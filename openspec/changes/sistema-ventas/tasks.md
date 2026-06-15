@@ -85,10 +85,10 @@ Chain strategy: stacked-to-main (resolved)
 
 ## Phase 7: Sync Engine
 
-- [ ] 7.1 Create `src-tauri/src/main.rs` — register sync + print Tauri commands
-- [ ] 7.2 Create `src-tauri/src/sync.rs` — push: query `sync_queue` → upsert cloud rows with LW-W conflict check
-- [ ] 7.3 Implement pull in `sync.rs` — batched (500) select from cloud → upsert local rows
-- [ ] 7.4 Add conflict logging: entity name, IDs, timestamps, verdict to sync_logs table
-- [ ] 7.5 Create `src/hooks/useSync.ts` — JS `setInterval` timer (60min) + manual `invoke("sync_now")`
-- [ ] 7.6 Write Rust tests: `#[cfg(test)]` push/pull/conflict with mocked DBs
-- [ ] 7.7 Integration test: offline write → sync → assert PostgreSQL has matching row
+- [x] 7.1 Update `src-tauri/src/lib.rs` — register `sync_now` Tauri command (main.rs already delegates to lib.rs)
+- [x] 7.2 Create `src-tauri/src/sync.rs` — push: query `sync_queue` → upsert cloud rows with LW-W conflict check
+- [x] 7.3 Implement pull in `sync.rs` — batched (500) select from cloud → upsert local rows
+- [x] 7.4 Add conflict logging: entity name, IDs, timestamps, verdict to sync_logs table
+- [x] 7.5 Create `src/hooks/useSync.ts` — JS `setInterval` timer (60min) + manual `invoke("sync_now")`
+- [x] 7.6 Write Rust tests: `#[cfg(test)]` push/pull/conflict with mocked DBs
+- [x] 7.7 Integration test: offline write → sync → assert PostgreSQL has matching row

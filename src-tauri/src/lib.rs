@@ -2,6 +2,7 @@ use tauri::Manager;
 
 mod pdf;
 mod printer;
+mod sync;
 
 // ──────────────────────────────────────────────
 // Tauri commands
@@ -21,11 +22,25 @@ fn print_receipt(invoice_data: String) -> Result<String, String> {
     printer::print_receipt(&invoice_data)
 }
 
+/// Run a full sync cycle (push local changes → pull remote changes).
+///
+/// This is an async command because it performs database I/O over the
+/// network. Returns a JSON-serialised `SyncResult` with counts of
+/// pushed/pulled rows, conflicts, and any errors.
+#[tauri::command]
+async fn sync_now() -> Result<String, String> {
+    let result = sync::run_sync()
+        .await
+        .map_err(|e| format!("Sync failed: {}", e))?;
+
+    serde_json::to_string(&result).map_err(|e| format!("Failed to serialise sync result: {}", e))
+}
+
 // ──────────────────────────────────────────────
 // App entry point
 // ──────────────────────────────────────────────
 
-/// Registers the SQL plugin, PDF/printer commands, and initialises the
+/// Registers the SQL plugin, PDF/printer/sync commands, and initialises the
 /// local SQLite database.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -35,7 +50,11 @@ pub fn run() {
                 .add_migrations("sqlite:pos.db", migrations())
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![generate_pdf, print_receipt])
+        .invoke_handler(tauri::generate_handler![
+            generate_pdf,
+            print_receipt,
+            sync_now
+        ])
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
