@@ -652,3 +652,180 @@ describe("useSync hook behavior", () => {
     expect(typeof navigator.onLine).toBe("boolean");
   });
 });
+
+// ──────────────────────────────────────────────
+// 7.8 — Full business flow E2E
+// ──────────────────────────────────────────────
+
+describe("E2E: Full business flow — offline sale → sync → cloud verify", () => {
+  function makeSim() {
+    return new InMemorySyncSimulator();
+  }
+
+  it("full flow: seed product → sync → pull into another store", () => {
+    const sim = makeSim();
+
+    // ── Offline write: seed product ──
+    sim.offlineWrite("products", {
+      id: 1,
+      name: "Coca-Cola 500ml",
+      price: 1200,
+      category_id: 1,
+    }, "product", "store_bazar");
+
+    // ── Push to cloud ──
+    const result = sim.fullSync();
+    expect(result.pushed).toBe(1);
+    expect(result.conflicts).toBe(0);
+
+    // ── Verify cloud has the product ──
+    expect(sim.cloud.get("products")!.get(1)!.name).toBe("Coca-Cola 500ml");
+
+    // ── Second store pulls from cloud ──
+    const sim2 = new InMemorySyncSimulator();
+    sim2.cloud = sim.cloud; // share cloud
+    sim2.fullSync();
+
+    expect(sim2.local.get("products")!.get(1)!.name).toBe("Coca-Cola 500ml");
+    expect(sim2.local.get("products")!.get(1)!.store_id).toBe("store_bazar");
+  });
+
+  it("full flow: products → sale → cash closing → invoice → sync all", () => {
+    const sim = makeSim();
+
+    // ── Seed products via offline write ──
+    sim.offlineWrite("products", {
+      id: 1, name: "Coca-Cola 500ml", price: 1200, category_id: 1,
+    }, "product", "store_bazar");
+    sim.offlineWrite("products", {
+      id: 2, name: "Papas Lays 120g", price: 1800, category_id: 1,
+    }, "product", "store_bazar");
+    sim.fullSync();
+
+    // ── Offline: record a sale ──
+    if (!sim.local.has("sales")) sim.local.set("sales", new Map());
+    sim.local.get("sales")!.set(100, {
+      id: 100, store_id: "store_bazar", total: 3000,
+      payment_method: "cash", cash_received: 5000, change: 2000,
+      created_at: new Date().toISOString(), sync_status: "pending",
+    });
+    sim.syncQueue.push({
+      id: sim.syncQueue.length + 1, entity: "sale", entity_id: 100,
+      operation: "insert", status: "pending", store_id: "store_bazar",
+    });
+    sim.fullSync();
+    expect(sim.cloud.get("sales")!.get(100)!.total).toBe(3000);
+
+    // ── Offline: cash closing ──
+    if (!sim.local.has("cash_closings")) sim.local.set("cash_closings", new Map());
+    sim.local.get("cash_closings")!.set(200, {
+      id: 200, store_id: "store_bazar", shift_id: 1,
+      employee: "Carlos", declared_cash: 3100,
+      expected_cash: 3000, variance: 100,
+      sync_status: "pending",
+    });
+    sim.syncQueue.push({
+      id: sim.syncQueue.length + 1000, entity: "cash_closing",
+      entity_id: 200, operation: "upsert", status: "pending",
+      store_id: "store_bazar",
+    });
+    sim.fullSync();
+    expect(sim.cloud.get("cash_closings")!.get(200)!.variance).toBe(100);
+
+    // ── Offline: generate invoice ──
+    if (!sim.local.has("invoices")) sim.local.set("invoices", new Map());
+    sim.local.get("invoices")!.set(300, {
+      id: 300, store_id: "store_bazar",
+      invoice_number: "INV-store_bazar-00001",
+      sale_id: 100, customer_name: "Cliente Final",
+      total: 3000, sync_status: "pending",
+    });
+    sim.syncQueue.push({
+      id: sim.syncQueue.length + 1001, entity: "invoice",
+      entity_id: 300, operation: "upsert", status: "pending",
+      store_id: "store_bazar",
+    });
+    sim.fullSync();
+
+    // ── Verify everything synced (sync_logs table not created = no conflicts) ──
+    expect(sim.cloud.get("products")!.size).toBe(2);
+    expect(sim.cloud.get("sales")!.size).toBe(1);
+    expect(sim.cloud.get("cash_closings")!.size).toBe(1);
+    expect(sim.cloud.get("invoices")!.size).toBe(1);
+    expect(sim.conflictLog).toHaveLength(0);
+  });
+
+  it("bulk sync: 5 offline sales sync in one batch", () => {
+    const sim = makeSim();
+
+    for (let i = 1; i <= 5; i++) {
+      sim.offlineWrite("sales", {
+        id: i, total: 1000 * i, payment_method: "cash",
+      }, "sale", "store_bazar");
+    }
+    expect(sim.local.get("sales")!.size).toBe(5);
+
+    const result = sim.fullSync();
+    expect(result.pushed).toBe(5);
+    expect(result.errors).toHaveLength(0);
+    expect(sim.cloud.get("sales")!.size).toBe(5);
+    expect(sim.cloud.get("sales")!.get(3)!.total).toBe(3000);
+  });
+  it("conflict: same product edited in two stores — newest timestamp wins", () => {
+    const sim = makeSim();
+    const t0 = "2026-06-15T10:00:00Z";
+    const t1 = "2026-06-15T11:00:00Z";
+    const t2 = "2026-06-15T12:00:00Z";
+
+    // ── Store A creates product at t0 (direct manipulation to control timestamp) ──
+    if (!sim.local.has("products")) sim.local.set("products", new Map());
+    sim.local.get("products")!.set(1, {
+      id: 1, store_id: "store_a", name: "Yerba Mate",
+      price: 2500, updated_at: t0, sync_status: "pending",
+    });
+    sim.syncQueue.push({
+      id: sim.syncQueue.length + 1, entity: "product",
+      entity_id: 1, operation: "upsert", status: "pending",
+      store_id: "store_a",
+    });
+    sim.fullSync();
+    expect(sim.cloud.get("products")!.get(1)!.price).toBe(2500);
+
+    // ── Store B pulls, edits at t1 ──
+    const simB = new InMemorySyncSimulator();
+    simB.cloud = sim.cloud;
+    simB.fullSync(); // pull product (reads from cloud schema)
+    expect(simB.local.get("products")!.get(1)!.price).toBe(2500);
+
+    // Store B edits: price=2800 at t1
+    simB.local.get("products")!.set(1, {
+      id: 1, store_id: "store_a", name: "Yerba Mate",
+      price: 2800, updated_at: t1, sync_status: "pending",
+    });
+    simB.syncQueue.push({
+      id: simB.syncQueue.length + 100, entity: "product",
+      entity_id: 1, operation: "upsert", status: "pending",
+      store_id: "store_a",
+    });
+
+    // ── Store A also edits at t2 (later) ──
+    sim.local.get("products")!.set(1, {
+      id: 1, store_id: "store_a", name: "Yerba Mate",
+      price: 3000, updated_at: t2, sync_status: "pending",
+    });
+    sim.syncQueue.push({
+      id: sim.syncQueue.length + 200, entity: "product",
+      entity_id: 1, operation: "upsert", status: "pending",
+      store_id: "store_a",
+    });
+
+    // ── Both push ──
+    simB.fullSync(); // pushes t1 version → cloud has price=2800
+    sim.fullSync();  // pushes t2 version (newer) → cloud wins with price=3000
+
+    // Wait... simB.cloud = sim.cloud, so after simB pushes, sim.cloud has price=2800
+    // Then sim pushes with price=3000, t2 > t1 → cloud should be price=3000
+    expect(sim.cloud.get("products")!.get(1)!.price).toBe(3000);
+    expect(sim.cloud.get("products")!.get(1)!.updated_at).toBe(t2);
+  });
+});

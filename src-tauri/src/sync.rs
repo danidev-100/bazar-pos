@@ -814,55 +814,167 @@ impl CloudStore for PgCloudStore {
     async fn upsert_row(
         &self,
         table: &str,
-        _columns: &[String],
-        _values: &[DbValue],
+        columns: &[String],
+        values: &[DbValue],
         updated_at: &str,
     ) -> Result<bool, SyncError> {
-        // In a real build, this would execute:
-        //
-        // INSERT INTO table (col1, col2, ...)
-        // VALUES ($1, $2, ...)
-        // ON CONFLICT (id) DO UPDATE SET
-        //   col1 = EXCLUDED.col1,
-        //   col2 = EXCLUDED.col2,
-        //   ...
-        // WHERE table.updated_at <= $updated_at
-        //
-        // If 0 rows were affected → cloud was newer → return false.
-        //
-        // For MVP, we simulate success. The full implementation requires
-        // dynamic SQL generation per entity type.
-        //
-        // This is exercised in tests via MockCloudStore.
+        if columns.is_empty() || columns.len() != values.len() {
+            return Err(SyncError::Database("Column/value mismatch".to_string()));
+        }
 
-        let _ = updated_at;
-        Ok(true)
+        // Build: INSERT INTO table (c1, c2, ...)
+        // VALUES ($1, $2, ...)
+        // ON CONFLICT (id) DO UPDATE SET c1 = EXCLUDED.c1, c2 = EXCLUDED.c2, ...
+        // WHERE table.updated_at <= $N
+        let cols: Vec<&str> = columns.iter().map(|s| s.as_str()).collect();
+        let placeholders: Vec<String> = (1..=cols.len()).map(|i| format!("${}", i)).collect();
+        let set_exprs: Vec<String> = cols
+            .iter()
+            .map(|c| format!("{} = EXCLUDED.{}", c, c))
+            .collect();
+        let updated_at_idx = cols.len() + 1; // $N is after all value params
+
+        let sql = format!(
+            "INSERT INTO {} ({}) VALUES ({}) ON CONFLICT (id) DO UPDATE SET {} WHERE {}.updated_at <= ${}",
+            table,
+            cols.join(", "),
+            placeholders.join(", "),
+            set_exprs.join(", "),
+            table,
+            updated_at_idx,
+        );
+
+        let mut query = sqlx::query(&sql);
+        for val in values {
+            query = match val {
+                DbValue::Text(s) => query.bind(s),
+                DbValue::Integer(n) => query.bind(n),
+                DbValue::Real(f) => query.bind(f),
+                DbValue::Null => query.bind(&None::<String> as &Option<String>),
+            };
+        }
+        query = query.bind(updated_at);
+
+        let result = query
+            .execute(&self.pool)
+            .await
+            .map_err(|e| SyncError::Database(format!("Cloud upsert failed on {}: {}", table, e)))?;
+
+        Ok(result.rows_affected() > 0)
     }
 
     async fn read_row(
         &self,
-        _table: &str,
-        _pk_column: &str,
-        _pk_value: i64,
+        table: &str,
+        pk_column: &str,
+        pk_value: i64,
     ) -> Result<Option<HashMap<String, DbValue>>, SyncError> {
-        // Real implementation would SELECT * FROM table WHERE pk = $pk
-        Ok(None)
+        let sql = format!("SELECT * FROM {} WHERE {} = $1", table, pk_column);
+
+        let row = sqlx::query(&sql)
+            .bind(pk_value)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| SyncError::Database(format!("Cloud read failed on {}: {}", table, e)))?;
+
+        match row {
+            Some(r) => {
+                let mut map = HashMap::new();
+                // sqlx::postgres::PgRow doesn't implement column iteration easily
+                // without knowing schema. Use the columns from the query result.
+                for (i, col) in r.columns().iter().enumerate() {
+                    let name = col.name().to_string();
+                    let value = pg_row_to_dbvalue(&r, i);
+                    map.insert(name, value);
+                }
+                Ok(Some(map))
+            }
+            None => Ok(None),
+        }
     }
 
     async fn query_rows_since(
         &self,
-        _table: &str,
-        _store_id: &str,
-        _since: &str,
-        _limit: i64,
+        table: &str,
+        store_id: &str,
+        since: &str,
+        limit: i64,
     ) -> Result<Vec<HashMap<String, DbValue>>, SyncError> {
-        // Real implementation would SELECT * FROM table WHERE store_id = $1 AND updated_at > $2 LIMIT $3
-        Ok(Vec::new())
+        let sql = format!(
+            "SELECT * FROM {} WHERE store_id = $1 AND updated_at > $2 ORDER BY updated_at ASC LIMIT $3",
+            table,
+        );
+
+        let rows = sqlx::query(&sql)
+            .bind(store_id)
+            .bind(since)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SyncError::Database(format!("Cloud pull failed on {}: {}", table, e)))?;
+
+        let result = rows
+            .iter()
+            .map(|r| {
+                let mut map = HashMap::new();
+                for (i, col) in r.columns().iter().enumerate() {
+                    map.insert(col.name().to_string(), pg_row_to_dbvalue(r, i));
+                }
+                map
+            })
+            .collect();
+
+        Ok(result)
     }
 
-    async fn write_conflict_log(&self, _entry: &ConflictEntry) -> Result<(), SyncError> {
-        // Real implementation would INSERT INTO sync_logs
+    async fn write_conflict_log(&self, entry: &ConflictEntry) -> Result<(), SyncError> {
+        sqlx::query(
+            "INSERT INTO sync_logs (entity, entity_id, store_id, local_version, cloud_version, verdict, created_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        )
+        .bind(&entry.entity)
+        .bind(entry.entity_id)
+        .bind(&entry.store_id)
+        .bind(&entry.local_version)
+        .bind(&entry.cloud_version)
+        .bind(&entry.verdict)
+        .bind(&entry.created_at)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| SyncError::Database(format!("Failed to write conflict log: {}", e)))?;
+
         Ok(())
+    }
+}
+
+/// Convert a PostgreSQL `PgRow` value at column index to `DbValue`.
+fn pg_row_to_dbvalue(row: &sqlx::postgres::PgRow, i: usize) -> DbValue {
+    use sqlx::Column;
+    let col = row.columns().get(i);
+    match col {
+        None => DbValue::Null,
+        Some(c) => {
+            // Try common types — Postgres returns NULL for type mismatches via try_get
+            let name = c.name().to_string();
+            // First try as text
+            if let Ok(val) = row.try_get::<String, usize>(i) {
+                return DbValue::Text(val);
+            }
+            // Then as i64
+            if let Ok(val) = row.try_get::<i64, usize>(i) {
+                return DbValue::Integer(val);
+            }
+            // Then as f64
+            if let Ok(val) = row.try_get::<f64, usize>(i) {
+                return DbValue::Real(val);
+            }
+            // Then as i32 → i64
+            if let Ok(val) = row.try_get::<i32, usize>(i) {
+                return DbValue::Integer(val as i64);
+            }
+            // Fallback
+            DbValue::Null
+        }
     }
 }
 

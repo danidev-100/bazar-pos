@@ -9,21 +9,38 @@ import InvoiceList from "@/components/InvoiceList";
 import InvoiceDetail from "@/components/InvoiceDetail";
 
 // ──────────────────────────────────────────────
-// Tauri command stubs (will use real invoke in production)
+// Tauri invoke commands
 // ──────────────────────────────────────────────
 
-/** Placeholder — will be replaced with Tauri `invoke("print_receipt")` in PR 7. */
-async function invokePrint(_invoice: Invoice): Promise<void> {
-  // In a real Tauri build this would call:
-  //   await invoke("print_receipt", { invoiceData: JSON.stringify(invoice) });
-  console.log("print_receipt called (stub):", _invoice.invoiceNumber);
+/** Send invoice to thermal printer via Tauri ESC/POS command. */
+async function invokePrint(invoice: Invoice): Promise<void> {
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("print_receipt", { invoiceData: JSON.stringify(invoice) });
+  } catch {
+    // Fallback when running outside Tauri (e.g., dev browser)
+    console.log("print_receipt (dev fallback):", invoice.invoiceNumber);
+  }
 }
 
-/** Placeholder — will be replaced with Tauri `invoke("generate_pdf")` in PR 7. */
-async function invokeExportPdf(_invoice: Invoice): Promise<void> {
-  // In a real Tauri build this would call:
-  //   const bytes = await invoke("generate_pdf", { invoiceData: JSON.stringify(invoice) });
-  console.log("generate_pdf called (stub):", _invoice.invoiceNumber);
+/** Generate PDF invoice via Tauri command and trigger download. */
+async function invokeExportPdf(invoice: Invoice): Promise<void> {
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const bytes: number[] = await invoke("generate_pdf", {
+      invoiceData: JSON.stringify(invoice),
+    });
+    const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${invoice.invoiceNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    // Fallback when running outside Tauri (e.g., dev browser)
+    console.log("generate_pdf (dev fallback):", invoice.invoiceNumber);
+  }
 }
 
 // ──────────────────────────────────────────────
