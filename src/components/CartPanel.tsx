@@ -6,19 +6,24 @@ import { useAppStore } from "@/store";
 
 type CartPanelProps = {
   onCheckout: () => void;
+  onSelectCustomer?: () => void;
 };
 
 // ──────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────
 
-export default function CartPanel({ onCheckout }: CartPanelProps) {
+export default function CartPanel({
+  onCheckout,
+  onSelectCustomer,
+}: CartPanelProps) {
   const items = useAppStore((s) => s.items);
   const addItem = useAppStore((s) => s.addItem);
   const updateQuantity = useAppStore((s) => s.updateQuantity);
   const removeItem = useAppStore((s) => s.removeItem);
   const cartTotal = useAppStore((s) => s.cartTotal);
   const itemCount = useAppStore((s) => s.itemCount);
+  const selectedCustomer = useAppStore((s) => s.selectedCustomer);
 
   const total = cartTotal();
   const count = itemCount();
@@ -36,6 +41,24 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
             </span>
           )}
         </h2>
+      </div>
+
+      {/* Selected customer */}
+      <div className="flex items-center justify-between mb-3 text-sm bg-pos-background/50 rounded-lg px-3 py-2">
+        <span className="text-pos-muted">
+          Cliente:{" "}
+          <span className="font-medium text-pos-text">
+            {selectedCustomer?.name ?? "Consumidor Final"}
+          </span>
+        </span>
+        {onSelectCustomer && (
+          <button
+            onClick={onSelectCustomer}
+            className="text-pos-secondary text-xs font-medium touch-target px-2 py-1 rounded hover:bg-pos-secondary/10 transition-colors"
+          >
+            Cambiar
+          </button>
+        )}
       </div>
 
       {/* Items list */}

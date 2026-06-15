@@ -7,6 +7,7 @@ import { exportInvoicePdf } from "@/lib/pdf-export";
 import ProductGrid from "@/components/ProductGrid";
 import CartPanel from "@/components/CartPanel";
 import CheckoutModal from "@/components/CheckoutModal";
+import CustomerSelectModal from "@/components/CustomerSelectModal";
 import ReceiptPreview from "@/components/ReceiptPreview";
 
 // ──────────────────────────────────────────────
@@ -173,6 +174,7 @@ export default function POSPage() {
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false);
 
   // Seed demo products on first mount
   useEffect(() => {
@@ -244,8 +246,22 @@ export default function POSPage() {
 
       {/* ── Right: Cart Panel ── */}
       <aside className="w-full lg:w-96 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto max-h-64 lg:max-h-full">
-        <CartPanel onCheckout={handleCheckout} />
+        <CartPanel
+          onCheckout={handleCheckout}
+          onSelectCustomer={() => setShowCustomerSelect(true)}
+        />
       </aside>
+
+      {/* ── Customer Select Modal ── */}
+      {showCustomerSelect && (
+        <CustomerSelectModal
+          onSelect={(customer) => {
+            useAppStore.getState().selectCustomer(customer);
+            setShowCustomerSelect(false);
+          }}
+          onClose={() => setShowCustomerSelect(false)}
+        />
+      )}
 
       {/* ── Checkout Modal ── */}
       {showCheckout && (

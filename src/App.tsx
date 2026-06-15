@@ -8,6 +8,7 @@ import ProductsPage from "@/pages/ProductsPage";
 import POSPage from "@/pages/POSPage";
 import CashClosingPage from "@/pages/CashClosingPage";
 import BillingPage from "@/pages/BillingPage";
+import CustomersPage from "@/pages/CustomersPage";
 import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 
@@ -20,6 +21,7 @@ const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
   products: ProductsPage,
   "cash-closing": CashClosingPage,
   billing: BillingPage,
+  customers: CustomersPage,
   stats: StatsPage,
   admin: AdminPage,
 };

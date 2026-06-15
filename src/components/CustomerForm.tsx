@@ -1,0 +1,215 @@
+import { useState, useEffect } from "react";
+import { useCustomersStore, type Customer } from "@/store/customers";
+import { useActiveStore } from "@/store/context";
+
+// ──────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────
+
+interface CustomerFormProps {
+  editCustomer: Customer | null;
+  onSaved: () => void;
+  onCancel: () => void;
+}
+
+export default function CustomerForm({
+  editCustomer,
+  onSaved,
+  onCancel,
+}: CustomerFormProps) {
+  const { storeId } = useActiveStore();
+  const addCustomer = useCustomersStore((s) => s.addCustomer);
+  const updateCustomer = useCustomersStore((s) => s.updateCustomer);
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [cuit, setCuit] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (editCustomer) {
+      setName(editCustomer.name);
+      setPhone(editCustomer.phone);
+      setEmail(editCustomer.email);
+      setAddress(editCustomer.address);
+      setCuit(editCustomer.cuit);
+      setError(null);
+    } else {
+      setName("");
+      setPhone("");
+      setEmail("");
+      setAddress("");
+      setCuit("");
+      setError(null);
+    }
+  }, [editCustomer]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError("El nombre del cliente no puede estar vacío");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editCustomer) {
+        updateCustomer(editCustomer.id, {
+          name: trimmedName,
+          phone: phone.trim(),
+          email: email.trim(),
+          address: address.trim(),
+          cuit: cuit.trim(),
+        });
+      } else {
+        addCustomer({
+          name: trimmedName,
+          phone: phone.trim(),
+          email: email.trim(),
+          address: address.trim(),
+          cuit: cuit.trim(),
+          store_id: storeId,
+        });
+      }
+      onSaved();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al guardar el cliente",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
+        {editCustomer ? "Editar Cliente" : "Nuevo Cliente"}
+      </h3>
+
+      {error && (
+        <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-sm rounded-lg px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Name */}
+        <div>
+          <label
+            htmlFor="customer-name"
+            className="block text-sm font-medium text-pos-text mb-1"
+          >
+            Nombre <span className="text-pos-danger">*</span>
+          </label>
+          <input
+            id="customer-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nombre del cliente"
+            required
+            className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+          />
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label
+            htmlFor="customer-phone"
+            className="block text-sm font-medium text-pos-text mb-1"
+          >
+            Teléfono
+          </label>
+          <input
+            id="customer-phone"
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Teléfono"
+            className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label
+            htmlFor="customer-email"
+            className="block text-sm font-medium text-pos-text mb-1"
+          >
+            Email
+          </label>
+          <input
+            id="customer-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@ejemplo.com"
+            className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+          />
+        </div>
+
+        {/* CUIT */}
+        <div>
+          <label
+            htmlFor="customer-cuit"
+            className="block text-sm font-medium text-pos-text mb-1"
+          >
+            CUIT
+          </label>
+          <input
+            id="customer-cuit"
+            type="text"
+            value={cuit}
+            onChange={(e) => setCuit(e.target.value)}
+            placeholder="XX-XXXXXXXX-X"
+            className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+          />
+        </div>
+
+        {/* Address — full width */}
+        <div className="sm:col-span-2">
+          <label
+            htmlFor="customer-address"
+            className="block text-sm font-medium text-pos-text mb-1"
+          >
+            Dirección
+          </label>
+          <input
+            id="customer-address"
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Dirección"
+            className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50"
+        >
+          {saving ? "Guardando…" : editCustomer ? "Actualizar" : "Crear"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 border border-pos-muted/30 text-pos-text rounded-lg font-medium text-sm touch-target hover:bg-pos-background"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}

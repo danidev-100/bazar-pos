@@ -23,6 +23,7 @@ export default function CheckoutModal({
   const items = useAppStore((s) => s.items);
   const cartTotal = useAppStore((s) => s.cartTotal);
   const checkout = useAppStore((s) => s.checkout);
+  const selectedCustomer = useAppStore((s) => s.selectedCustomer);
 
   const total = cartTotal();
   const isEmpty = items.length === 0;
@@ -79,6 +80,7 @@ export default function CheckoutModal({
         paymentMethod,
         paymentMethod === "cash" ? parsedAmount : undefined,
         storeId,
+        selectedCustomer?.name,
       );
       resetState();
       onComplete();
@@ -139,6 +141,16 @@ export default function CheckoutModal({
               ))}
             </div>
           </div>
+
+          {/* Selected customer */}
+          {selectedCustomer && (
+            <div className="flex items-center justify-between text-sm bg-pos-background/50 rounded-lg px-3 py-2">
+              <span className="text-pos-muted">Cliente</span>
+              <span className="font-medium text-pos-text">
+                {selectedCustomer.name}
+              </span>
+            </div>
+          )}
 
           {/* Total */}
           <div className="flex items-center justify-between pt-2 border-t border-pos-muted/20">

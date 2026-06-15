@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { type Customer } from "./customers";
 
 // ──────────────────────────────────────────────
 // Page navigation enum (no React Router)
@@ -10,7 +11,8 @@ export type Page =
   | "cash-closing"
   | "billing"
   | "stats"
-  | "admin";
+  | "admin"
+  | "customers";
 
 // ──────────────────────────────────────────────
 // Cart item
@@ -86,6 +88,10 @@ export type AppStore = {
   cartTotal: () => number;
   itemCount: () => number;
 
+  // ── Customer selection ──
+  selectedCustomer: Customer | null;
+  selectCustomer: (customer: Customer | null) => void;
+
   // ── Sales ──
   lastCompletedSale: CompletedSale | null;
   completedSales: CompletedSale[];
@@ -120,6 +126,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   items: [],
   lastCompletedSale: null,
   completedSales: [],
+  selectedCustomer: null,
 
   // ── Navigation ──
   setPage: (page) => set({ page }),
@@ -238,6 +245,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   dismissReceipt: () => set({ lastCompletedSale: null }),
+
+  // ── Customer selection ──
+  selectCustomer: (customer) => set({ selectedCustomer: customer }),
 }));
 
 // Re-export admin store for convenience

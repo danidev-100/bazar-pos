@@ -17,6 +17,7 @@ const PAGES: PageDef[] = [
   { id: "products", label: "Productos", icon: "📦" },
   { id: "cash-closing", label: "Caja", icon: "💰" },
   { id: "billing", label: "Facturación", icon: "🧾" },
+  { id: "customers", label: "Clientes", icon: "👥" },
   { id: "stats", label: "Estadísticas", icon: "📊" },
   { id: "admin", label: "Admin", icon: "🔒" },
 ];
