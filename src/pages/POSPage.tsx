@@ -228,8 +228,8 @@ export default function POSPage() {
 
     exportInvoicePdf(invoice);
 
-    showNotification(`Factura ${invoice.invoiceNumber} generada`);
-    setTimeout(() => dismissNotification(), 3000);
+    showNotification(`Factura ${invoice.invoiceNumber} — elegí "Guardar como PDF" en el diálogo de impresión`);
+    setTimeout(() => dismissNotification(), 5000);
   }
 
   function handleNewSale() {

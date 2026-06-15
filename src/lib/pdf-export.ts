@@ -119,20 +119,43 @@ export async function exportInvoicePdf(invoice: Invoice): Promise<void> {
     // Tauri not available — fall through to browser print
   }
 
-  // Browser fallback: open print dialog with receipt format
-  const printWin = window.open("", "_blank");
-  if (!printWin) {
-    // Popup blocked — just log
-    console.log("print_fallback:", invoice.invoiceNumber);
+  // Browser fallback: render invoice in a hidden iframe, then print.
+  // No popup blocker issues, works in all modern browsers.
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.top = "-9999px";
+  iframe.style.left = "-9999px";
+  iframe.style.width = "1px";
+  iframe.style.height = "1px";
+  iframe.style.border = "none";
+  iframe.title = "print-frame";
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    console.log("print_fallback: no iframe contentWindow");
+    document.body.removeChild(iframe);
     return;
   }
 
-  printWin.document.write(buildInvoiceHtml(invoice));
-  printWin.document.close();
-  printWin.focus();
+  doc.open();
+  doc.write(buildInvoiceHtml(invoice));
+  doc.close();
 
-  // Wait for content to render, then print
+  // Wait for fonts/content to render, then print
   setTimeout(() => {
-    printWin.print();
-  }, 300);
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (err) {
+      console.log("print_fallback error:", err);
+    }
+    // Remove iframe after a short delay (print is async)
+    setTimeout(() => {
+      if (iframe.parentNode) {
+        document.body.removeChild(iframe);
+      }
+    }, 1000);
+  }, 500);
 }
