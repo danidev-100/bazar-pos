@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Sistema de Ventas — Base Styles
+ *
+ * Tailwind directives above generate the utility classes defined
+ * in tailwind.config.js. Additional global overrides live here.
+ */
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Prevent text selection on UI elements in POS mode */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Touch-friendly tap targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}

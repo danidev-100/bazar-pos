@@ -1,0 +1,37 @@
+{
+  "name": "sistema-ventas",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Multi-store POS desktop application — offline-first with sync",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "db:generate:local": "drizzle-kit generate --config=drizzle.config.local.ts",
+    "db:generate:cloud": "drizzle-kit generate --config=drizzle.config.cloud.ts",
+    "db:push:local": "drizzle-kit push --config=drizzle.config.local.ts",
+    "db:push:cloud": "drizzle-kit push --config=drizzle.config.cloud.ts"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-sql": "^2.0.0",
+    "drizzle-orm": "^0.35.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "drizzle-kit": "^0.25.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1"
+  }
+}
