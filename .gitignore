@@ -33,3 +33,5 @@ Thumbs.db
 drizzle/meta/
 drizzle/*.sql
 !drizzle/.gitkeep
+
+.vercel

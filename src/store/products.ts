@@ -59,7 +59,7 @@ export type ProductsStore = {
   stockMovements: StockMovement[];
 
   /** Add a product. Throws if barcode duplicate in same store. */
-  addProduct: (data: Omit<Product, "id">) => Product;
+  addProduct: (data: Omit<Product, "id" | "costPrice" | "brandId"> & { costPrice?: number; brandId?: number | null }) => Product;
 
   /** Update product fields by id. */
   updateProduct: (id: number, updates: Partial<Omit<Product, "id">>) => void;
@@ -123,9 +123,9 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 
     const product: Product = {
       id: nextProductId++,
-      costPrice: 0,
-      brandId: null,
       ...data,
+      costPrice: data.costPrice ?? 0,
+      brandId: data.brandId ?? null,
     };
     set({ products: [...get().products, product] });
     return product;

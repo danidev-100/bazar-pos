@@ -77,8 +77,10 @@ describe("Product CRUD", () => {
       barcode: "77912345",
       name: "Coca-Cola 500ml",
       price: 150.0,
-      stock: 10,
+      stock: 0,
       category_id: null,
+      costPrice: 0,
+      brandId: null,
       store_id: STORE_A,
     });
 

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useAdminStore, type BulkPreviewItem } from "@/store/admin";
+import { useAdminStore, type BulkPreviewItem, type BulkPriceOpts } from "@/store/admin";
 import { useProductsStore } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
 import { useActiveStore } from "@/store/context";
@@ -95,9 +95,9 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
       return;
     }
 
-    const opts = {
+    const opts: BulkPriceOpts = {
       filter:
-        categoryId !== "" || brandId !== "" ? "category" : ("all" as const),
+        categoryId !== "" || brandId !== "" ? "category" : "all",
       filterId:
         categoryId !== "" ? (categoryId as number) : undefined,
       percent: parsedPercent,
