@@ -41,12 +41,12 @@ Chain strategy: stacked-to-main (resolved)
 
 ## Phase 2: Products + Stock
 
-- [ ] 2.1 Create `src/pages/ProductsPage.tsx` — layout with category tree + product list + movement log
-- [ ] 2.2 Create `src/components/CategoryTree.tsx` — hierarchical category CRUD
-- [ ] 2.3 Create `src/components/ProductForm.tsx` — product create/edit form (name, barcode, price, category)
-- [ ] 2.4 Create `src/components/StockMovementLog.tsx` — movement history table + manual adjustment form
-- [ ] 2.5 Write tests: `src/__tests__/products.test.ts` — product CRUD, barcode uniqueness, stock movement recording
-- [ ] 2.6 Verify store isolation: query store A products from store B context → empty
+- [x] 2.1 Create `src/pages/ProductsPage.tsx` — layout with category tree + product list + movement log
+- [x] 2.2 Create `src/components/CategoryTree.tsx` — hierarchical category CRUD
+- [x] 2.3 Create `src/components/ProductForm.tsx` — product create/edit form (name, barcode, price, category)
+- [x] 2.4 Create `src/components/StockMovementLog.tsx` — movement history table + manual adjustment form
+- [x] 2.5 Write tests: `src/__tests__/products.test.ts` — product CRUD, barcode uniqueness, stock movement recording
+- [x] 2.6 Verify store isolation: query store A products from store B context → empty
 
 ## Phase 3: POS Sales
 
