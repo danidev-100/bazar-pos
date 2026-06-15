@@ -1,0 +1,155 @@
+import { useState } from "react";
+import { useCashClosingStore, type Shift } from "@/store/cash-closing";
+
+// ──────────────────────────────────────────────
+// Props
+// ──────────────────────────────────────────────
+
+type ShiftPanelProps = {
+  storeId: string;
+  currentShift: Shift | null;
+  onShiftChanged: () => void;
+};
+
+// ──────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────
+
+export default function ShiftPanel({
+  storeId,
+  currentShift,
+  onShiftChanged,
+}: ShiftPanelProps) {
+  const openShift = useCashClosingStore((s) => s.openShift);
+  const closeShift = useCashClosingStore((s) => s.closeShift);
+
+  const [employee, setEmployee] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  function handleOpen() {
+    setError(null);
+    setSuccess(null);
+
+    const trimmed = employee.trim();
+    if (!trimmed) {
+      setError("Enter employee name");
+      return;
+    }
+
+    try {
+      openShift(trimmed, storeId);
+      setSuccess(`Shift opened for ${trimmed}`);
+      setEmployee("");
+      onShiftChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to open shift");
+    }
+  }
+
+  function handleClose() {
+    setError(null);
+    setSuccess(null);
+
+    if (!currentShift) return;
+
+    try {
+      closeShift(currentShift.id);
+      setSuccess("Shift closed");
+      onShiftChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to close shift");
+    }
+  }
+
+  // ── Open state ──
+  if (currentShift) {
+    const openTime = new Date(currentShift.openTime);
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
+          Current Shift
+        </h3>
+
+        <div className="bg-pos-success/10 border border-pos-success/30 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-pos-success">● Open</span>
+            <span className="text-xs text-pos-muted">
+              Since {openTime.toLocaleTimeString()}
+            </span>
+          </div>
+          <div className="text-sm text-pos-text">
+            <span className="text-pos-muted">Employee:</span>{" "}
+            {currentShift.employee}
+          </div>
+          <div className="text-xs text-pos-muted">
+            Opened {openTime.toLocaleDateString()} at{" "}
+            {openTime.toLocaleTimeString()}
+          </div>
+
+          {error && (
+            <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-xs rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="bg-pos-success/10 border border-pos-success/30 text-pos-success text-xs rounded-lg px-3 py-2">
+              {success}
+            </div>
+          )}
+
+          <button
+            onClick={handleClose}
+            className="w-full px-4 py-2 bg-pos-danger text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity"
+          >
+            Close Shift
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Closed / no shift state ──
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
+        Open New Shift
+      </h3>
+
+      {error && (
+        <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-sm rounded-lg px-3 py-2">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="bg-pos-success/10 border border-pos-success/30 text-pos-success text-sm rounded-lg px-3 py-2">
+          {success}
+        </div>
+      )}
+
+      <div>
+        <label
+          htmlFor="shift-employee"
+          className="block text-sm font-medium text-pos-text mb-1"
+        >
+          Employee Name
+        </label>
+        <input
+          id="shift-employee"
+          value={employee}
+          onChange={(e) => setEmployee(e.target.value)}
+          placeholder="e.g. Juan Pérez"
+          className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+        />
+      </div>
+
+      <button
+        onClick={handleOpen}
+        disabled={!employee.trim()}
+        className="w-full px-4 py-2 bg-pos-success text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Open Shift
+      </button>
+    </div>
+  );
+}

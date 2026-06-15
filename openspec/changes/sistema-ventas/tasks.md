@@ -60,11 +60,11 @@ Chain strategy: stacked-to-main (resolved)
 
 ## Phase 4: Cash Closing
 
-- [ ] 4.1 Create `src/pages/CashClosingPage.tsx` — layout: shift list + reconciliation form + closure report
-- [ ] 4.2 Create `src/components/ShiftPanel.tsx` — open/close shift with timestamps and employee
-- [ ] 4.3 Create `src/components/ReconciliationForm.tsx` — declared cash input, variance calculation
-- [ ] 4.4 Create `src/components/ClosureReport.tsx` — summary: sale count, totals, variances, product counts
-- [ ] 4.5 Write tests: shift open/close lifecycle, variance calc, double-open rejection
+- [x] 4.1 Create `src/pages/CashClosingPage.tsx` — layout: shift list + reconciliation form + closure report
+- [x] 4.2 Create `src/components/ShiftPanel.tsx` — open/close shift with timestamps and employee
+- [x] 4.3 Create `src/components/ReconciliationForm.tsx` — declared cash input, variance calculation
+- [x] 4.4 Create `src/components/ClosureReport.tsx` — summary: sale count, totals, variances, product counts
+- [x] 4.5 Write tests: shift open/close lifecycle, variance calc, double-open rejection
 
 ## Phase 5: Internal Billing + PDF/Print
 

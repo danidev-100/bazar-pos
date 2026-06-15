@@ -3,18 +3,11 @@ import { StoreProvider } from "@/store/context";
 import NavigationBar from "@/components/NavigationBar";
 import ProductsPage from "@/pages/ProductsPage";
 import POSPage from "@/pages/POSPage";
+import CashClosingPage from "@/pages/CashClosingPage";
 
 // ──────────────────────────────────────────────
 // Page placeholders (implemented in later PRs)
 // ──────────────────────────────────────────────
-
-function CashClosingPage() {
-  return (
-    <div className="flex items-center justify-center h-full text-pos-muted">
-      <p className="text-lg">Cash Closing — coming in PR 4</p>
-    </div>
-  );
-}
 
 function BillingPage() {
   return (
