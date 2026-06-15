@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
+import { useBrandsStore } from "@/store/brands";
+import { useAdminStore } from "@/store/admin";
 import CategoryTree from "@/components/CategoryTree";
 import ProductForm from "@/components/ProductForm";
 import StockMovementLog from "@/components/StockMovementLog";
@@ -23,6 +25,8 @@ export default function ProductsPage() {
   const { storeId } = useActiveStore();
   const products = useProductsStore((s) => s.products);
   const categories = useProductsStore((s) => s.categories);
+  const brands = useBrandsStore((s) => s.brands);
+  const isUnlocked = useAdminStore((s) => s.isUnlocked);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
@@ -130,7 +134,7 @@ export default function ProductsPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
+                    <thead>
                     <tr className="text-pos-muted border-b border-pos-muted/20">
                       <th className="text-left py-2 pr-2 font-medium">Nombre</th>
                       <th className="text-left py-2 px-2 font-medium">
@@ -139,9 +143,19 @@ export default function ProductsPage() {
                       <th className="text-right py-2 px-2 font-medium">
                         Precio
                       </th>
+                      {isUnlocked && (
+                        <th className="text-right py-2 px-2 font-medium">
+                          Costo
+                        </th>
+                      )}
                       <th className="text-right py-2 px-2 font-medium">
                         Stock
                       </th>
+                      {isUnlocked && (
+                        <th className="text-left py-2 px-2 font-medium">
+                          Marca
+                        </th>
+                      )}
                       <th className="text-left py-2 px-2 font-medium">
                         Categoría
                       </th>
@@ -155,6 +169,9 @@ export default function ProductsPage() {
                       const cat = storeCategories.find(
                         (c) => c.id === p.category_id,
                       );
+                      const brand = isUnlocked
+                        ? brands.find((b) => b.id === p.brandId)
+                        : null;
                       return (
                         <tr
                           key={p.id}
@@ -174,6 +191,11 @@ export default function ProductsPage() {
                           <td className="py-2 px-2 text-right font-mono">
                             ${p.price.toFixed(2)}
                           </td>
+                          {isUnlocked && (
+                            <td className="py-2 px-2 text-right font-mono text-pos-muted">
+                              ${p.costPrice.toFixed(2)}
+                            </td>
+                          )}
                           <td
                             className={`py-2 px-2 text-right font-mono font-bold ${
                               p.stock < 0
@@ -183,6 +205,11 @@ export default function ProductsPage() {
                           >
                             {p.stock}
                           </td>
+                          {isUnlocked && (
+                            <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
+                              {brand?.name ?? "—"}
+                            </td>
+                          )}
                           <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
                             {cat?.name ?? "—"}
                           </td>

@@ -48,6 +48,7 @@ export async function hashPin(pin: string): Promise<string> {
 // ──────────────────────────────────────────────
 
 const PIN_HASH_KEY = "admin_pin_hash";
+const THEME_KEY = "admin_theme";
 
 function loadPinHash(): string | null {
   try {
@@ -60,6 +61,24 @@ function loadPinHash(): string | null {
 function savePinHash(hash: string): void {
   try {
     localStorage.setItem(PIN_HASH_KEY, hash);
+  } catch {
+    // localStorage unavailable — skip
+  }
+}
+
+function loadTheme(): "light" | "dark" {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "dark" || stored === "light") return stored;
+  } catch {
+    // localStorage unavailable
+  }
+  return "light";
+}
+
+function saveTheme(theme: "light" | "dark"): void {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
   } catch {
     // localStorage unavailable — skip
   }
@@ -127,7 +146,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   // ── Defaults ──
   isUnlocked: false,
   pinHash: loadPinHash(),
-  theme: "light",
+  theme: loadTheme(),
   preview: null,
   pendingBulkOpts: null,
 
@@ -172,7 +191,17 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   // ── Theme ──
 
   toggleTheme: () => {
-    set((s) => ({ theme: s.theme === "light" ? "dark" : "light" }));
+    set((s) => {
+      const next = s.theme === "light" ? "dark" : "light";
+      saveTheme(next);
+      // Apply/remove dark class on <html>
+      if (next === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      return { theme: next };
+    });
   },
 
   // ── Bulk price ──

@@ -56,10 +56,10 @@ Chain strategy: stacked-to-main
 
 ## PR 4: Product Cost & Brand Integration
 
-- [ ] 4.1 Update `ProductForm.tsx`: add cost_price input + brand select dropdown
-- [ ] 4.2 Update `ProductsPage.tsx`: add cost_price + brand columns (admin-only)
-- [ ] 4.3 Conditionally hide cost_price columns when admin mode off
-- [ ] 4.4 Tests: form saves cost_price + brand_id, columns hidden from non-admin
+- [x] 4.1 Update `ProductForm.tsx`: add cost_price input + brand select dropdown
+- [x] 4.2 Update `ProductsPage.tsx`: add cost_price + brand columns (admin-only)
+- [x] 4.3 Conditionally hide cost_price columns when admin mode off
+- [x] 4.4 Tests: form saves cost_price + brand_id, columns hidden from non-admin
 
 ## PR 5: Dark Theme & Number Styling
 

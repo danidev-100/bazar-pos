@@ -4,6 +4,8 @@ import {
   type Product,
   type Category,
 } from "@/store/products";
+import { useBrandsStore } from "@/store/brands";
+import { useAdminStore } from "@/store/admin";
 import { useActiveStore } from "@/store/context";
 
 // ──────────────────────────────────────────────
@@ -14,6 +16,8 @@ type FormData = {
   name: string;
   barcode: string;
   price: string;
+  costPrice: string;
+  brandId: string; // string because select value
   category_id: string; // string because select value
 };
 
@@ -21,6 +25,8 @@ const INITIAL_FORM: FormData = {
   name: "",
   barcode: "",
   price: "0",
+  costPrice: "0",
+  brandId: "",
   category_id: "",
 };
 
@@ -65,6 +71,8 @@ export default function ProductForm({
   const categories = useProductsStore((s) => s.categories);
   const addProduct = useProductsStore((s) => s.addProduct);
   const updateProduct = useProductsStore((s) => s.updateProduct);
+  const brands = useBrandsStore((s) => s.brands);
+  const isUnlocked = useAdminStore((s) => s.isUnlocked);
 
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +80,9 @@ export default function ProductForm({
 
   const storeCategories = categories.filter((c) => c.store_id === storeId);
   const flatCategories = flattenCategories(storeCategories, null, 0, []);
+  const storeBrands = brands
+    .filter((b) => b.store_id === storeId)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Populate form when editing
   useEffect(() => {
@@ -80,6 +91,8 @@ export default function ProductForm({
         name: editProduct.name,
         barcode: editProduct.barcode ?? "",
         price: String(editProduct.price),
+        costPrice: String(editProduct.costPrice),
+        brandId: editProduct.brandId != null ? String(editProduct.brandId) : "",
         category_id: editProduct.category_id != null ? String(editProduct.category_id) : "",
       });
       setError(null);
@@ -106,6 +119,13 @@ export default function ProductForm({
     }
 
     const categoryId = form.category_id ? Number(form.category_id) : null;
+    const costPrice = parseFloat(form.costPrice);
+    const brandId = form.brandId ? Number(form.brandId) : null;
+
+    if (isNaN(costPrice) || costPrice < 0) {
+      setError("El costo debe ser un número no negativo");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -114,6 +134,8 @@ export default function ProductForm({
           name: trimmed,
           barcode: form.barcode.trim() || null,
           price,
+          costPrice,
+          brandId,
           category_id: categoryId,
           store_id: storeId,
         });
@@ -122,6 +144,8 @@ export default function ProductForm({
           name: trimmed,
           barcode: form.barcode.trim() || null,
           price,
+          costPrice,
+          brandId,
           stock: 0,
           category_id: categoryId,
           store_id: storeId,
@@ -202,6 +226,54 @@ export default function ProductForm({
           className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         />
       </div>
+
+      {/* Cost Price (admin only) */}
+      {isUnlocked && (
+        <div>
+          <label
+            htmlFor="product-cost-price"
+            className="block text-sm font-medium text-pos-text mb-1"
+          >
+            Cost Price
+            <span className="text-pos-muted ml-1">(opcional)</span>
+          </label>
+          <input
+            id="product-cost-price"
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.costPrice}
+            onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
+            className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+          />
+        </div>
+      )}
+
+      {/* Brand (admin only) */}
+      {isUnlocked && (
+        <div>
+          <label
+            htmlFor="product-brand"
+            className="block text-sm font-medium text-pos-text mb-1"
+          >
+            Brand
+            <span className="text-pos-muted ml-1">(opcional)</span>
+          </label>
+          <select
+            id="product-brand"
+            value={form.brandId}
+            onChange={(e) => setForm({ ...form, brandId: e.target.value })}
+            className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+          >
+            <option value="">— No brand —</option>
+            {storeBrands.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Category */}
       <div>

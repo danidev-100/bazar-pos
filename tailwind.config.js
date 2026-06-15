@@ -1,19 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
         pos: {
-          primary: "#1e3a5f",
-          secondary: "#4a90d9",
-          accent: "#f5a623",
-          danger: "#d32f2f",
-          success: "#388e3c",
-          background: "#f5f7fa",
-          surface: "#ffffff",
-          text: "#1a1a2e",
-          muted: "#6b7280",
+          primary: "var(--color-pos-primary)",
+          secondary: "var(--color-pos-secondary)",
+          accent: "var(--color-pos-accent)",
+          danger: "var(--color-pos-danger)",
+          success: "var(--color-pos-success)",
+          background: "var(--color-pos-background)",
+          surface: "var(--color-pos-surface)",
+          text: "var(--color-pos-text)",
+          muted: "var(--color-pos-muted)",
         },
       },
       fontFamily: {

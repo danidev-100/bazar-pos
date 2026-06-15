@@ -117,6 +117,8 @@ function SettingsTab() {
   const lock = useAdminStore((s) => s.lock);
   const setPin = useAdminStore((s) => s.setPin);
   const changePin = useAdminStore((s) => s.changePin);
+  const theme = useAdminStore((s) => s.theme);
+  const toggleTheme = useAdminStore((s) => s.toggleTheme);
   const setPage = useAppStore((s) => s.setPage);
 
   const [currentPin, setCurrentPin] = useState("");
@@ -263,21 +265,43 @@ function SettingsTab() {
         </form>
       </section>
 
-      {/* Theme Section (placeholder — PR 5) */}
+      {/* Theme Section */}
       <section>
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
           Tema
         </h3>
-        <p className="text-sm text-pos-muted/70 mb-3">
-          El modo oscuro estará disponible en una futura actualización.
-        </p>
-        <div className="flex items-center gap-3 p-3 bg-pos-background/50 rounded-lg border border-pos-muted/10">
-          <span className="text-sm text-pos-muted">Claro</span>
-          <div className="flex-1 h-6 bg-pos-muted/20 rounded-full relative">
-            <div className="absolute left-1 top-1 w-4 h-4 bg-pos-muted/40 rounded-full" />
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center justify-between p-3 bg-pos-background/50 rounded-xl border border-pos-muted/10 touch-target hover:bg-pos-background/80 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-lg">
+              {theme === "light" ? "☀️" : "🌙"}
+            </span>
+            <span className="text-sm font-medium text-pos-text">
+              {theme === "light" ? "Modo Claro" : "Modo Oscuro"}
+            </span>
           </div>
-          <span className="text-sm text-pos-muted">Oscuro</span>
-        </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-pos-muted">Claro</span>
+            <div
+              className={`w-10 h-6 rounded-full transition-colors ${
+                theme === "dark"
+                  ? "bg-pos-secondary"
+                  : "bg-pos-muted/30"
+              } relative`}
+            >
+              <div
+                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                  theme === "dark"
+                    ? "translate-x-[18px]"
+                    : "translate-x-0.5"
+                }`}
+              />
+            </div>
+            <span className="text-xs text-pos-muted">Oscuro</span>
+          </div>
+        </button>
       </section>
 
       {/* Lock Admin */}

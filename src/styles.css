@@ -9,6 +9,32 @@
  * in tailwind.config.js. Additional global overrides live here.
  */
 
+/* ── Light mode (default) ── */
+:root {
+  --color-pos-primary: #1e3a5f;
+  --color-pos-secondary: #4a90d9;
+  --color-pos-accent: #f5a623;
+  --color-pos-danger: #d32f2f;
+  --color-pos-success: #388e3c;
+  --color-pos-background: #f5f7fa;
+  --color-pos-surface: #ffffff;
+  --color-pos-text: #1a1a2e;
+  --color-pos-muted: #6b7280;
+}
+
+/* ── Dark mode ── */
+.dark {
+  --color-pos-primary: #0f1f33;
+  --color-pos-secondary: #5ba0e8;
+  --color-pos-accent: #d4921e;
+  --color-pos-danger: #ef5350;
+  --color-pos-success: #4caf50;
+  --color-pos-background: #111827;
+  --color-pos-surface: #1f2937;
+  --color-pos-text: #f3f4f6;
+  --color-pos-muted: #9ca3af;
+}
+
 html,
 body,
 #root {
@@ -17,6 +43,14 @@ body,
   height: 100%;
   width: 100%;
   overflow: hidden;
+}
+
+/* Smooth background/text transitions when toggling theme */
+html,
+body,
+#root,
+* {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 /* Prevent text selection on UI elements in POS mode */

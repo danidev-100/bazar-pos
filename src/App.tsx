@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { useAppStore, type Page } from "@/store";
+import { useAdminStore } from "@/store/admin";
 import { StoreProvider } from "@/store/context";
-import NavigationBar from "@/components/NavigationBar";
 import AdminRoute from "@/components/AdminRoute";
+import NavigationBar from "@/components/NavigationBar";
 import ProductsPage from "@/pages/ProductsPage";
 import POSPage from "@/pages/POSPage";
 import CashClosingPage from "@/pages/CashClosingPage";
@@ -28,7 +30,17 @@ const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
 
 export default function App() {
   const page = useAppStore((s) => s.page);
+  const theme = useAdminStore((s) => s.theme);
   const PageComponent = PAGE_COMPONENTS[page];
+
+  // Sync theme class on mount and on change
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   return (
     <StoreProvider initialStoreId="store_1">
