@@ -86,3 +86,13 @@ body,
   min-height: 44px;
   min-width: 44px;
 }
+
+/* ── Barcode scan green flash ── */
+@keyframes scan-flash {
+  0% { background-color: transparent; }
+  20% { background-color: rgba(34, 197, 94, 0.15); }
+  100% { background-color: transparent; }
+}
+.scan-flash {
+  animation: scan-flash 0.5s ease-out;
+}
