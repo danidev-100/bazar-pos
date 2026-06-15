@@ -20,6 +20,11 @@
   --color-pos-surface: #ffffff;
   --color-pos-text: #1a1a2e;
   --color-pos-muted: #6b7280;
+  --color-chart-grid: #e5e7eb;
+  --color-chart-axis: #6b7280;
+  --color-chart-tooltip-bg: #ffffff;
+  --color-chart-tooltip-border: #e5e7eb;
+  --color-chart-bar: #4a90d9;
 }
 
 /* ── Dark mode ── */
@@ -33,6 +38,11 @@
   --color-pos-surface: #1f2937;
   --color-pos-text: #f3f4f6;
   --color-pos-muted: #9ca3af;
+  --color-chart-grid: #374151;
+  --color-chart-axis: #9ca3af;
+  --color-chart-tooltip-bg: #1f2937;
+  --color-chart-tooltip-border: #374151;
+  --color-chart-bar: #60a5fa;
 }
 
 html,
@@ -51,6 +61,18 @@ body,
 #root,
 * {
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Number styling: tabular-nums for all monospace text (prices, quantities, IDs) */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Convenience class for price/cost/total fields: monospace + right-aligned */
+.num {
+  font-family: "JetBrains Mono", monospace;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Prevent text selection on UI elements in POS mode */

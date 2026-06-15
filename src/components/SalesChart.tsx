@@ -130,16 +130,16 @@ export default function SalesChart({
     <div className="w-full">
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
             tickLine={false}
-            axisLine={{ stroke: "#e5e7eb" }}
+            axisLine={{ stroke: "var(--color-chart-grid)" }}
             interval="preserveStartEnd"
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: number) => `$${v}`}
@@ -148,7 +148,8 @@ export default function SalesChart({
             contentStyle={{
               fontSize: 12,
               borderRadius: 8,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--color-chart-tooltip-border)",
+              backgroundColor: "var(--color-chart-tooltip-bg)",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             }}
             formatter={(value: number, name: string) => {
@@ -159,7 +160,7 @@ export default function SalesChart({
           />
           <Bar
             dataKey="revenue"
-            fill="#4a90d9"
+            fill="var(--color-chart-bar)"
             radius={[4, 4, 0, 0]}
             maxBarSize={48}
           />

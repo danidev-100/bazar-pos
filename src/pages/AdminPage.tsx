@@ -187,7 +187,7 @@ function SettingsTab() {
         )}
 
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-3 py-2 mb-3">
+          <div className="bg-pos-success/10 border border-pos-success/30 text-pos-success text-sm rounded-lg px-3 py-2 mb-3">
             {success}
           </div>
         )}

@@ -76,7 +76,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8">
+      <div className="bg-pos-surface rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8">
         {/* Lock icon */}
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 rounded-full bg-pos-secondary/10 flex items-center justify-center">
@@ -96,10 +96,10 @@ export default function AdminRoute({ children }: AdminRouteProps) {
           </div>
         </div>
 
-        <h2 className="text-xl font-bold text-center text-gray-800 mb-2">
+        <h2 className="text-xl font-bold text-center text-pos-text mb-2">
           Acceso Admin
         </h2>
-        <p className="text-sm text-center text-gray-500 mb-6">
+        <p className="text-sm text-center text-pos-muted mb-6">
           {step === "setup"
             ? "Configurá un PIN de admin para acceder a la administración"
             : "Ingresá tu PIN para desbloquear el modo admin"}
@@ -107,7 +107,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">
+          <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-sm rounded-lg px-4 py-2 mb-4">
             {error}
           </div>
         )}
@@ -124,7 +124,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 onChange={(e) => setPinInput(e.target.value)}
                 placeholder="Ingresá PIN"
                 autoFocus
-                className="w-full text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+                className="w-full text-center text-2xl tracking-[0.5em] border border-pos-muted/30 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface text-pos-text"
                 maxLength={10}
               />
             </div>
@@ -140,7 +140,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium touch-target hover:bg-gray-50"
+                className="px-4 py-2.5 border border-pos-muted/30 text-pos-text rounded-lg font-medium touch-target hover:bg-pos-background"
               >
                 Cancelar
               </button>
@@ -154,7 +154,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
             <div>
               <label
                 htmlFor="admin-pin"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-pos-text mb-1"
               >
                 Nuevo PIN
               </label>
@@ -167,7 +167,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 onChange={(e) => setPinInput(e.target.value)}
                 placeholder="Ingresá nuevo PIN"
                 autoFocus
-                className="w-full text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+                className="w-full text-center text-2xl tracking-[0.5em] border border-pos-muted/30 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface text-pos-text"
                 maxLength={10}
               />
             </div>
@@ -175,7 +175,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
             <div>
               <label
                 htmlFor="admin-pin-confirm"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-pos-text mb-1"
               >
                 Confirmar PIN
               </label>
@@ -187,7 +187,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 value={confirmPin}
                 onChange={(e) => setConfirmPin(e.target.value)}
                 placeholder="Confirmar PIN"
-                className="w-full text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+                className="w-full text-center text-2xl tracking-[0.5em] border border-pos-muted/30 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface text-pos-text"
                 maxLength={10}
               />
             </div>
@@ -203,7 +203,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium touch-target hover:bg-gray-50"
+                className="px-4 py-2.5 border border-pos-muted/30 text-pos-text rounded-lg font-medium touch-target hover:bg-pos-background"
               >
                 Cancelar
               </button>

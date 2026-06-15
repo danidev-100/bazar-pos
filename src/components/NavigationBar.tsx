@@ -1,5 +1,6 @@
 import { useAppStore, useAdminStore, type Page } from "@/store";
 import { useActiveStore } from "@/store/context";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // ──────────────────────────────────────────────
 // Page definitions
@@ -75,7 +76,10 @@ export default function NavigationBar() {
         ))}
       </div>
 
-      {/* Store selector */}
+      {/* Theme toggle + Store selector */}
+      <div className="flex items-center gap-1">
+        <ThemeToggle compact />
+      </div>
       <div className="flex items-center gap-2">
         <label htmlFor="store-selector" className="text-sm text-white/70">
           Tienda:
