@@ -50,6 +50,7 @@ function makeSale(
     change: method === "cash" ? 0 : null,
     date: date.toISOString(),
     storeId: "store_1",
+    customerName: null,
   };
 }
 

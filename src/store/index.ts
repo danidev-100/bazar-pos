@@ -36,6 +36,7 @@ export type CompletedSale = {
   change: number | null;
   date: string;
   storeId: string;
+  customerName: string | null;
 };
 
 // ──────────────────────────────────────────────
@@ -91,6 +92,7 @@ export type AppStore = {
     paymentMethod: "cash" | "card",
     amountPaid?: number,
     storeId?: string,
+    customerName?: string,
   ) => CompletedSale;
   dismissReceipt: () => void;
 };
@@ -195,7 +197,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   // ── Sales / Checkout ──
 
-  checkout: (paymentMethod, amountPaid, storeId) => {
+  checkout: (paymentMethod, amountPaid, storeId, customerName) => {
     const { items, cartTotal } = get();
     if (items.length === 0) {
       throw new Error("Cannot checkout with an empty cart");
@@ -222,6 +224,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       change,
       date: new Date().toISOString(),
       storeId: storeId ?? "store_1",
+      customerName: customerName ?? null,
     };
 
     set({

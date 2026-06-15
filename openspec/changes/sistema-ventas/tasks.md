@@ -68,12 +68,12 @@ Chain strategy: stacked-to-main (resolved)
 
 ## Phase 5: Internal Billing + PDF/Print
 
-- [ ] 5.1 Create `src/pages/BillingPage.tsx` — invoice list + detail view with sequential numbering
-- [ ] 5.2 Create `src/components/InvoiceList.tsx` — searchable/filterable invoice history
-- [ ] 5.3 Create `src/components/InvoiceDetail.tsx` — invoice header, items, totals, print/export buttons
-- [ ] 5.4 Create `src-tauri/src/pdf.rs` — PDF generation from invoice data (printflip/printpdf crate)
-- [ ] 5.5 Create `src-tauri/src/printer.rs` — ESC/POS thermal printer driver
-- [ ] 5.6 Write tests: sequential numbering per store, invoice PDF generation
+- [x] 5.1 Create `src/pages/BillingPage.tsx` — invoice list + detail view with sequential numbering
+- [x] 5.2 Create `src/components/InvoiceList.tsx` — searchable/filterable invoice history
+- [x] 5.3 Create `src/components/InvoiceDetail.tsx` — invoice header, items, totals, print/export buttons
+- [x] 5.4 Create `src-tauri/src/pdf.rs` — PDF generation from invoice data (printpdf crate)
+- [x] 5.5 Create `src-tauri/src/printer.rs` — ESC/POS thermal printer driver
+- [x] 5.6 Write tests: sequential numbering per store, invoice PDF generation
 
 ## Phase 6: Sales Statistics
 

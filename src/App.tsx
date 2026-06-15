@@ -4,18 +4,11 @@ import NavigationBar from "@/components/NavigationBar";
 import ProductsPage from "@/pages/ProductsPage";
 import POSPage from "@/pages/POSPage";
 import CashClosingPage from "@/pages/CashClosingPage";
+import BillingPage from "@/pages/BillingPage";
 
 // ──────────────────────────────────────────────
 // Page placeholders (implemented in later PRs)
 // ──────────────────────────────────────────────
-
-function BillingPage() {
-  return (
-    <div className="flex items-center justify-center h-full text-pos-muted">
-      <p className="text-lg">Billing — coming in PR 5</p>
-    </div>
-  );
-}
 
 function StatsPage() {
   return (
