@@ -41,7 +41,7 @@ export default function BrandForm({
 
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Brand name cannot be empty");
+      setError("El nombre de la marca no puede estar vacío");
       return;
     }
 
@@ -54,7 +54,7 @@ export default function BrandForm({
       }
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error saving brand");
+      setError(err instanceof Error ? err.message : "Error al guardar la marca");
     } finally {
       setSaving(false);
     }
@@ -63,7 +63,7 @@ export default function BrandForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-        {editBrand ? "Edit Brand" : "New Brand"}
+        {editBrand ? "Editar Marca" : "Nueva Marca"}
       </h3>
 
       {error && (
@@ -77,7 +77,7 @@ export default function BrandForm({
           id="brand-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Brand name"
+          placeholder="Nombre de la marca"
           required
           className="flex-1 border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         />
@@ -86,14 +86,14 @@ export default function BrandForm({
           disabled={saving}
           className="px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? "Saving..." : editBrand ? "Update" : "Create"}
+          {saving ? "Guardando..." : editBrand ? "Actualizar" : "Crear"}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="px-4 py-2 border border-pos-muted/30 text-pos-text rounded-lg font-medium text-sm touch-target hover:bg-pos-background"
         >
-          Cancel
+          Cancelar
         </button>
       </div>
     </form>

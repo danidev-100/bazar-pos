@@ -11,6 +11,8 @@ export type Product = {
   price: number;
   stock: number;
   category_id: number | null;
+  costPrice: number;
+  brandId: number | null;
   store_id: string;
 };
 
@@ -119,7 +121,12 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       }
     }
 
-    const product: Product = { id: nextProductId++, ...data };
+    const product: Product = {
+      id: nextProductId++,
+      costPrice: 0,
+      brandId: null,
+      ...data,
+    };
     set({ products: [...get().products, product] });
     return product;
   },

@@ -41,7 +41,7 @@ export default function BrandList() {
 
   function handleDelete(e: React.MouseEvent, brand: Brand) {
     e.stopPropagation();
-    if (!confirm(`Delete brand "${brand.name}"?`)) return;
+    if (!confirm(`¿Eliminar la marca "${brand.name}"?`)) return;
     deleteBrand(brand.id);
   }
 
@@ -50,7 +50,7 @@ export default function BrandList() {
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-          Brands
+          Marcas
           <span className="text-pos-muted font-normal normal-case ml-1">
             — {storeBrands.length}
           </span>
@@ -60,7 +60,7 @@ export default function BrandList() {
             onClick={handleCreate}
             className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
           >
-            + Add Brand
+            + Agregar Marca
           </button>
         )}
       </div>
@@ -79,7 +79,7 @@ export default function BrandList() {
       {/* Empty state */}
       {storeBrands.length === 0 && !isCreating && (
         <p className="text-xs text-pos-muted italic py-3 text-center">
-          No brands yet. Click "+ Add Brand" to create one.
+          Todavía no hay marcas. Hacé clic en "+ Agregar Marca" para crear una.
         </p>
       )}
 
@@ -89,8 +89,8 @@ export default function BrandList() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-pos-muted border-b border-pos-muted/20">
-                <th className="text-left py-2 pr-2 font-medium">Name</th>
-                <th className="text-right py-2 pl-2 font-medium">Actions</th>
+                <th className="text-left py-2 pr-2 font-medium">Nombre</th>
+                <th className="text-right py-2 pl-2 font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -106,16 +106,16 @@ export default function BrandList() {
                     <button
                       onClick={() => handleEdit(brand)}
                       className="text-xs px-2 py-1 text-pos-secondary hover:bg-pos-secondary/10 rounded touch-target mr-1"
-                      aria-label={`Edit ${brand.name}`}
+                      aria-label={`Editar ${brand.name}`}
                     >
-                      ✎ Edit
+                      ✎ Editar
                     </button>
                     <button
                       onClick={(e) => handleDelete(e, brand)}
                       className="text-xs px-2 py-1 text-pos-danger hover:bg-pos-danger/10 rounded touch-target"
-                      aria-label={`Delete ${brand.name}`}
+                      aria-label={`Eliminar ${brand.name}`}
                     >
-                      ✕ Delete
+                      ✕ Eliminar
                     </button>
                   </td>
                 </tr>

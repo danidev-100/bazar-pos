@@ -58,7 +58,7 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
     let mut y_pos = Mm(185.0);
 
     // Title
-    current_layer.use_text("INVOICE", 14.0, Mm(5.0), y_pos, &font_bold);
+    current_layer.use_text("FACTURA", 14.0, Mm(5.0), y_pos, &font_bold);
     y_pos -= Mm(6.0);
 
     // Invoice number
@@ -73,7 +73,7 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
 
     // Date
     current_layer.use_text(
-        &format!("Date: {}", &invoice.date),
+        &format!("Fecha: {}", &invoice.date),
         8.0,
         Mm(5.0),
         y_pos,
@@ -83,7 +83,7 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
 
     // Customer
     current_layer.use_text(
-        &format!("Customer: {}", &invoice.customer),
+        &format!("Cliente: {}", &invoice.customer),
         8.0,
         Mm(5.0),
         y_pos,
@@ -102,9 +102,9 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
     y_pos -= Mm(5.0);
 
     // ── Column headers ──
-    current_layer.use_text("Qty", 8.0, Mm(5.0), y_pos, &font_bold);
-    current_layer.use_text("Product", 8.0, Mm(12.0), y_pos, &font_bold);
-    current_layer.use_text("Price", 8.0, Mm(50.0), y_pos, &font_bold);
+    current_layer.use_text("Cant", 8.0, Mm(5.0), y_pos, &font_bold);
+    current_layer.use_text("Producto", 8.0, Mm(12.0), y_pos, &font_bold);
+    current_layer.use_text("Precio", 8.0, Mm(50.0), y_pos, &font_bold);
     current_layer.use_text("Total", 8.0, Mm(62.0), y_pos, &font_bold);
     y_pos -= Mm(5.0);
 
@@ -174,7 +174,7 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
 
     // Payment method
     current_layer.use_text(
-        &format!("Payment: {}", &invoice.payment_method),
+        &format!("Pago: {}", &invoice.payment_method),
         8.0,
         Mm(5.0),
         y_pos,
@@ -184,7 +184,7 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
 
     // ── Footer ──
     current_layer.use_text(
-        "Thank you for your purchase!",
+        "¡Gracias por tu compra!",
         9.0,
         Mm(5.0),
         y_pos,

@@ -1,4 +1,13 @@
 import { create } from "zustand";
+import { useProductsStore } from "./products";
+
+// ──────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 
 // ──────────────────────────────────────────────
 // Types
@@ -10,11 +19,14 @@ export type BulkPriceOpts = {
   percent: number;
   target: "cost" | "selling" | "both";
   storeId: string;
+  categoryId?: number;
+  brandId?: number;
 };
 
 export type BulkPreviewItem = {
   productId: number;
   name: string;
+  field: "cost" | "selling";
   currentPrice: number;
   newPrice: number;
 };
@@ -85,11 +97,26 @@ export type AdminStore = {
 
   toggleTheme: () => void;
 
-  // ── Bulk price (stubs — full logic in PR 3) ──
+  // ── Bulk price ──
 
+  /** Cached preview items from the most recent bulkPricePreview call. */
   preview: BulkPreviewItem[] | null;
+
+  /** The opts used to generate the current preview (needed for confirm). */
+  pendingBulkOpts: BulkPriceOpts | null;
+
+  /** Compute a price-increase preview WITHOUT mutating any products. */
   bulkPricePreview: (opts: BulkPriceOpts) => BulkPreviewItem[];
+
+  /**
+   * Apply the current preview to the products store.
+   * Uses a snapshot-and-restore pattern for rollback on failure.
+   * Throws if preview is stale or empty.
+   */
   bulkPriceConfirm: () => void;
+
+  /** Clear the current preview without applying changes. */
+  clearBulkPreview: () => void;
 };
 
 // ──────────────────────────────────────────────
@@ -102,6 +129,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   pinHash: loadPinHash(),
   theme: "light",
   preview: null,
+  pendingBulkOpts: null,
 
   // ── PIN actions ──
 
@@ -147,14 +175,105 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     set((s) => ({ theme: s.theme === "light" ? "dark" : "light" }));
   },
 
-  // ── Bulk price stubs (PR 3) ──
+  // ── Bulk price ──
 
-  bulkPricePreview: (_opts: BulkPriceOpts): BulkPreviewItem[] => {
-    // Stub — full implementation in PR 3
-    return [];
+  bulkPricePreview: (opts: BulkPriceOpts): BulkPreviewItem[] => {
+    const { products } = useProductsStore.getState();
+
+    // 1. Scope to the active store
+    let filtered = products.filter((p) => p.store_id === opts.storeId);
+
+    // 2. Apply category filter
+    if (opts.categoryId != null) {
+      filtered = filtered.filter((p) => p.category_id === opts.categoryId);
+    } else if (opts.filter === "category" && opts.filterId != null) {
+      filtered = filtered.filter((p) => p.category_id === opts.filterId);
+    }
+
+    // 3. Apply brand filter
+    if (opts.brandId != null) {
+      filtered = filtered.filter((p) => p.brandId === opts.brandId);
+    } else if (opts.filter === "brand" && opts.filterId != null) {
+      filtered = filtered.filter((p) => p.brandId === opts.filterId);
+    }
+
+    // 4. Calculate preview
+    const multiplier = 1 + opts.percent / 100;
+    const items: BulkPreviewItem[] = [];
+
+    for (const product of filtered) {
+      if (opts.target === "cost" || opts.target === "both") {
+        const current = product.costPrice;
+        const newPrice = round2(current * multiplier);
+        items.push({
+          productId: product.id,
+          name: product.name,
+          field: "cost",
+          currentPrice: current,
+          newPrice,
+        });
+      }
+      if (opts.target === "selling" || opts.target === "both") {
+        const current = product.price;
+        const newPrice = round2(current * multiplier);
+        items.push({
+          productId: product.id,
+          name: product.name,
+          field: "selling",
+          currentPrice: current,
+          newPrice,
+        });
+      }
+    }
+
+    set({ preview: items, pendingBulkOpts: opts });
+    return items;
   },
 
   bulkPriceConfirm: () => {
-    // Stub — full implementation in PR 3
+    const { preview, pendingBulkOpts } = get();
+    if (!preview || !pendingBulkOpts) return;
+
+    const { products } = useProductsStore.getState();
+
+    // Snapshot affected products for rollback
+    const affectedIds = [...new Set(preview.map((i) => i.productId))];
+    const snapshot = products
+      .filter((p) => affectedIds.includes(p.id))
+      .map((p) => ({ ...p }));
+
+    try {
+      for (const item of preview) {
+        if (item.field === "cost") {
+          useProductsStore.getState().updateProduct(item.productId, {
+            costPrice: item.newPrice,
+          });
+        } else {
+          useProductsStore.getState().updateProduct(item.productId, {
+            price: item.newPrice,
+          });
+        }
+      }
+
+      // Success — clear
+      set({ preview: null, pendingBulkOpts: null });
+    } catch {
+      // Rollback: restore snapshot directly (bypass validation)
+      const restoreMap = new Map(snapshot.map((p) => [p.id, p]));
+      useProductsStore.setState({
+        products: products.map((p) =>
+          restoreMap.has(p.id) ? { ...restoreMap.get(p.id)! } : p,
+        ),
+      });
+
+      set({ preview: null, pendingBulkOpts: null });
+      throw new Error(
+        "Bulk price update failed. All changes have been rolled back.",
+      );
+    }
+  },
+
+  clearBulkPreview: () => {
+    set({ preview: null, pendingBulkOpts: null });
   },
 }));

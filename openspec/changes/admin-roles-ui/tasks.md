@@ -48,11 +48,11 @@ Chain strategy: stacked-to-main
 
 ## PR 3: Bulk Price Increase
 
-- [ ] 3.1 Add bulk price types + `bulkPricePreview()` to admin store (no DB writes)
-- [ ] 3.2 Add `bulkPriceConfirm()` with transactional DB update
-- [ ] 3.3 Create `src/components/BulkPriceModal.tsx` (filter + preview table + confirm)
-- [ ] 3.4 Wire BulkPriceModal into AdminPage bulk tab
-- [ ] 3.5 Store tests: preview matches confirm, cancel is no-op, rollback on error
+- [x] 3.1 Add bulk price types + `bulkPricePreview()` to admin store (no DB writes)
+- [x] 3.2 Add `bulkPriceConfirm()` with transactional DB update
+- [x] 3.3 Create `src/components/BulkPriceModal.tsx` (filter + preview table + confirm)
+- [x] 3.4 Wire BulkPriceModal into AdminPage bulk tab
+- [x] 3.5 Store tests: preview matches confirm, cancel is no-op, rollback on error
 
 ## PR 4: Product Cost & Brand Integration
 

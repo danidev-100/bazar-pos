@@ -53,11 +53,11 @@ export default function AdminRoute({ children }: AdminRouteProps) {
     setError(null);
 
     if (!pin) {
-      setError("Enter a PIN");
+      setError("Ingresá un PIN");
       return;
     }
     if (pin !== confirmPin) {
-      setError("PINs do not match");
+      setError("Los PINs no coinciden");
       return;
     }
 
@@ -97,12 +97,12 @@ export default function AdminRoute({ children }: AdminRouteProps) {
         </div>
 
         <h2 className="text-xl font-bold text-center text-gray-800 mb-2">
-          Admin Access
+          Acceso Admin
         </h2>
         <p className="text-sm text-center text-gray-500 mb-6">
           {step === "setup"
-            ? "Set an admin PIN to enable admin features"
-            : "Enter your PIN to unlock admin mode"}
+            ? "Configurá un PIN de admin para acceder a la administración"
+            : "Ingresá tu PIN para desbloquear el modo admin"}
         </p>
 
         {/* Error */}
@@ -122,7 +122,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 pattern="[0-9]*"
                 value={pin}
                 onChange={(e) => setPinInput(e.target.value)}
-                placeholder="Enter PIN"
+                placeholder="Ingresá PIN"
                 autoFocus
                 className="w-full text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
                 maxLength={10}
@@ -135,14 +135,14 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 disabled={!pin}
                 className="flex-1 px-4 py-2.5 bg-pos-secondary text-white rounded-lg font-medium touch-target hover:opacity-90 disabled:opacity-50"
               >
-                Unlock
+                Desbloquear
               </button>
               <button
                 type="button"
                 onClick={handleDismiss}
                 className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium touch-target hover:bg-gray-50"
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -156,7 +156,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 htmlFor="admin-pin"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                New PIN
+                Nuevo PIN
               </label>
               <input
                 id="admin-pin"
@@ -165,7 +165,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 pattern="[0-9]*"
                 value={pin}
                 onChange={(e) => setPinInput(e.target.value)}
-                placeholder="Enter new PIN"
+                placeholder="Ingresá nuevo PIN"
                 autoFocus
                 className="w-full text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
                 maxLength={10}
@@ -177,7 +177,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 htmlFor="admin-pin-confirm"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Confirm PIN
+                Confirmar PIN
               </label>
               <input
                 id="admin-pin-confirm"
@@ -186,7 +186,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 pattern="[0-9]*"
                 value={confirmPin}
                 onChange={(e) => setConfirmPin(e.target.value)}
-                placeholder="Confirm PIN"
+                placeholder="Confirmar PIN"
                 className="w-full text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
                 maxLength={10}
               />
@@ -198,14 +198,14 @@ export default function AdminRoute({ children }: AdminRouteProps) {
                 disabled={!pin || !confirmPin}
                 className="flex-1 px-4 py-2.5 bg-pos-secondary text-white rounded-lg font-medium touch-target hover:opacity-90 disabled:opacity-50"
               >
-                Set PIN & Unlock
+                Configurar PIN y Desbloquear
               </button>
               <button
                 type="button"
                 onClick={handleDismiss}
                 className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium touch-target hover:bg-gray-50"
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAdminStore } from "@/store/admin";
 import { useAppStore } from "@/store";
 import BrandList from "@/components/BrandList";
+import BulkPriceModal from "@/components/BulkPriceModal";
 
 // ──────────────────────────────────────────────
 // Tab definitions
@@ -10,9 +11,9 @@ import BrandList from "@/components/BrandList";
 type AdminTab = "brands" | "bulk-price" | "settings";
 
 const TABS: { id: AdminTab; label: string }[] = [
-  { id: "brands", label: "Brands" },
-  { id: "bulk-price", label: "Bulk Price" },
-  { id: "settings", label: "Settings" },
+  { id: "brands", label: "Marcas" },
+  { id: "bulk-price", label: "Precio Masivo" },
+  { id: "settings", label: "Configuración" },
 ];
 
 // ──────────────────────────────────────────────
@@ -64,10 +65,12 @@ function BrandsTab() {
 }
 
 // ──────────────────────────────────────────────
-// Bulk Price Tab (placeholder — PR 3)
+// Bulk Price Tab
 // ──────────────────────────────────────────────
 
 function BulkPriceTab() {
+  const [showModal, setShowModal] = useState(false);
+
   return (
     <div className="flex flex-col items-center justify-center h-64 text-center">
       <svg
@@ -83,13 +86,23 @@ function BulkPriceTab() {
           d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
         />
       </svg>
-      <h3 className="text-lg font-medium text-pos-muted mb-1">
+      <h3 className="text-lg font-medium text-pos-text mb-1">
         Bulk Price Increase
       </h3>
-      <p className="text-sm text-pos-muted/70 max-w-sm">
-        Coming in a future update. You'll be able to apply percentage-based
-        price increases filtered by category or brand.
+      <p className="text-sm text-pos-muted/70 max-w-sm mb-6">
+        Apply percentage-based price increases to multiple products at once.
+        Filter by category, brand, or apply to all products.
       </p>
+      <button
+        onClick={() => setShowModal(true)}
+        className="px-6 py-2.5 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity"
+      >
+        Start Bulk Price Increase
+      </button>
+
+      {showModal && (
+        <BulkPriceModal onClose={() => setShowModal(false)} />
+      )}
     </div>
   );
 }
@@ -119,11 +132,11 @@ function SettingsTab() {
     setSuccess(null);
 
     if (!newPin) {
-      setError("Enter a new PIN");
+      setError("Ingresá un nuevo PIN");
       return;
     }
     if (newPin !== confirmNewPin) {
-      setError("New PINs do not match");
+      setError("Los PINs nuevos no coinciden");
       return;
     }
 
@@ -133,7 +146,7 @@ function SettingsTab() {
         // Changing existing PIN — verify old one
         const ok = await changePin(currentPin, newPin);
         if (!ok) {
-          setError("Current PIN is incorrect");
+          setError("El PIN actual es incorrecto");
           return;
         }
       } else {
@@ -141,12 +154,12 @@ function SettingsTab() {
         await setPin(newPin);
       }
 
-      setSuccess("PIN updated successfully");
+      setSuccess("PIN actualizado correctamente");
       setCurrentPin("");
       setNewPin("");
       setConfirmNewPin("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error updating PIN");
+      setError(err instanceof Error ? err.message : "Error al actualizar el PIN");
     } finally {
       setSaving(false);
     }
@@ -162,7 +175,7 @@ function SettingsTab() {
       {/* PIN Change Section */}
       <section>
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
-          {pinHash ? "Change PIN" : "Set PIN"}
+          {pinHash ? "Cambiar PIN" : "Configurar PIN"}
         </h3>
 
         {error && (
@@ -184,7 +197,7 @@ function SettingsTab() {
                 htmlFor="settings-current-pin"
                 className="block text-sm font-medium text-pos-text mb-1"
               >
-                Current PIN
+                PIN Actual
               </label>
               <input
                 id="settings-current-pin"
@@ -193,7 +206,7 @@ function SettingsTab() {
                 pattern="[0-9]*"
                 value={currentPin}
                 onChange={(e) => setCurrentPin(e.target.value)}
-                placeholder="Enter current PIN"
+                placeholder="Ingresá el PIN actual"
                 className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
                 maxLength={10}
               />
@@ -205,7 +218,7 @@ function SettingsTab() {
               htmlFor="settings-new-pin"
               className="block text-sm font-medium text-pos-text mb-1"
             >
-              New PIN
+              Nuevo PIN
             </label>
             <input
               id="settings-new-pin"
@@ -214,7 +227,7 @@ function SettingsTab() {
               pattern="[0-9]*"
               value={newPin}
               onChange={(e) => setNewPin(e.target.value)}
-              placeholder="Enter new PIN"
+              placeholder="Ingresá el nuevo PIN"
               className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
               maxLength={10}
             />
@@ -225,7 +238,7 @@ function SettingsTab() {
               htmlFor="settings-confirm-pin"
               className="block text-sm font-medium text-pos-text mb-1"
             >
-              Confirm New PIN
+              Confirmar Nuevo PIN
             </label>
             <input
               id="settings-confirm-pin"
@@ -234,7 +247,7 @@ function SettingsTab() {
               pattern="[0-9]*"
               value={confirmNewPin}
               onChange={(e) => setConfirmNewPin(e.target.value)}
-              placeholder="Confirm new PIN"
+              placeholder="Confirmá el nuevo PIN"
               className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
               maxLength={10}
             />
@@ -245,7 +258,7 @@ function SettingsTab() {
             disabled={saving || !newPin || !confirmNewPin}
             className="w-full px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50"
           >
-            {saving ? "Saving..." : pinHash ? "Change PIN" : "Set PIN"}
+            {saving ? "Guardando..." : pinHash ? "Cambiar PIN" : "Configurar PIN"}
           </button>
         </form>
       </section>
@@ -253,17 +266,17 @@ function SettingsTab() {
       {/* Theme Section (placeholder — PR 5) */}
       <section>
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
-          Theme
+          Tema
         </h3>
         <p className="text-sm text-pos-muted/70 mb-3">
-          Dark theme toggle coming in a future update.
+          El modo oscuro estará disponible en una futura actualización.
         </p>
         <div className="flex items-center gap-3 p-3 bg-pos-background/50 rounded-lg border border-pos-muted/10">
-          <span className="text-sm text-pos-muted">Light</span>
+          <span className="text-sm text-pos-muted">Claro</span>
           <div className="flex-1 h-6 bg-pos-muted/20 rounded-full relative">
             <div className="absolute left-1 top-1 w-4 h-4 bg-pos-muted/40 rounded-full" />
           </div>
-          <span className="text-sm text-pos-muted">Dark</span>
+          <span className="text-sm text-pos-muted">Oscuro</span>
         </div>
       </section>
 
@@ -274,7 +287,7 @@ function SettingsTab() {
             onClick={handleLock}
             className="w-full px-4 py-2.5 bg-pos-danger/10 border border-pos-danger/30 text-pos-danger rounded-lg font-medium text-sm touch-target hover:bg-pos-danger/20"
           >
-            Lock Admin Mode
+            Bloquear Admin
           </button>
         </section>
       )}
