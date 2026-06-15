@@ -2,18 +2,11 @@ import { useAppStore, type Page } from "@/store";
 import { StoreProvider } from "@/store/context";
 import NavigationBar from "@/components/NavigationBar";
 import ProductsPage from "@/pages/ProductsPage";
+import POSPage from "@/pages/POSPage";
 
 // ──────────────────────────────────────────────
 // Page placeholders (implemented in later PRs)
 // ──────────────────────────────────────────────
-
-function POSPage() {
-  return (
-    <div className="flex items-center justify-center h-full text-pos-muted">
-      <p className="text-lg">POS — coming in PR 3</p>
-    </div>
-  );
-}
 
 function CashClosingPage() {
   return (

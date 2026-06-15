@@ -50,13 +50,13 @@ Chain strategy: stacked-to-main (resolved)
 
 ## Phase 3: POS Sales
 
-- [ ] 3.1 Create `src/pages/POSPage.tsx` — layout: product grid + cart panel + checkout modal
-- [ ] 3.2 Create `src/components/ProductGrid.tsx` — touch-friendly product catalog grid (search by name/barcode)
-- [ ] 3.3 Create `src/components/CartPanel.tsx` — line items with qty controls, subtotal, total
-- [ ] 3.4 Create `src/components/CheckoutModal.tsx` — payment selection (cash/card), change calculation
-- [ ] 3.5 Create `src/components/ReceiptPreview.tsx` — post-checkout receipt display with print option
-- [ ] 3.6 Wire cart Zustand actions: add/update/remove items, calculate totals, validate checkout
-- [ ] 3.7 Write tests: `src/__tests__/cart.test.ts` — totals, qty updates, empty cart guard, cash change calc
+- [x] 3.1 Create `src/pages/POSPage.tsx` — layout: product grid + cart panel + checkout modal
+- [x] 3.2 Create `src/components/ProductGrid.tsx` — touch-friendly product catalog grid (search by name/barcode)
+- [x] 3.3 Create `src/components/CartPanel.tsx` — line items with qty controls, subtotal, total
+- [x] 3.4 Create `src/components/CheckoutModal.tsx` — payment selection (cash/card), change calculation
+- [x] 3.5 Create `src/components/ReceiptPreview.tsx` — post-checkout receipt display with print option
+- [x] 3.6 Wire cart Zustand actions: add/update/remove items, calculate totals, validate checkout
+- [x] 3.7 Write tests: `src/__tests__/cart.test.ts` — totals, qty updates, empty cart guard, cash change calc
 
 ## Phase 4: Cash Closing
 

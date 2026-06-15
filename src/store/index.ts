@@ -24,6 +24,21 @@ export type CartItem = {
 };
 
 // ──────────────────────────────────────────────
+// Completed sale record
+// ──────────────────────────────────────────────
+
+export type CompletedSale = {
+  id: number;
+  items: CartItem[];
+  total: number;
+  paymentMethod: "cash" | "card";
+  amountPaid: number | null;
+  change: number | null;
+  date: string;
+  storeId: string;
+};
+
+// ──────────────────────────────────────────────
 // UI state slice
 // ──────────────────────────────────────────────
 
@@ -68,15 +83,27 @@ export type AppStore = {
   clearCart: () => void;
   cartTotal: () => number;
   itemCount: () => number;
+
+  // ── Sales ──
+  lastCompletedSale: CompletedSale | null;
+  completedSales: CompletedSale[];
+  checkout: (
+    paymentMethod: "cash" | "card",
+    amountPaid?: number,
+    storeId?: string,
+  ) => CompletedSale;
+  dismissReceipt: () => void;
 };
 
 // ──────────────────────────────────────────────
-// Helper: recalculate subtotal
+// Helpers
 // ──────────────────────────────────────────────
 
 function calcSubtotal(qty: number, price: number): number {
   return Math.round(qty * price * 100) / 100;
 }
+
+let nextSaleId = 1;
 
 // ──────────────────────────────────────────────
 // Store factory
@@ -88,6 +115,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   busy: false,
   notification: null,
   items: [],
+  lastCompletedSale: null,
+  completedSales: [],
 
   // ── Navigation ──
   setPage: (page) => set({ page }),
@@ -163,4 +192,46 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
+
+  // ── Sales / Checkout ──
+
+  checkout: (paymentMethod, amountPaid, storeId) => {
+    const { items, cartTotal } = get();
+    if (items.length === 0) {
+      throw new Error("Cannot checkout with an empty cart");
+    }
+
+    const total = cartTotal();
+    const change =
+      paymentMethod === "cash" && amountPaid != null
+        ? Math.round((amountPaid - total) * 100) / 100
+        : null;
+
+    if (paymentMethod === "cash" && amountPaid != null && amountPaid < total) {
+      throw new Error(
+        `Insufficient payment: $${amountPaid.toFixed(2)} is less than the total of $${total.toFixed(2)}`,
+      );
+    }
+
+    const sale: CompletedSale = {
+      id: nextSaleId++,
+      items: items.map((i) => ({ ...i })),
+      total,
+      paymentMethod,
+      amountPaid: amountPaid ?? null,
+      change,
+      date: new Date().toISOString(),
+      storeId: storeId ?? "store_1",
+    };
+
+    set({
+      items: [],
+      lastCompletedSale: sale,
+      completedSales: [...get().completedSales, sale],
+    });
+
+    return sale;
+  },
+
+  dismissReceipt: () => set({ lastCompletedSale: null }),
 }));
