@@ -39,12 +39,12 @@ Chain strategy: stacked-to-main
 
 ## PR 2: Admin Auth & Route Guard
 
-- [ ] 2.1 Create `src/store/admin.ts` (pinHash, isUnlocked, lock/unlock/setPin, theme, bulkPrice state)
-- [ ] 2.2 Create `src/components/AdminRoute.tsx` (PIN gate → redirect on locked)
-- [ ] 2.3 Add `"admin"` to `Page` union in `src/store/index.ts`
-- [ ] 2.4 Create `src/pages/AdminPage.tsx` (tabbed: Brands / Bulk Price / Settings)
-- [ ] 2.5 Update `NavigationBar.tsx` + `App.tsx` (admin nav button, page map entry)
-- [ ] 2.6 Store tests: PIN set/unlock/lock, wrong PIN reject, PIN change flow
+- [x] 2.1 Create `src/store/admin.ts` (pinHash, isUnlocked, lock/unlock/setPin, theme, bulkPrice state)
+- [x] 2.2 Create `src/components/AdminRoute.tsx` (PIN gate → redirect on locked)
+- [x] 2.3 Add `"admin"` to `Page` union in `src/store/index.ts`
+- [x] 2.4 Create `src/pages/AdminPage.tsx` (tabbed: Brands / Bulk Price / Settings)
+- [x] 2.5 Update `NavigationBar.tsx` + `App.tsx` (admin nav button, page map entry)
+- [x] 2.6 Store + component tests: 21 tests (hash, PIN set, unlock/lock, change PIN, AdminRoute render/unlock/wrong PIN/dismiss)
 
 ## PR 3: Bulk Price Increase
 

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import CategoryTree from "@/components/CategoryTree";
-import BrandList from "@/components/BrandList";
 import ProductForm from "@/components/ProductForm";
 import StockMovementLog from "@/components/StockMovementLog";
 
@@ -85,15 +84,13 @@ export default function ProductsPage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
-      {/* ── Left panel: Category tree + Brands ── */}
+      {/* ── Left panel: Category tree ── */}
       <aside className="w-full lg:w-64 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full">
         <CategoryTree
           selectedId={selectedCategoryId}
           onSelect={handleCategorySelect}
           onEdit={handleCategoryEdit}
         />
-        <hr className="my-3 border-pos-muted/20" />
-        <BrandList />
       </aside>
 
       {/* ── Center panel: Product list / form ── */}

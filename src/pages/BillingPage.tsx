@@ -5,6 +5,7 @@ import {
   useInvoicesStore,
   type Invoice,
 } from "@/store/invoices";
+import { exportInvoicePdf } from "@/lib/pdf-export";
 import InvoiceList from "@/components/InvoiceList";
 import InvoiceDetail from "@/components/InvoiceDetail";
 
@@ -25,22 +26,7 @@ async function invokePrint(invoice: Invoice): Promise<void> {
 
 /** Generate PDF invoice via Tauri command and trigger download. */
 async function invokeExportPdf(invoice: Invoice): Promise<void> {
-  try {
-    const { invoke } = await import("@tauri-apps/api/core");
-    const bytes: number[] = await invoke("generate_pdf", {
-      invoiceData: JSON.stringify(invoice),
-    });
-    const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${invoice.invoiceNumber}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-    // Fallback when running outside Tauri (e.g., dev browser)
-    console.log("generate_pdf (dev fallback):", invoice.invoiceNumber);
-  }
+  await exportInvoicePdf(invoice);
 }
 
 // ──────────────────────────────────────────────

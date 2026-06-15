@@ -1,4 +1,4 @@
-import { useAppStore, type Page } from "@/store";
+import { useAppStore, useAdminStore, type Page } from "@/store";
 import { useActiveStore } from "@/store/context";
 
 // ──────────────────────────────────────────────
@@ -17,6 +17,7 @@ const PAGES: PageDef[] = [
   { id: "cash-closing", label: "Caja", icon: "💰" },
   { id: "billing", label: "Facturación", icon: "🧾" },
   { id: "stats", label: "Estadísticas", icon: "📊" },
+  { id: "admin", label: "Admin", icon: "🔒" },
 ];
 
 // ──────────────────────────────────────────────
@@ -37,6 +38,7 @@ export default function NavigationBar() {
   const page = useAppStore((s) => s.page);
   const setPage = useAppStore((s) => s.setPage);
   const clearCart = useAppStore((s) => s.clearCart);
+  const isUnlocked = useAdminStore((s) => s.isUnlocked);
   const { storeId, setStoreId } = useActiveStore();
 
   function handleStoreChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -47,6 +49,9 @@ export default function NavigationBar() {
     clearCart();
     setStoreId(newStore);
   }
+
+  // Dynamic admin icon based on unlock state
+  const adminIcon = isUnlocked ? "🔓" : "🔒";
 
   return (
     <nav className="flex items-center justify-between bg-pos-primary text-white px-2 sm:px-4 py-2 shadow-md gap-2">
@@ -63,7 +68,7 @@ export default function NavigationBar() {
             }`}
           >
             <span className="text-base" role="img" aria-label={p.label}>
-              {p.icon}
+              {p.id === "admin" ? adminIcon : p.icon}
             </span>
             <span className="hidden sm:inline">{p.label}</span>
           </button>

@@ -9,7 +9,8 @@ export type Page =
   | "products"
   | "cash-closing"
   | "billing"
-  | "stats";
+  | "stats"
+  | "admin";
 
 // ──────────────────────────────────────────────
 // Cart item
@@ -238,3 +239,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   dismissReceipt: () => set({ lastCompletedSale: null }),
 }));
+
+// Re-export admin store for convenience
+export { useAdminStore } from "./admin";

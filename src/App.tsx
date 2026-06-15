@@ -1,11 +1,13 @@
 import { useAppStore, type Page } from "@/store";
 import { StoreProvider } from "@/store/context";
 import NavigationBar from "@/components/NavigationBar";
+import AdminRoute from "@/components/AdminRoute";
 import ProductsPage from "@/pages/ProductsPage";
 import POSPage from "@/pages/POSPage";
 import CashClosingPage from "@/pages/CashClosingPage";
 import BillingPage from "@/pages/BillingPage";
 import StatsPage from "@/pages/StatsPage";
+import AdminPage from "@/pages/AdminPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component
@@ -17,6 +19,7 @@ const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
   "cash-closing": CashClosingPage,
   billing: BillingPage,
   stats: StatsPage,
+  admin: AdminPage,
 };
 
 // ──────────────────────────────────────────────
@@ -35,7 +38,13 @@ export default function App() {
 
         {/* Main content area — switches page by state */}
         <main className="flex-1 overflow-auto p-4">
-          <PageComponent />
+          {page === "admin" ? (
+            <AdminRoute>
+              <PageComponent />
+            </AdminRoute>
+          ) : (
+            <PageComponent />
+          )}
         </main>
       </div>
     </StoreProvider>

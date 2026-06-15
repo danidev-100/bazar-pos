@@ -2,6 +2,8 @@ import { useEffect, useCallback, useState } from "react";
 import { useAppStore } from "@/store";
 import { useProductsStore } from "@/store/products";
 import { useActiveStore } from "@/store/context";
+import { useInvoicesStore } from "@/store/invoices";
+import { exportInvoicePdf } from "@/lib/pdf-export";
 import ProductGrid from "@/components/ProductGrid";
 import CartPanel from "@/components/CartPanel";
 import CheckoutModal from "@/components/CheckoutModal";
@@ -213,8 +215,18 @@ export default function POSPage() {
   }
 
   function handlePrint() {
-    // Placeholder — will wire to actual printer in PR 5
-    showNotification("La impresión estará disponible en una futura actualización");
+    if (!lastCompletedSale) return;
+
+    const invoice = useInvoicesStore
+      .getState()
+      .generateInvoice(
+        lastCompletedSale,
+        lastCompletedSale.customerName ?? undefined,
+      );
+
+    exportInvoicePdf(invoice);
+
+    showNotification(`Factura ${invoice.invoiceNumber} generada`);
     setTimeout(() => dismissNotification(), 3000);
   }
 
