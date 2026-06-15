@@ -1,0 +1,7 @@
+node_modules
+src-tauri
+.git
+.gitignore
+*.md
+.env*
+pnpm-lock.yaml
