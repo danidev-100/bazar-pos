@@ -87,17 +87,17 @@ function BulkPriceTab() {
         />
       </svg>
       <h3 className="text-lg font-medium text-pos-text mb-1">
-        Bulk Price Increase
+        Aumento de Precio Masivo
       </h3>
       <p className="text-sm text-pos-muted/70 max-w-sm mb-6">
-        Apply percentage-based price increases to multiple products at once.
-        Filter by category, brand, or apply to all products.
+        Aplicá aumentos porcentuales a múltiples productos de una sola vez.
+        Filtralos por categoría, marca o aplicá a todos.
       </p>
       <button
         onClick={() => setShowModal(true)}
         className="px-6 py-2.5 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity"
       >
-        Start Bulk Price Increase
+        Iniciar Aumento Masivo
       </button>
 
       {showModal && (
