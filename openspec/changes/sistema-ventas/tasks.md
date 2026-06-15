@@ -77,11 +77,11 @@ Chain strategy: stacked-to-main (resolved)
 
 ## Phase 6: Sales Statistics
 
-- [ ] 6.1 Create `src/pages/StatsPage.tsx` — layout: date filter + chart area + ranking
-- [ ] 6.2 Create `src/components/DateRangeFilter.tsx` — day/week/month presets + custom range
-- [ ] 6.3 Create `src/components/SalesChart.tsx` — time-based revenue chart (recharts or chart.js)
-- [ ] 6.4 Create `src/components/TopSellers.tsx` — product ranking table by quantity sold
-- [ ] 6.5 Write tests: date range queries, top-seller aggregation, zero-sale periods
+- [x] 6.1 Create `src/pages/StatsPage.tsx` — layout: date filter + chart area + ranking
+- [x] 6.2 Create `src/components/DateRangeFilter.tsx` — day/week/month presets + custom range
+- [x] 6.3 Create `src/components/SalesChart.tsx` — time-based revenue chart (recharts)
+- [x] 6.4 Create `src/components/TopSellers.tsx` — product ranking table by quantity sold
+- [x] 6.5 Write tests: date range queries, top-seller aggregation, zero-sale periods
 
 ## Phase 7: Sync Engine
 

@@ -5,18 +5,7 @@ import ProductsPage from "@/pages/ProductsPage";
 import POSPage from "@/pages/POSPage";
 import CashClosingPage from "@/pages/CashClosingPage";
 import BillingPage from "@/pages/BillingPage";
-
-// ──────────────────────────────────────────────
-// Page placeholders (implemented in later PRs)
-// ──────────────────────────────────────────────
-
-function StatsPage() {
-  return (
-    <div className="flex items-center justify-center h-full text-pos-muted">
-      <p className="text-lg">Statistics — coming in PR 6</p>
-    </div>
-  );
-}
+import StatsPage from "@/pages/StatsPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component
