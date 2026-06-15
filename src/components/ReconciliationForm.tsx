@@ -41,25 +41,25 @@ export default function ReconciliationForm({
     return (
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-          Reconciliation
+          Arqueo
         </h3>
 
         <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-pos-muted">Expected Cash</span>
+            <span className="text-sm text-pos-muted">Efectivo Esperado</span>
             <span className="text-sm font-mono font-bold">
               ${expectedCash.toFixed(2)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-pos-muted">Declared Cash</span>
+            <span className="text-sm text-pos-muted">Efectivo Declarado</span>
             <span className="text-sm font-mono font-bold">
               ${shift.declaredCash!.toFixed(2)}
             </span>
           </div>
           <hr className="border-pos-muted/20" />
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Variance</span>
+            <span className="text-sm font-medium">Diferencia</span>
             <span
               className={`text-sm font-mono font-bold ${
                 shift.variance === 0
@@ -79,7 +79,7 @@ export default function ReconciliationForm({
                 : "bg-pos-accent/10 text-pos-accent"
             }`}
           >
-            {shift.reconciliationStatus === "matched" ? "✓ Matched" : "⚠ Mismatch"}
+            {shift.reconciliationStatus === "matched" ? "✓ Coincide" : "⚠ Diferencia"}
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function ReconciliationForm({
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-        Drawer Reconciliation
+        Arqueo de Caja
       </h3>
 
       {error && (
@@ -112,7 +112,7 @@ export default function ReconciliationForm({
             htmlFor="declared-cash"
             className="block text-sm font-medium text-pos-text mb-1"
           >
-            Cash in Drawer
+            Dinero en Caja
           </label>
           <input
             id="declared-cash"
@@ -128,7 +128,7 @@ export default function ReconciliationForm({
 
         {previewVariance !== null && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-pos-muted">Variance</span>
+            <span className="text-sm text-pos-muted">Diferencia</span>
             <span
               className={`text-sm font-mono font-bold ${
                 previewVariance === 0
@@ -148,7 +148,7 @@ export default function ReconciliationForm({
             setError(null);
             const amount = parseFloat(declaredCash);
             if (isNaN(amount) || amount < 0) {
-              setError("Enter a valid cash amount");
+              setError("Ingresá un monto válido");
               return;
             }
             try {
@@ -156,14 +156,14 @@ export default function ReconciliationForm({
               onReconciled();
             } catch (err) {
               setError(
-                err instanceof Error ? err.message : "Reconciliation failed",
+                err instanceof Error ? err.message : "Error en el arqueo",
               );
             }
           }}
           disabled={!declaredCash}
           className="w-full px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Reconcile
+          Arquear
         </button>
       </div>
     </div>

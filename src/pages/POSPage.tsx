@@ -224,14 +224,14 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Left: Product Grid ── */}
       <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto">
         <ProductGrid onAddToCart={handleAddToCart} />
       </section>
 
       {/* ── Right: Cart Panel ── */}
-      <aside className="w-96 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto">
+      <aside className="w-full lg:w-96 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto max-h-64 lg:max-h-full">
         <CartPanel onCheckout={handleCheckout} />
       </aside>
 

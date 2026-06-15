@@ -45,14 +45,14 @@ export default function InvoiceList({
       <div className="space-y-2 mb-4">
         <input
           type="text"
-          placeholder="Search by invoice # or customer..."
+          placeholder="Buscá por factura o cliente..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-3 py-1.5 text-sm rounded-lg bg-pos-background border border-pos-muted/20 text-pos-text placeholder-pos-muted/50 focus:outline-none focus:ring-2 focus:ring-pos-secondary/50"
         />
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="block text-xs text-pos-muted mb-0.5">From</label>
+            <label className="block text-xs text-pos-muted mb-0.5">Desde</label>
             <input
               type="date"
               value={dateFrom}
@@ -61,7 +61,7 @@ export default function InvoiceList({
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs text-pos-muted mb-0.5">To</label>
+            <label className="block text-xs text-pos-muted mb-0.5">Hasta</label>
             <input
               type="date"
               value={dateTo}
@@ -78,8 +78,8 @@ export default function InvoiceList({
           <div className="flex items-center justify-center h-32">
             <p className="text-xs text-pos-muted italic">
               {searchQuery || dateFrom || dateTo
-                ? "No invoices match your search"
-                : "No invoices yet. Generate one from a completed sale."}
+                ? "No hay facturas que coincidan con tu búsqueda"
+                : "Todavía no hay facturas. Generá una desde una venta completada."}
             </p>
           </div>
         ) : (

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import CategoryTree from "@/components/CategoryTree";
+import BrandList from "@/components/BrandList";
 import ProductForm from "@/components/ProductForm";
 import StockMovementLog from "@/components/StockMovementLog";
 
@@ -83,14 +84,16 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="flex gap-4 h-full">
-      {/* ── Left panel: Category tree ── */}
-      <aside className="w-64 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto">
+    <div className="flex flex-col lg:flex-row gap-4 h-full">
+      {/* ── Left panel: Category tree + Brands ── */}
+      <aside className="w-full lg:w-64 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full">
         <CategoryTree
           selectedId={selectedCategoryId}
           onSelect={handleCategorySelect}
           onEdit={handleCategoryEdit}
         />
+        <hr className="my-3 border-pos-muted/20" />
+        <BrandList />
       </aside>
 
       {/* ── Center panel: Product list / form ── */}
@@ -100,10 +103,10 @@ export default function ProductsPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-                Products
+                Productos
                 {selectedCategoryId && (
                   <span className="text-pos-muted font-normal normal-case ml-1">
-                    (filtered)
+                    (filtrados)
                   </span>
                 )}
                 <span className="text-pos-muted font-normal normal-case ml-1">
@@ -114,7 +117,7 @@ export default function ProductsPage() {
                 onClick={() => setCenterView({ kind: "create" })}
                 className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
               >
-                + Add Product
+                + Agregar Producto
               </button>
             </div>
 
@@ -123,8 +126,8 @@ export default function ProductsPage() {
               <div className="flex items-center justify-center h-48">
                 <p className="text-sm text-pos-muted italic">
                   {selectedCategoryId
-                    ? "No products in this category"
-                    : "No products yet. Click \"+ Add Product\" to create one."}
+                    ? "No hay productos en esta categoría"
+                    : "Todavía no hay productos. Hacé clic en \"+ Agregar Producto\" para crear uno."}
                 </p>
               </div>
             ) : (
@@ -132,21 +135,21 @@ export default function ProductsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-pos-muted border-b border-pos-muted/20">
-                      <th className="text-left py-2 pr-2 font-medium">Name</th>
+                      <th className="text-left py-2 pr-2 font-medium">Nombre</th>
                       <th className="text-left py-2 px-2 font-medium">
-                        Barcode
+                        Código
                       </th>
                       <th className="text-right py-2 px-2 font-medium">
-                        Price
+                        Precio
                       </th>
                       <th className="text-right py-2 px-2 font-medium">
                         Stock
                       </th>
                       <th className="text-left py-2 px-2 font-medium">
-                        Category
+                        Categoría
                       </th>
                       <th className="text-right py-2 pl-2 font-medium">
-                        Actions
+                        Acciones
                       </th>
                     </tr>
                   </thead>
@@ -193,9 +196,9 @@ export default function ProductsPage() {
                                 setCenterView({ kind: "edit", product: p });
                               }}
                               className="text-xs px-2 py-1 text-pos-secondary hover:bg-pos-secondary/10 rounded touch-target"
-                              aria-label="Edit product"
+                              aria-label="Editar producto"
                             >
-                              ✎ Edit
+                              ✎ Editar
                             </button>
                           </td>
                         </tr>
@@ -234,7 +237,7 @@ export default function ProductsPage() {
       </section>
 
       {/* ── Right panel: Stock movement log ── */}
-      <aside className="w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto">
+      <aside className="w-full lg:w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full">
         <StockMovementLog
           product={selectedProduct}
           emptyState={
@@ -271,7 +274,7 @@ function EditCategoryForm({
 
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Category name cannot be empty");
+      setError("El nombre de la categoría no puede estar vacío");
       return;
     }
 
@@ -280,7 +283,7 @@ function EditCategoryForm({
       onSaved();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to update category",
+        err instanceof Error ? err.message : "Error al actualizar la categoría",
       );
     }
   }
@@ -288,7 +291,7 @@ function EditCategoryForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-        Edit Category
+        Editar Categoría
       </h2>
 
       {error && (
@@ -302,7 +305,7 @@ function EditCategoryForm({
           htmlFor="edit-cat-name"
           className="block text-sm font-medium text-pos-text mb-1"
         >
-          Name
+          Nombre
         </label>
         <input
           id="edit-cat-name"
@@ -318,14 +321,14 @@ function EditCategoryForm({
           type="submit"
           className="flex-1 px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90"
         >
-          Save
+          Guardar
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="px-4 py-2 border border-pos-muted/30 text-pos-text rounded-lg font-medium text-sm touch-target hover:bg-pos-background"
         >
-          Cancel
+          Cancelar
         </button>
       </div>
     </form>

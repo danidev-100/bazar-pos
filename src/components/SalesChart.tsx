@@ -32,7 +32,7 @@ type ChartDataPoint = {
 // ──────────────────────────────────────────────
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return d.toLocaleDateString("es-AR", { month: "short", day: "numeric" });
 }
 
 function formatWeek(d: Date): string {
@@ -44,7 +44,7 @@ function formatWeek(d: Date): string {
 }
 
 function formatMonth(d: Date): string {
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return d.toLocaleDateString("es-AR", { month: "short", year: "numeric" });
 }
 
 function getPeriodKey(date: Date, granularity: Granularity): string {
@@ -121,7 +121,7 @@ export default function SalesChart({
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 bg-pos-background/50 rounded-xl border border-dashed border-pos-muted/20">
-        <p className="text-pos-muted text-sm">No sales data for this period</p>
+        <p className="text-pos-muted text-sm">No hay ventas en este período</p>
       </div>
     );
   }
@@ -153,8 +153,8 @@ export default function SalesChart({
             }}
             formatter={(value: number, name: string) => {
               if (name === "revenue")
-                return [`$${value.toFixed(2)}`, "Revenue"];
-              return [value, "Transactions"];
+                return [`$${value.toFixed(2)}`, "Ingresos"];
+              return [value, "Transacciones"];
             }}
           />
           <Bar
@@ -174,12 +174,12 @@ export default function SalesChart({
           </strong>
         </span>
         <span>
-          Transactions: <strong className="text-pos-text">
+          Transacciones: <strong className="text-pos-text">
             {data.reduce((s, d) => s + d.transactions, 0)}
           </strong>
         </span>
         <span>
-          Periods: <strong className="text-pos-text">{data.length}</strong>
+          Períodos: <strong className="text-pos-text">{data.length}</strong>
         </span>
       </div>
     </div>

@@ -65,6 +65,25 @@ export const categories = sqliteTable(
 );
 
 // ──────────────────────────────────────────────
+// Brands (syncable)
+// ──────────────────────────────────────────────
+
+export const brands = sqliteTable(
+  "brands",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    ...syncColumns,
+  },
+  (table) => ({
+    storeNameIdx: uniqueIndex("idx_brands_store_name").on(
+      table.store_id,
+      table.name,
+    ),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Products (syncable)
 // ──────────────────────────────────────────────
 
@@ -75,8 +94,10 @@ export const products = sqliteTable(
     barcode: text("barcode"),
     name: text("name").notNull(),
     price: real("price").notNull().default(0),
+    cost_price: real("cost_price").notNull().default(0),
     stock: integer("stock").notNull().default(0),
     category_id: integer("category_id").references((): any => categories.id),
+    brand_id: integer("brand_id").references((): any => brands.id),
     ...syncColumns,
   },
   (table) => ({
@@ -85,6 +106,7 @@ export const products = sqliteTable(
       table.barcode,
     ),
     categoryIdx: index("idx_products_category").on(table.category_id),
+    brandIdx: index("idx_products_brand").on(table.brand_id),
     nameIdx: index("idx_products_name").on(table.name),
   }),
 );

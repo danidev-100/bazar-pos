@@ -31,7 +31,7 @@ export default function InvoiceDetail({
     return (
       <div className="flex items-center justify-center h-full text-pos-muted">
         <p className="text-sm italic">
-          Select an invoice from the list to view details
+          Seleccioná una factura de la lista para ver los detalles
         </p>
       </div>
     );
@@ -50,26 +50,26 @@ export default function InvoiceDetail({
               onClick={() => onPrint(invoice)}
               className="px-3 py-1.5 text-xs font-medium rounded-lg bg-pos-secondary text-white hover:bg-pos-secondary/90 transition-colors"
             >
-              🖨 Print
+              🖨 Imprimir
             </button>
             <button
               onClick={() => onExportPdf(invoice)}
               className="px-3 py-1.5 text-xs font-medium rounded-lg bg-pos-primary text-white hover:bg-pos-primary/90 transition-colors"
             >
-              📄 Export PDF
+              📄 Exportar PDF
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
           <div>
-            <span className="text-pos-muted text-xs">Invoice #</span>
+            <span className="text-pos-muted text-xs">Factura N°</span>
             <p className="text-pos-text font-mono">
               {invoice.invoiceNumber}
             </p>
           </div>
           <div>
-            <span className="text-pos-muted text-xs">Date</span>
+            <span className="text-pos-muted text-xs">Fecha</span>
             <p className="text-pos-text">
               {new Date(invoice.date).toLocaleDateString(undefined, {
                 year: "numeric",
@@ -81,15 +81,15 @@ export default function InvoiceDetail({
             </p>
           </div>
           <div>
-            <span className="text-pos-muted text-xs">Customer</span>
+            <span className="text-pos-muted text-xs">Cliente</span>
             <p className="text-pos-text font-medium">{invoice.customer}</p>
           </div>
           <div>
-            <span className="text-pos-muted text-xs">Payment</span>
+            <span className="text-pos-muted text-xs">Pago</span>
             <p className="text-pos-text capitalize">{invoice.paymentMethod}</p>
           </div>
           <div>
-            <span className="text-pos-muted text-xs">Sale #</span>
+            <span className="text-pos-muted text-xs">Venta N°</span>
             <p className="text-pos-text font-mono">{invoice.saleId}</p>
           </div>
         </div>
@@ -99,17 +99,17 @@ export default function InvoiceDetail({
 
       {/* ── Items Table ── */}
       <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide mb-2">
-        Items
+        Productos
       </h3>
 
-      <div className="overflow-y-auto flex-1">
+      <div className="overflow-x-auto overflow-y-auto flex-1">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-pos-muted uppercase tracking-wide border-b border-pos-muted/20">
               <th className="text-left py-1 pr-2 font-medium">#</th>
-              <th className="text-left py-1 px-2 font-medium">Product</th>
-              <th className="text-center py-1 px-2 font-medium">Qty</th>
-              <th className="text-right py-1 px-2 font-medium">Price</th>
+              <th className="text-left py-1 px-2 font-medium">Producto</th>
+              <th className="text-center py-1 px-2 font-medium">Cant</th>
+              <th className="text-right py-1 px-2 font-medium">Precio</th>
               <th className="text-right py-1 pl-2 font-medium">Subtotal</th>
             </tr>
           </thead>
@@ -151,13 +151,13 @@ export default function InvoiceDetail({
         {invoice.paymentMethod === "cash" && (
           <>
             <div className="flex items-center justify-between">
-              <span className="text-pos-muted">Amount Paid</span>
+              <span className="text-pos-muted">Monto Pagado</span>
               <span className="font-mono">
                 ${invoice.total.toFixed(2)}
               </span>
             </div>
             <div className="flex items-center justify-between text-pos-success">
-              <span>Change</span>
+              <span>Vuelto</span>
               <span className="font-mono">$0.00</span>
             </div>
           </>
@@ -174,7 +174,7 @@ export default function InvoiceDetail({
       {/* ── Footer ── */}
       <div className="mt-4 pt-3 border-t border-pos-muted/20 text-center">
         <p className="text-xs text-pos-muted italic">
-          Thank you for your purchase
+          Gracias por tu compra
         </p>
         <p className="text-xs text-pos-muted/50 mt-0.5">
           {invoice.invoiceNumber} · {new Date(invoice.date).toLocaleDateString()}

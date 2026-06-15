@@ -69,7 +69,7 @@ export default function TopSellers({ sales, limit = 10 }: TopSellersProps) {
   if (ranking.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 bg-pos-background/50 rounded-xl border border-dashed border-pos-muted/20">
-        <p className="text-pos-muted text-sm">No sales in this period</p>
+        <p className="text-pos-muted text-sm">No hay ventas en este período</p>
       </div>
     );
   }
@@ -80,9 +80,9 @@ export default function TopSellers({ sales, limit = 10 }: TopSellersProps) {
         <thead>
           <tr className="text-xs text-pos-muted uppercase tracking-wide border-b border-pos-muted/10">
             <th className="text-left py-2 pr-2 w-8">#</th>
-            <th className="text-left py-2 px-2">Product</th>
-            <th className="text-right py-2 px-2">Qty Sold</th>
-            <th className="text-right py-2 pl-2">Revenue</th>
+            <th className="text-left py-2 px-2">Producto</th>
+            <th className="text-right py-2 px-2">Cant Vendida</th>
+            <th className="text-right py-2 pl-2">Ingresos</th>
           </tr>
         </thead>
         <tbody>

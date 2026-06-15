@@ -85,7 +85,7 @@ export default function CategoryTree({
         setExpanded((prev) => new Set([...prev, addingParent]));
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to add category");
+      alert(err instanceof Error ? err.message : "Error al agregar la categoría");
     }
 
     setAddingParent(null);
@@ -94,7 +94,7 @@ export default function CategoryTree({
 
   function handleDelete(e: React.MouseEvent, id: number) {
     e.stopPropagation();
-    if (!confirm("Delete this category and all its subcategories?")) return;
+    if (!confirm("¿Eliminar esta categoría y todas sus subcategorías?")) return;
     deleteCategory(id);
     if (selectedId === id) onSelect(null);
   }
@@ -123,7 +123,7 @@ export default function CategoryTree({
               toggleExpand(node.id);
             }}
             className="w-5 h-5 flex items-center justify-center text-xs text-pos-muted hover:text-pos-text"
-            aria-label={isExpanded ? "Collapse" : "Expand"}
+            aria-label={isExpanded ? "Contraer" : "Expandir"}
           >
             {hasChildren ? (isExpanded ? "▾" : "▸") : "·"}
           </button>
@@ -140,14 +140,14 @@ export default function CategoryTree({
               onEdit(node);
             }}
             className="text-xs text-pos-muted hover:text-pos-secondary px-1"
-            aria-label="Edit category"
+            aria-label="Editar categoría"
           >
             ✎
           </button>
           <button
             onClick={(e) => handleDelete(e, node.id)}
             className="text-xs text-pos-muted hover:text-pos-danger px-1"
-            aria-label="Delete category"
+            aria-label="Eliminar categoría"
           >
             ✕
           </button>
@@ -167,7 +167,7 @@ export default function CategoryTree({
               autoFocus
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Category name"
+               placeholder="Nombre de la categoría"
               className="flex-1 text-sm border border-pos-muted/30 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pos-secondary"
             />
             <button
@@ -199,13 +199,13 @@ export default function CategoryTree({
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-          Categories
+          Categorías
         </h2>
         <button
           onClick={() => handleStartAdd(null)}
           className="text-xs px-2 py-1 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
         >
-          + New
+          + Nueva
         </button>
       </div>
 
@@ -222,7 +222,7 @@ export default function CategoryTree({
             autoFocus
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Category name"
+               placeholder="Nombre de la categoría"
             className="flex-1 text-sm border border-pos-muted/30 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pos-secondary"
           />
           <button
@@ -244,7 +244,7 @@ export default function CategoryTree({
       {/* Tree */}
       {storeCategories.length === 0 ? (
         <p className="text-xs text-pos-muted italic py-4 text-center">
-          No categories yet. Click "+ New" to create one.
+          Todavía no hay categorías. Hacé clic en "+ Nueva" para crear una.
         </p>
       ) : (
         <ul className="flex-1 overflow-y-auto space-y-0.5">

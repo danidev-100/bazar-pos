@@ -68,7 +68,7 @@ export default function BillingPage() {
 
     if (!sale) {
       useAppStore.getState().showNotification(
-        "No pending sales to invoice for this store",
+        "No hay ventas pendientes para facturar en esta tienda",
       );
       return;
     }
@@ -77,36 +77,36 @@ export default function BillingPage() {
     setSelectedInvoiceId(invoice.id);
     useAppStore
       .getState()
-      .showNotification(`Invoice ${invoice.invoiceNumber} generated`);
+      .showNotification(`Factura ${invoice.invoiceNumber} generada`);
   }, [completedSales, storeId, generateInvoice]);
 
   const handlePrint = useCallback((_invoice: Invoice) => {
     invokePrint(_invoice);
     useAppStore
       .getState()
-      .showNotification(`Printing ${_invoice.invoiceNumber}...`);
+      .showNotification(`Imprimiendo ${_invoice.invoiceNumber}...`);
   }, []);
 
   const handleExportPdf = useCallback((_invoice: Invoice) => {
     invokeExportPdf(_invoice);
     useAppStore
       .getState()
-      .showNotification(`Exporting ${_invoice.invoiceNumber} as PDF...`);
+      .showNotification(`Exportando ${_invoice.invoiceNumber} as PDF...`);
   }, []);
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Left panel: Invoice List ── */}
-      <aside className="w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto flex flex-col">
+      <aside className="w-full lg:w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto flex flex-col max-h-48 lg:max-h-full">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-            Invoices
+            Facturas
           </h2>
           <button
             onClick={handleGenerateInvoice}
             className="px-2.5 py-1 text-xs font-medium rounded-lg bg-pos-secondary text-white hover:bg-pos-secondary/90 transition-colors"
           >
-            + Generate
+            + Generar
           </button>
         </div>
         <InvoiceList
@@ -119,7 +119,7 @@ export default function BillingPage() {
       {/* ── Right panel: Invoice Detail ── */}
       <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
-          Invoice Details
+          Detalle de Factura
         </h2>
         <InvoiceDetail
           invoiceId={selectedInvoiceId}

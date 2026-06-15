@@ -61,12 +61,12 @@ export default function CheckoutModal({
       return;
     }
     if (!paymentMethod) {
-      setError("Select a payment method");
+      setError("Seleccioná un método de pago");
       return;
     }
     if (paymentMethod === "cash" && parsedAmount < total) {
       setError(
-        `Insufficient payment: $${parsedAmount.toFixed(2)} is less than the total of $${total.toFixed(2)}`,
+        `Pago insuficiente: $${parsedAmount.toFixed(2)} es menor al total de $${total.toFixed(2)}`,
       );
       return;
     }
@@ -84,7 +84,7 @@ export default function CheckoutModal({
       onComplete();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Checkout failed. Please try again.",
+        err instanceof Error ? err.message : "Error al procesar el pago. Intentá de nuevo.",
       );
       setBusy(false);
     }
@@ -121,7 +121,7 @@ export default function CheckoutModal({
           {/* Items summary */}
           <div>
             <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
-              Items ({items.length})
+              Productos ({items.length})
             </h3>
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
               {items.map((item) => (
@@ -152,7 +152,7 @@ export default function CheckoutModal({
           {!paymentMethod && (
             <div>
               <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
-                Payment Method
+                Método de pago
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -161,7 +161,7 @@ export default function CheckoutModal({
                 >
                   <span className="text-3xl mb-1">💵</span>
                   <span className="text-sm font-semibold text-pos-text">
-                    Cash
+                    Efectivo
                   </span>
                 </button>
                 <button
@@ -170,7 +170,7 @@ export default function CheckoutModal({
                 >
                   <span className="text-3xl mb-1">💳</span>
                   <span className="text-sm font-semibold text-pos-text">
-                    Card
+                    Tarjeta
                   </span>
                 </button>
               </div>
@@ -181,17 +181,17 @@ export default function CheckoutModal({
           {paymentMethod === "cash" && (
             <div>
               <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
-                Cash Payment
+                Pago en efectivo
               </h3>
               <div className="space-y-3">
                 <input
                   type="number"
                   value={cashAmount}
                   onChange={(e) => setCashAmount(e.target.value)}
-                  placeholder="Amount received"
+                  placeholder="Monto recibido"
                   min={total}
                   step="0.01"
-                  aria-label="Cash amount received"
+                  aria-label="Monto recibido en efectivo"
                   className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-lg font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
                   autoFocus
                 />
@@ -199,7 +199,7 @@ export default function CheckoutModal({
                 {parsedAmount >= total && parsedAmount > 0 && (
                   <div className="flex items-center justify-between bg-pos-success/10 border border-pos-success/20 rounded-xl px-4 py-3">
                     <span className="text-sm font-semibold text-pos-success">
-                      Change
+                      Vuelto
                     </span>
                     <span className="text-lg font-bold font-mono text-pos-success">
                       ${change.toFixed(2)}
@@ -214,10 +214,10 @@ export default function CheckoutModal({
           {paymentMethod === "card" && (
             <div className="bg-pos-secondary/10 border border-pos-secondary/20 rounded-xl px-4 py-3 text-center">
               <p className="text-sm text-pos-secondary font-medium">
-                💳 Card payment selected
+                💳 Pago con tarjeta seleccionado
               </p>
               <p className="text-xs text-pos-muted mt-1">
-                Tap "Confirm" to complete the sale
+                Tocá "Confirmar" para completar la venta
               </p>
             </div>
           )}
@@ -228,7 +228,7 @@ export default function CheckoutModal({
               onClick={handleCancel}
               className="flex-1 px-4 py-3 border border-pos-muted/30 text-pos-text rounded-xl font-medium text-sm touch-target hover:bg-pos-background transition-colors"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               onClick={handleConfirm}
@@ -236,8 +236,8 @@ export default function CheckoutModal({
               className="flex-1 px-4 py-3 bg-pos-accent text-white rounded-xl font-bold text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {busy
-                ? "Processing…"
-                : `Confirm — $${total.toFixed(2)}`}
+                ? "Procesando…"
+                : `Confirmar — $${total.toFixed(2)}`}
             </button>
           </div>
         </div>

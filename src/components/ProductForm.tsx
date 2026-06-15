@@ -95,13 +95,13 @@ export default function ProductForm({
 
     const trimmed = form.name.trim();
     if (!trimmed) {
-      setError("Product name is required");
+      setError("El nombre del producto es obligatorio");
       return;
     }
 
     const price = parseFloat(form.price);
     if (isNaN(price) || price < 0) {
-      setError("Price must be a non-negative number");
+      setError("El precio debe ser un número no negativo");
       return;
     }
 
@@ -129,7 +129,7 @@ export default function ProductForm({
       }
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save product");
+      setError(err instanceof Error ? err.message : "Error al guardar el producto");
     } finally {
       setSaving(false);
     }
@@ -138,7 +138,7 @@ export default function ProductForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-        {editProduct ? "Edit Product" : "New Product"}
+        {editProduct ? "Editar Producto" : "Nuevo Producto"}
       </h2>
 
       {/* Error */}
@@ -154,13 +154,13 @@ export default function ProductForm({
           htmlFor="product-name"
           className="block text-sm font-medium text-pos-text mb-1"
         >
-          Name *
+          Nombre *
         </label>
         <input
           id="product-name"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          placeholder="Product name"
+          placeholder="Nombre del producto"
           required
           className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         />
@@ -172,14 +172,14 @@ export default function ProductForm({
           htmlFor="product-barcode"
           className="block text-sm font-medium text-pos-text mb-1"
         >
-          Barcode
-          <span className="text-pos-muted ml-1">(optional)</span>
+          Código de barras
+          <span className="text-pos-muted ml-1">(opcional)</span>
         </label>
         <input
           id="product-barcode"
           value={form.barcode}
           onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-          placeholder="e.g. 77912345"
+          placeholder="ej. 77912345"
           className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         />
       </div>
@@ -190,7 +190,7 @@ export default function ProductForm({
           htmlFor="product-price"
           className="block text-sm font-medium text-pos-text mb-1"
         >
-          Price
+          Precio
         </label>
         <input
           id="product-price"
@@ -209,8 +209,8 @@ export default function ProductForm({
           htmlFor="product-category"
           className="block text-sm font-medium text-pos-text mb-1"
         >
-          Category
-          <span className="text-pos-muted ml-1">(optional)</span>
+          Categoría
+          <span className="text-pos-muted ml-1">(opcional)</span>
         </label>
         <select
           id="product-category"
@@ -218,7 +218,7 @@ export default function ProductForm({
           onChange={(e) => setForm({ ...form, category_id: e.target.value })}
           className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         >
-          <option value="">— No category —</option>
+          <option value="">— Sin categoría —</option>
           {flatCategories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.label}
@@ -234,14 +234,14 @@ export default function ProductForm({
           disabled={saving}
           className="flex-1 px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? "Saving..." : editProduct ? "Update Product" : "Create Product"}
+          {saving ? "Guardando..." : editProduct ? "Actualizar Producto" : "Crear Producto"}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="px-4 py-2 border border-pos-muted/30 text-pos-text rounded-lg font-medium text-sm touch-target hover:bg-pos-background"
         >
-          Cancel
+          Cancelar
         </button>
       </div>
     </form>

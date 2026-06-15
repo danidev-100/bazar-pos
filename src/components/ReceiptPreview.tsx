@@ -16,7 +16,7 @@ type ReceiptPreviewProps = {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString("es-AR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -43,7 +43,7 @@ export default function ReceiptPreview({
         <div className="p-6 space-y-4">
           {/* Header */}
           <div className="text-center border-b border-dashed border-pos-muted/20 pb-4">
-            <h2 className="text-lg font-bold text-pos-text">Sale Complete</h2>
+            <h2 className="text-lg font-bold text-pos-text">Venta Completa</h2>
             <p className="text-xs text-pos-muted font-mono mt-1">
               #{String(sale.id).padStart(6, "0")}
             </p>
@@ -52,7 +52,7 @@ export default function ReceiptPreview({
           {/* Store info */}
           <div className="text-center">
             <p className="text-sm font-medium text-pos-text">
-              Store: {sale.storeId}
+              Tienda: {sale.storeId}
             </p>
             <p className="text-xs text-pos-muted font-mono mt-0.5">
               {formatDate(sale.date)}
@@ -62,7 +62,7 @@ export default function ReceiptPreview({
           {/* Items */}
           <div className="border-t border-dashed border-pos-muted/20 pt-3">
             <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
-              Items
+              Productos
             </h3>
             <div className="space-y-2">
               {sale.items.map((item) => (
@@ -78,7 +78,7 @@ export default function ReceiptPreview({
                       x{item.quantity}
                     </span>
                     <div className="text-xs text-pos-muted font-mono">
-                      ${item.unitPrice.toFixed(2)} each
+                      ${item.unitPrice.toFixed(2)} c/u
                     </div>
                   </div>
                   <span className="font-mono font-medium text-pos-text whitespace-nowrap">
@@ -96,7 +96,7 @@ export default function ReceiptPreview({
               <span className="font-mono">${sale.total.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-pos-muted">Tax</span>
+              <span className="text-pos-muted">Impuesto</span>
               <span className="font-mono">$0.00</span>
             </div>
             <div className="flex items-center justify-between text-base font-bold pt-1 border-t border-pos-muted/10">
@@ -110,7 +110,7 @@ export default function ReceiptPreview({
           {/* Payment info */}
           <div className="border-t border-dashed border-pos-muted/20 pt-3 space-y-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-pos-muted">Payment</span>
+              <span className="text-pos-muted">Pago</span>
               <span className="font-medium capitalize">
                 {sale.paymentMethod}
               </span>
@@ -118,13 +118,13 @@ export default function ReceiptPreview({
             {sale.paymentMethod === "cash" && sale.amountPaid != null && (
               <>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-pos-muted">Amount Paid</span>
+                  <span className="text-pos-muted">Monto Pagado</span>
                   <span className="font-mono">
                     ${sale.amountPaid.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm font-semibold">
-                  <span className="text-pos-success">Change</span>
+                  <span className="text-pos-success">Vuelto</span>
                   <span className="font-mono text-pos-success">
                     ${(sale.change ?? 0).toFixed(2)}
                   </span>
@@ -136,7 +136,7 @@ export default function ReceiptPreview({
           {/* Divider */}
           <div className="border-t-2 border-double border-pos-muted/20 pt-3 text-center">
             <p className="text-xs text-pos-muted font-mono tracking-widest">
-              • • • THANK YOU • • •
+              • • • GRACIAS • • •
             </p>
           </div>
 
@@ -146,13 +146,13 @@ export default function ReceiptPreview({
               onClick={onPrint}
               className="flex-1 px-4 py-3 border-2 border-pos-secondary text-pos-secondary rounded-xl font-bold text-sm touch-target hover:bg-pos-secondary/5 transition-colors"
             >
-              🖨️ Print
+              🖨️ Imprimir
             </button>
             <button
               onClick={onClose}
               className="flex-1 px-4 py-3 bg-pos-secondary text-white rounded-xl font-bold text-sm touch-target hover:opacity-90 transition-opacity"
             >
-              New Sale
+              Nueva Venta
             </button>
           </div>
         </div>

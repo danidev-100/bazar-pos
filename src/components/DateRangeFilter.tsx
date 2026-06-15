@@ -58,11 +58,11 @@ function presetRange(preset: Preset): DateRange {
 }
 
 const PRESETS: { id: Preset; label: string }[] = [
-  { id: "today", label: "Today" },
-  { id: "this-week", label: "This Week" },
-  { id: "this-month", label: "This Month" },
-  { id: "this-quarter", label: "This Quarter" },
-  { id: "all", label: "All Time" },
+  { id: "today", label: "Hoy" },
+  { id: "this-week", label: "Esta Semana" },
+  { id: "this-month", label: "Este Mes" },
+  { id: "this-quarter", label: "Este Trimestre" },
+  { id: "all", label: "Todo" },
 ];
 
 // ──────────────────────────────────────────────
@@ -99,7 +99,7 @@ export default function DateRangeFilter({ value, onChange }: DateRangeFilterProp
 
   // Format dates for input[type=date] default values
   const presetLabel = useMemo(() => {
-    if (activePreset === "custom") return "Custom Range";
+    if (activePreset === "custom") return "Rango Personalizado";
     return PRESETS.find((p) => p.id === activePreset)?.label ?? "";
   }, [activePreset]);
 
@@ -123,29 +123,29 @@ export default function DateRangeFilter({ value, onChange }: DateRangeFilterProp
       </div>
 
       {/* ── Custom range ── */}
-      <div className="flex items-center gap-2">
-        <label className="text-xs text-pos-muted whitespace-nowrap">Custom:</label>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <label className="text-xs text-pos-muted whitespace-nowrap">Personalizado:</label>
         <input
           type="date"
           value={customFrom}
           onChange={(e) => setCustomFrom(e.target.value)}
-          className="px-2 py-1.5 text-xs rounded-lg border border-pos-muted/20 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
-          aria-label="From date"
+          className="w-full sm:w-auto px-2 py-1.5 text-xs rounded-lg border border-pos-muted/20 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
+          aria-label="Fecha desde"
         />
-        <span className="text-pos-muted text-xs">–</span>
+        <span className="text-pos-muted text-xs self-center">–</span>
         <input
           type="date"
           value={customTo}
           onChange={(e) => setCustomTo(e.target.value)}
-          className="px-2 py-1.5 text-xs rounded-lg border border-pos-muted/20 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
-          aria-label="To date"
+          className="w-full sm:w-auto px-2 py-1.5 text-xs rounded-lg border border-pos-muted/20 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
+          aria-label="Fecha hasta"
         />
         <button
           onClick={handleCustomApply}
           disabled={!customFrom}
           className="px-3 py-1.5 text-xs font-medium rounded-lg bg-pos-secondary text-white hover:bg-pos-secondary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed touch-target"
         >
-          Apply
+          Aplicar
         </button>
       </div>
 

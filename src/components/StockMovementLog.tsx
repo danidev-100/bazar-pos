@@ -6,9 +6,9 @@ import { useProductsStore, type Product } from "@/store/products";
 // ──────────────────────────────────────────────
 
 const TYPE_LABELS: Record<string, string> = {
-  purchase: "Purchase",
-  sale: "Sale",
-  adjustment: "Adjustment",
+  purchase: "Compra",
+  sale: "Venta",
+  adjustment: "Ajuste",
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -60,7 +60,7 @@ export default function StockMovementLog({
 
     const qty = parseInt(adjustValue, 10);
     if (isNaN(qty)) {
-      setAdjustError("Enter a valid number");
+      setAdjustError("Ingresá un número válido");
       return;
     }
 
@@ -76,7 +76,7 @@ export default function StockMovementLog({
       <div className="flex items-center justify-center h-full">
         {emptyState ?? (
           <p className="text-xs text-pos-muted italic">
-            Select a product to view stock movements
+              Seleccioná un producto para ver sus movimientos
           </p>
         )}
       </div>
@@ -112,14 +112,14 @@ export default function StockMovementLog({
             htmlFor="adjust-stock"
             className="block text-xs font-medium text-pos-text mb-1"
           >
-            Adjust to:
+            Ajustar a:
           </label>
           <input
             id="adjust-stock"
             type="number"
             value={adjustValue}
             onChange={(e) => setAdjustValue(e.target.value)}
-            placeholder="New quantity"
+            placeholder="Nueva cantidad"
             className="w-full border border-pos-muted/30 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />
         </div>
@@ -128,7 +128,7 @@ export default function StockMovementLog({
           disabled={adjusting || !adjustValue.trim()}
           className="px-3 py-1.5 bg-pos-accent text-white rounded-lg text-xs font-medium touch-target hover:opacity-90 disabled:opacity-50"
         >
-          Set
+          Establecer
         </button>
       </form>
 
@@ -139,19 +139,20 @@ export default function StockMovementLog({
       {/* Movement table */}
       <div className="flex-1 overflow-y-auto">
         <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide mb-1">
-          History
+          Historial
         </h3>
         {movements.length === 0 ? (
           <p className="text-xs text-pos-muted italic py-4 text-center">
-            No movements recorded yet
+            Todavía no hay movimientos
           </p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="text-pos-muted border-b border-pos-muted/20">
-                <th className="text-left py-1 pr-2 font-medium">Date</th>
-                <th className="text-left py-1 px-2 font-medium">Type</th>
-                <th className="text-right py-1 px-2 font-medium">Delta</th>
+                <th className="text-left py-1 pr-2 font-medium">Fecha</th>
+                <th className="text-left py-1 px-2 font-medium">Tipo</th>
+                <th className="text-right py-1 px-2 font-medium">Cambio</th>
                 <th className="text-right py-1 pl-2 font-medium">Stock</th>
               </tr>
             </thead>
@@ -185,6 +186,7 @@ export default function StockMovementLog({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

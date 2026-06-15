@@ -49,14 +49,14 @@ export default function NavigationBar() {
   }
 
   return (
-    <nav className="flex items-center justify-between bg-pos-primary text-white px-4 py-2 shadow-md">
+    <nav className="flex items-center justify-between bg-pos-primary text-white px-2 sm:px-4 py-2 shadow-md gap-2">
       {/* Page switcher */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         {PAGES.map((p) => (
           <button
             key={p.id}
             onClick={() => setPage(p.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               page === p.id
                 ? "bg-pos-secondary text-white"
                 : "text-white/70 hover:text-white hover:bg-white/10"

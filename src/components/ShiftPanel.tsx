@@ -33,17 +33,17 @@ export default function ShiftPanel({
 
     const trimmed = employee.trim();
     if (!trimmed) {
-      setError("Enter employee name");
+      setError("Ingresá el nombre del empleado");
       return;
     }
 
     try {
       openShift(trimmed, storeId);
-      setSuccess(`Shift opened for ${trimmed}`);
+      setSuccess(`Turno abierto para ${trimmed}`);
       setEmployee("");
       onShiftChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to open shift");
+      setError(err instanceof Error ? err.message : "Error al abrir el turno");
     }
   }
 
@@ -55,10 +55,10 @@ export default function ShiftPanel({
 
     try {
       closeShift(currentShift.id);
-      setSuccess("Shift closed");
+      setSuccess("Turno cerrado");
       onShiftChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to close shift");
+      setError(err instanceof Error ? err.message : "Error al cerrar el turno");
     }
   }
 
@@ -68,22 +68,22 @@ export default function ShiftPanel({
     return (
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-          Current Shift
+          Turno Actual
         </h3>
 
         <div className="bg-pos-success/10 border border-pos-success/30 rounded-xl p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-pos-success">● Open</span>
+            <span className="text-sm font-medium text-pos-success">● Abierto</span>
             <span className="text-xs text-pos-muted">
-              Since {openTime.toLocaleTimeString()}
+              Desde las {openTime.toLocaleTimeString()}
             </span>
           </div>
           <div className="text-sm text-pos-text">
-            <span className="text-pos-muted">Employee:</span>{" "}
+            <span className="text-pos-muted">Empleado:</span>{" "}
             {currentShift.employee}
           </div>
           <div className="text-xs text-pos-muted">
-            Opened {openTime.toLocaleDateString()} at{" "}
+            Abierto {openTime.toLocaleDateString()} a las{" "}
             {openTime.toLocaleTimeString()}
           </div>
 
@@ -102,7 +102,7 @@ export default function ShiftPanel({
             onClick={handleClose}
             className="w-full px-4 py-2 bg-pos-danger text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity"
           >
-            Close Shift
+            Cerrar Turno
           </button>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function ShiftPanel({
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-        Open New Shift
+        Abrir Nuevo Turno
       </h3>
 
       {error && (
@@ -132,7 +132,7 @@ export default function ShiftPanel({
           htmlFor="shift-employee"
           className="block text-sm font-medium text-pos-text mb-1"
         >
-          Employee Name
+          Nombre del Empleado
         </label>
         <input
           id="shift-employee"
@@ -148,7 +148,7 @@ export default function ShiftPanel({
         disabled={!employee.trim()}
         className="w-full px-4 py-2 bg-pos-success text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        Open Shift
+        Abrir Turno
       </button>
     </div>
   );

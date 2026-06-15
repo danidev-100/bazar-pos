@@ -61,13 +61,15 @@ export default function StatsPage() {
   return (
     <div className="flex flex-col gap-5 h-full">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-lg font-semibold text-pos-text">Sales Statistics</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h1 className="text-lg font-semibold text-pos-text">Estadísticas de Ventas</h1>
 
         {/* Granularity toggle */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-pos-muted">View:</span>
-          {(["day", "week", "month"] as Granularity[]).map((g) => (
+        <div className="flex items-center gap-1.5 self-stretch sm:self-auto">
+          <span className="text-xs text-pos-muted">Ver:</span>
+          {(["day", "week", "month"] as Granularity[]).map((g) => {
+            const GRANULARITY_LABELS: Record<Granularity, string> = { day: "Día", week: "Semana", month: "Mes" };
+            return (
             <button
               key={g}
               onClick={() => setGranularity(g)}
@@ -77,9 +79,10 @@ export default function StatsPage() {
                   : "bg-pos-background text-pos-muted hover:text-pos-secondary"
               }`}
             >
-              {g.charAt(0).toUpperCase() + g.slice(1)}
+              {GRANULARITY_LABELS[g]}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -89,21 +92,21 @@ export default function StatsPage() {
       {/* ── Summary cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCard
-          label="Total Revenue"
+          label="Ingresos Totales"
           value={`$${filteredSales.reduce((s, sale) => s + sale.total, 0).toFixed(2)}`}
         />
         <SummaryCard
-          label="Transactions"
+          label="Transacciones"
           value={String(filteredSales.length)}
         />
         <SummaryCard
-          label="Items Sold"
+          label="Productos Vendidos"
           value={String(
             filteredSales.reduce((s, sale) => s + sale.items.reduce((si, i) => si + i.quantity, 0), 0),
           )}
         />
         <SummaryCard
-          label="Avg per Sale"
+          label="Prom./Venta"
           value={
             filteredSales.length > 0
               ? `$${(
@@ -118,7 +121,7 @@ export default function StatsPage() {
       {/* ── Chart ── */}
       <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
-          Revenue Over Time
+          Ingresos en el Tiempo
         </h2>
         <SalesChart sales={filteredSales} granularity={granularity} />
       </section>
@@ -126,7 +129,7 @@ export default function StatsPage() {
       {/* ── Top Sellers ── */}
       <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
-          Top Sellers
+          Más Vendidos
         </h2>
         <TopSellers sales={filteredSales} limit={10} />
       </section>

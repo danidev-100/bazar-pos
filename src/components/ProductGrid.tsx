@@ -57,7 +57,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscá por nombre o código…"
-          aria-label="Search products"
+          aria-label="Buscar productos"
           className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface"
         />
       </div>
@@ -76,13 +76,13 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto auto-rows-max pr-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto overflow-x-auto auto-rows-max pr-1">
           {filtered.map((product) => (
             <button
               key={product.id}
               onClick={() => handleTap(product)}
               className="flex flex-col items-center justify-center bg-pos-surface border border-pos-muted/10 rounded-xl p-4 touch-target hover:border-pos-secondary/50 hover:shadow-sm transition-all active:scale-95"
-              aria-label={`Add ${product.name} to cart`}
+              aria-label={`Agregar ${product.name} al carrito`}
             >
               {/* Product emoji placeholder — replace with actual image later */}
               <span className="text-3xl mb-2" role="img" aria-hidden="true">

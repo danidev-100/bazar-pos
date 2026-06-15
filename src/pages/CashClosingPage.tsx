@@ -45,9 +45,9 @@ export default function CashClosingPage() {
     selectedShift.reconciliationStatus !== null;
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Left panel: Shift list ── */}
-      <aside className="w-72 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto">
+      <aside className="w-full lg:w-72 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-40 lg:max-h-full">
         <ShiftList
           shifts={storeShifts}
           currentShift={currentShift}
@@ -59,7 +59,7 @@ export default function CashClosingPage() {
       {/* ── Center panel: ShiftPanel or Reconciliation or Report ── */}
       <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
-          Cash Closing
+          Cierre de Caja
         </h2>
 
         {/* If there's an open shift, show the ShiftPanel */}
@@ -103,8 +103,7 @@ export default function CashClosingPage() {
         {!currentShift && !selectedShift && (
           <div className="flex items-center justify-center h-48">
             <p className="text-sm text-pos-muted italic">
-              No shifts yet. Open a shift from the left panel or use the form
-              above.
+              Todavía no hay turnos. Abrí un turno desde el panel izquierdo o usá el formulario.
             </p>
           </div>
         )}
@@ -112,7 +111,7 @@ export default function CashClosingPage() {
 
       {/* ── Right panel: Quick stats for selected shift ── */}
       {selectedShift && (
-        <aside className="w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto">
+        <aside className="w-full lg:w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-40 lg:max-h-full">
           <ShiftQuickStats
             shift={selectedShift}
             completedSales={completedSales}
@@ -141,7 +140,7 @@ function ShiftList({
   if (shifts.length === 0) {
     return (
       <div className="flex items-center justify-center h-32">
-        <p className="text-xs text-pos-muted italic">No shifts recorded</p>
+        <p className="text-xs text-pos-muted italic">No hay turnos registrados</p>
       </div>
     );
   }
@@ -149,7 +148,7 @@ function ShiftList({
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide mb-3">
-        Shift History
+        Historial de Turnos
       </h3>
 
       {shifts.map((s) => {
@@ -172,11 +171,11 @@ function ShiftList({
               </span>
               {isOpen ? (
                 <span className="text-xs bg-pos-success/10 text-pos-success font-medium px-1.5 py-0.5 rounded-full">
-                  Open
+                  Abierto
                 </span>
               ) : (
                 <span className="text-xs bg-pos-muted/10 text-pos-muted font-medium px-1.5 py-0.5 rounded-full">
-                  Closed
+                  Cerrado
                 </span>
               )}
             </div>
@@ -195,7 +194,7 @@ function ShiftList({
                     : "text-pos-accent"
                 }`}
               >
-                {s.reconciliationStatus === "matched" ? "✓ Matched" : "⚠ Mismatch"}
+                {s.reconciliationStatus === "matched" ? "✓ Coincide" : "⚠ Diferencia"}
               </div>
             )}
           </button>
@@ -241,36 +240,36 @@ function ShiftQuickStats({
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-        Quick Stats
+        Resumen
       </h3>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-pos-muted">Transactions</span>
+          <span className="text-xs text-pos-muted">Transacciones</span>
           <span className="text-sm font-mono font-bold">
             {shiftSales.length}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-pos-muted">Items Sold</span>
+          <span className="text-xs text-pos-muted">Productos Vendidos</span>
           <span className="text-sm font-mono font-bold">{itemCount}</span>
         </div>
         <hr className="border-pos-muted/20" />
         <div className="flex items-center justify-between">
-          <span className="text-xs text-pos-muted">Cash</span>
+          <span className="text-xs text-pos-muted">Efectivo</span>
           <span className="text-sm font-mono">
             ${cashTotal.toFixed(2)}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-pos-muted">Card</span>
+          <span className="text-xs text-pos-muted">Tarjeta</span>
           <span className="text-sm font-mono">
             ${cardTotal.toFixed(2)}
           </span>
         </div>
         <hr className="border-pos-muted/20" />
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold">Total Sales</span>
+          <span className="text-xs font-semibold">Total Ventas</span>
           <span className="text-sm font-mono font-bold text-pos-text">
             ${totalSales.toFixed(2)}
           </span>
