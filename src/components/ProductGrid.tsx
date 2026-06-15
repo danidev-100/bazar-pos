@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type RefObject } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore } from "@/store/products";
 
@@ -12,13 +12,15 @@ type ProductGridProps = {
     name: string;
     price: number;
   }) => void;
+  /** Optional ref for keyboard-shortcut focus (F2) */
+  searchInputRef?: React.Ref<HTMLInputElement>;
 };
 
 // ──────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────
 
-export default function ProductGrid({ onAddToCart }: ProductGridProps) {
+export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGridProps) {
   const { storeId } = useActiveStore();
   const products = useProductsStore((s) => s.products);
   const [search, setSearch] = useState("");
@@ -53,6 +55,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       {/* Search bar */}
       <div className="mb-3">
         <input
+          ref={searchInputRef as React.Ref<HTMLInputElement>}
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

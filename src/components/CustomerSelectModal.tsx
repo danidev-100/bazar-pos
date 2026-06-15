@@ -53,7 +53,6 @@ export default function CustomerSelectModal({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar cliente…"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
-            autoFocus
           />
 
           {/* "Consumidor Final" button */}

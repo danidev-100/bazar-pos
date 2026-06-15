@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { useAppStore } from "@/store";
 import { useProductsStore } from "@/store/products";
 import { useActiveStore } from "@/store/context";
@@ -9,6 +9,8 @@ import CartPanel from "@/components/CartPanel";
 import CheckoutModal from "@/components/CheckoutModal";
 import CustomerSelectModal from "@/components/CustomerSelectModal";
 import ReceiptPreview from "@/components/ReceiptPreview";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useBarcodeScan } from "@/hooks/useBarcodeScan";
 
 // ──────────────────────────────────────────────
 // Demo seed data — runs once on first POSPage mount
@@ -175,11 +177,86 @@ export default function POSPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const hintShown = useRef(false);
 
   // Seed demo products on first mount
   useEffect(() => {
     seedDemoProducts();
   }, []);
+
+  // Hint toast on first POS load
+  useEffect(() => {
+    if (hintShown.current) return;
+    hintShown.current = true;
+    showNotification("⌨️ F1 Cobrar · F2 Buscar · F3 Nueva venta · +/- Cantidad");
+    const timer = setTimeout(() => dismissNotification(), 5000);
+    return () => clearTimeout(timer);
+  }, [showNotification, dismissNotification]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onCheckout: useCallback(() => {
+      const { items } = useAppStore.getState();
+      if (items.length === 0) return;
+      setShowCheckout(true);
+    }, []),
+    onFocusSearch: useCallback(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }, []),
+    onNewSale: useCallback(() => {
+      const { items } = useAppStore.getState();
+      if (items.length === 0) return;
+      if (window.confirm("¿Iniciar una nueva venta? Se borrará el carrito actual.")) {
+        useAppStore.getState().clearCart();
+        setShowCheckout(false);
+        setShowReceipt(false);
+        setShowCustomerSelect(false);
+        dismissNotification();
+      }
+    }, [dismissNotification]),
+    onIncreaseQty: useCallback(() => {
+      const { selectedCartItemId, items, updateQuantity } = useAppStore.getState();
+      if (selectedCartItemId == null) return;
+      const item = items.find((i) => i.productId === selectedCartItemId);
+      if (item) updateQuantity(selectedCartItemId, item.quantity + 1);
+    }, []),
+    onDecreaseQty: useCallback(() => {
+      const { selectedCartItemId, items, updateQuantity } = useAppStore.getState();
+      if (selectedCartItemId == null) return;
+      const item = items.find((i) => i.productId === selectedCartItemId);
+      if (item) updateQuantity(selectedCartItemId, item.quantity - 1);
+    }, []),
+    onEscape: useCallback(() => {
+      if (showReceipt) {
+        setShowReceipt(false);
+        useAppStore.getState().dismissReceipt();
+      } else if (showCheckout) {
+        setShowCheckout(false);
+      } else if (showCustomerSelect) {
+        setShowCustomerSelect(false);
+      }
+    }, [showReceipt, showCheckout, showCustomerSelect]),
+  });
+
+  // Barcode scan hook
+  const storeProducts = useProductsStore((s) => s.products);
+  const { scanFlash } = useBarcodeScan(storeProducts, {
+    onMatch: useCallback(
+      (id: number, name: string, price: number) => {
+        addItem(id, name, price);
+      },
+      [addItem],
+    ),
+    onMiss: useCallback(
+      (barcode: string) => {
+        showNotification(`Código ${barcode} no encontrado`);
+        setTimeout(() => dismissNotification(), 3000);
+      },
+      [showNotification, dismissNotification],
+    ),
+  });
 
   // Show receipt when a sale completes
   useEffect(() => {
@@ -240,8 +317,8 @@ export default function POSPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Left: Product Grid ── */}
-      <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto">
-        <ProductGrid onAddToCart={handleAddToCart} />
+      <section className={`flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto ${scanFlash ? "scan-flash" : ""}`}>
+        <ProductGrid onAddToCart={handleAddToCart} searchInputRef={searchInputRef} />
       </section>
 
       {/* ── Right: Cart Panel ── */}

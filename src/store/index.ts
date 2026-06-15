@@ -88,6 +88,11 @@ export type AppStore = {
   cartTotal: () => number;
   itemCount: () => number;
 
+  // ── Cart selection (keyboard shortcuts) ──
+  selectedCartItemId: number | null;
+  selectCartItem: (productId: number) => void;
+  clearSelectedCartItem: () => void;
+
   // ── Customer selection ──
   selectedCustomer: Customer | null;
   selectCustomer: (customer: Customer | null) => void;
@@ -127,6 +132,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastCompletedSale: null,
   completedSales: [],
   selectedCustomer: null,
+  selectedCartItemId: null,
 
   // ── Navigation ──
   setPage: (page) => set({ page }),
@@ -194,7 +200,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ items: get().items.filter((i) => i.productId !== productId) });
   },
 
-  clearCart: () => set({ items: [] }),
+  clearCart: () => set({ items: [], selectedCartItemId: null }),
+
+  // ── Cart Selection ──
+  selectCartItem: (productId) => set({ selectedCartItemId: productId }),
+  clearSelectedCartItem: () => set({ selectedCartItemId: null }),
 
   cartTotal: () => {
     const total = get().items.reduce((sum, i) => sum + i.subtotal, 0);

@@ -24,6 +24,9 @@ export default function CartPanel({
   const cartTotal = useAppStore((s) => s.cartTotal);
   const itemCount = useAppStore((s) => s.itemCount);
   const selectedCustomer = useAppStore((s) => s.selectedCustomer);
+  const selectedCartItemId = useAppStore((s) => s.selectedCartItemId);
+  const selectCartItem = useAppStore((s) => s.selectCartItem);
+  const clearSelectedCartItem = useAppStore((s) => s.clearSelectedCartItem);
 
   const total = cartTotal();
   const count = itemCount();
@@ -73,7 +76,12 @@ export default function CartPanel({
           items.map((item) => (
             <div
               key={item.productId}
-              className="bg-pos-surface border border-pos-muted/10 rounded-xl p-3"
+              onClick={() => selectCartItem(item.productId)}
+              className={`bg-pos-surface border rounded-xl p-3 cursor-pointer transition-colors ${
+                selectedCartItemId === item.productId
+                  ? "border-pos-secondary ring-1 ring-pos-secondary/30"
+                  : "border-pos-muted/10"
+              }`}
             >
               {/* Product name + remove */}
               <div className="flex items-start justify-between mb-2">
@@ -129,8 +137,7 @@ export default function CartPanel({
                 </span>
               </div>
             </div>
-          ))
-        )}
+          )))}
       </div>
 
       {/* Totals + checkout */}
