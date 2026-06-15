@@ -45,8 +45,12 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
         "Layer 1",
     );
 
-    let font = doc.add_builtin_font(BuiltinFont::Helvetica)?;
-    let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold)?;
+    let font = doc
+        .add_builtin_font(BuiltinFont::Helvetica)
+        .map_err(|e| format!("Font error: {}", e))?;
+    let font_bold = doc
+        .add_builtin_font(BuiltinFont::HelveticaBold)
+        .map_err(|e| format!("Font error: {}", e))?;
 
     let current_layer = doc.get_page(page1).get_layer(layer1);
 

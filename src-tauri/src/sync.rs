@@ -24,7 +24,8 @@
 
 use async_trait::async_trait;
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
+use sqlx::Column;
+use sqlx::Row;
 use std::collections::HashMap;
 
 // ──────────────────────────────────────────────
@@ -467,7 +468,7 @@ impl<L: LocalStore, C: CloudStore> SyncEngine<L, C> {
                     let cloud_updated_at = row
                         .get("updated_at")
                         .and_then(|v| v.as_text())
-                        .cloned()
+                        .map(|s| s.to_string())
                         .unwrap_or_else(|| now.clone());
 
                     let columns: Vec<String> = row.keys().cloned().collect();
@@ -555,16 +556,12 @@ struct PullResult {
 /// Opens the local SQLite database, creates a PgPool for the cloud,
 /// runs push → pull, and returns a JSON-serialized `SyncResult`.
 ///
-/// In a full Tauri build, the cloud connection string would come from
-/// app configuration or a Tauri state struct. Here we read from the
-/// `SYNC_DATABASE_URL` environment variable for flexibility.
+/// The cloud connection string comes from the `SYNC_DATABASE_URL` env var.
 pub async fn run_sync() -> Result<SyncResult, SyncError> {
-    use tauri_plugin_sql::Database;
-
     let config = SyncConfig::default();
 
-    // ── Open local SQLite ──
-    let local_db = Database::load("sqlite:pos.db")
+    // ── Open local SQLite (sqlx direct) ──
+    let local_db = sqlx::SqlitePool::connect("sqlite:pos.db")
         .await
         .map_err(|e| SyncError::Database(format!("Failed to open local DB: {}", e)))?;
 
@@ -596,48 +593,34 @@ pub async fn run_sync() -> Result<SyncResult, SyncError> {
 // Real store implementations
 // ──────────────────────────────────────────────
 
-/// Local store backed by `tauri_plugin_sql::Database` (SQLite).
+/// Local store backed by `sqlx::SqlitePool`.
 pub struct TauriLocalStore {
-    pub db: tauri_plugin_sql::Database,
+    pub db: sqlx::SqlitePool,
 }
 
 #[async_trait]
 impl LocalStore for TauriLocalStore {
     async fn pending_items(&self, limit: i64) -> Result<Vec<SyncQueueItem>, SyncError> {
-        use tauri_plugin_sql::Value;
-
-        let rows = self
-            .db
-            .select(
-                "SELECT id, entity, entity_id, operation, store_id, payload, created_at, retry_count \
-                 FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?1",
-                vec![Value::Integer(limit)],
-            )
-            .await
-            .map_err(|e| SyncError::Database(e.to_string()))?;
+        let rows = sqlx::query(
+            "SELECT id, entity, entity_id, operation, store_id, payload, created_at, retry_count \
+             FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?",
+        )
+        .bind(limit)
+        .fetch_all(&self.db)
+        .await
+        .map_err(|e| SyncError::Database(e.to_string()))?;
 
         let items = rows
-            .into_iter()
-            .map(|row| {
-                let id = row.get("id").and_then(as_i64).unwrap_or(0);
-                let entity = row.get("entity").and_then(as_str).unwrap_or_default();
-                let entity_id = row.get("entity_id").and_then(as_i64).unwrap_or(0);
-                let operation = row.get("operation").and_then(as_str).unwrap_or_default();
-                let store_id = row.get("store_id").and_then(as_str).unwrap_or_default();
-                let payload = row.get("payload").and_then(as_str).map(|s| s.to_string());
-                let created_at = row.get("created_at").and_then(as_str).unwrap_or_default();
-                let retry_count = row.get("retry_count").and_then(as_i64).unwrap_or(0);
-
-                SyncQueueItem {
-                    id,
-                    entity,
-                    entity_id,
-                    operation,
-                    store_id,
-                    payload,
-                    created_at,
-                    retry_count,
-                }
+            .iter()
+            .map(|row| SyncQueueItem {
+                id: row.get("id"),
+                entity: row.get("entity"),
+                entity_id: row.get("entity_id"),
+                operation: row.get("operation"),
+                store_id: row.get("store_id"),
+                payload: row.try_get("payload").ok(),
+                created_at: row.get("created_at"),
+                retry_count: row.get("retry_count"),
             })
             .collect();
 
@@ -645,19 +628,15 @@ impl LocalStore for TauriLocalStore {
     }
 
     async fn mark_item(&self, id: i64, status: &str, synced_at: &str) -> Result<(), SyncError> {
-        use tauri_plugin_sql::Value;
-
-        self.db
-            .execute(
-                "UPDATE sync_queue SET status = ?1, synced_at = ?2 WHERE id = ?3",
-                vec![
-                    Value::Text(status.to_string()),
-                    Value::Text(synced_at.to_string()),
-                    Value::Integer(id),
-                ],
-            )
-            .await
-            .map_err(|e| SyncError::Database(e.to_string()))?;
+        sqlx::query(
+            "UPDATE sync_queue SET status = ?1, synced_at = ?2 WHERE id = ?3",
+        )
+        .bind(status)
+        .bind(synced_at)
+        .bind(id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| SyncError::Database(e.to_string()))?;
 
         Ok(())
     }
@@ -668,38 +647,22 @@ impl LocalStore for TauriLocalStore {
         pk_column: &str,
         pk_value: i64,
     ) -> Result<Option<HashMap<String, DbValue>>, SyncError> {
-        use tauri_plugin_sql::Value;
-
-        let sql = format!(
-            "SELECT * FROM {} WHERE {} = ?1 LIMIT 1",
-            table, pk_column
-        );
-
-        let mut rows = self
-            .db
-            .select(&sql, vec![Value::Integer(pk_value)])
+        let sql = format!("SELECT * FROM {} WHERE {} = ? LIMIT 1", table, pk_column);
+        let rows = sqlx::query(&sql)
+            .bind(pk_value)
+            .fetch_all(&self.db)
             .await
             .map_err(|e| SyncError::Database(e.to_string()))?;
 
-        if rows.is_empty() {
-            return Ok(None);
-        }
-
-        let row = rows.remove(0);
-        let mut map = HashMap::new();
-
-        for (key, val) in row {
-            let db_val = match val {
-                Value::Null => DbValue::Null,
-                Value::Text(s) => DbValue::Text(s),
-                Value::Integer(n) => DbValue::Integer(n),
-                Value::Real(f) => DbValue::Real(f),
-                Value::Blob(_) => DbValue::Null,
-            };
-            map.insert(key, db_val);
-        }
-
-        Ok(Some(map))
+        Ok(rows.first().map(|row| {
+            let mut map = HashMap::new();
+            for col in row.columns() {
+                let name = col.name().to_string();
+                let val = sqlite_val(row, col.ordinal());
+                map.insert(name, val);
+            }
+            map
+        }))
     }
 
     async fn upsert_row(
@@ -709,69 +672,56 @@ impl LocalStore for TauriLocalStore {
         values: &[DbValue],
         _local_updated_at: &str,
     ) -> Result<bool, SyncError> {
-        use tauri_plugin_sql::Value;
-
         if columns.is_empty() || columns.len() != values.len() {
             return Err(SyncError::Database("Column/value mismatch".to_string()));
         }
 
-        // Build: INSERT INTO table (col1, col2, ...) VALUES (?1, ?2, ...)
-        // ON CONFLICT(id) DO UPDATE SET col1=excluded.col1, ...
-        let placeholders: Vec<String> = (1..=columns.len())
-            .map(|i| format!("?{}", i))
-            .collect();
-
-        let set_clause: Vec<String> = columns
-            .iter()
-            .skip(1) // Skip id for SET
-            .map(|col| format!("{} = excluded.{}", col, col))
-            .collect();
+        let cols: Vec<&str> = columns.iter().map(|s| s.as_str()).collect();
+        let placeholders: Vec<String> = (1..=cols.len()).map(|i| format!("?{}", i)).collect();
 
         let sql = format!(
-            "INSERT OR REPLACE INTO {} ({}) VALUES ({})",
+            "INSERT INTO {} ({}) VALUES ({}) ON CONFLICT(id) DO UPDATE SET {}",
             table,
-            columns.join(", "),
+            cols.join(", "),
             placeholders.join(", "),
+            cols.iter()
+                .map(|c| format!("{} = excluded.{}", c, c))
+                .collect::<Vec<_>>()
+                .join(", "),
         );
 
-        let tauri_values: Vec<Value> = values
-            .iter()
-            .map(|v| match v {
-                DbValue::Null => Value::Null,
-                DbValue::Text(s) => Value::Text(s.clone()),
-                DbValue::Integer(n) => Value::Integer(*n),
-                DbValue::Real(f) => Value::Real(*f),
-            })
-            .collect();
+        let mut query = sqlx::query(&sql);
+        for val in values {
+            query = match val {
+                DbValue::Text(s) => query.bind(s),
+                DbValue::Integer(n) => query.bind(n),
+                DbValue::Real(f) => query.bind(f),
+                DbValue::Null => query.bind(&None::<String> as &Option<String>),
+            };
+        }
 
-        self.db
-            .execute(&sql, tauri_values)
+        query
+            .execute(&self.db)
             .await
             .map_err(|e| SyncError::Database(e.to_string()))?;
 
-        // SQLite INSERT OR REPLACE always succeeds if row exists.
-        // LW-W happens via updated_at in the application logic.
         Ok(true)
     }
 
     async fn write_conflict_log(&self, entry: &ConflictEntry) -> Result<(), SyncError> {
-        use tauri_plugin_sql::Value;
-
-        self.db
-            .execute(
-                "INSERT INTO sync_logs (entity, entity_id, local_updated_at, cloud_updated_at, verdict, store_id) \
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                vec![
-                    Value::Text(entry.entity.clone()),
-                    Value::Integer(entry.entity_id),
-                    Value::Text(entry.local_updated_at.clone()),
-                    Value::Text(entry.cloud_updated_at.clone()),
-                    Value::Text(entry.verdict.clone()),
-                    Value::Text(entry.store_id.clone()),
-                ],
-            )
-            .await
-            .map_err(|e| SyncError::Database(e.to_string()))?;
+        sqlx::query(
+            "INSERT INTO sync_logs (entity, entity_id, local_updated_at, cloud_updated_at, verdict, store_id) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        )
+        .bind(&entry.entity)
+        .bind(entry.entity_id)
+        .bind(&entry.local_updated_at)
+        .bind(&entry.cloud_updated_at)
+        .bind(&entry.verdict)
+        .bind(&entry.store_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| SyncError::Database(e.to_string()))?;
 
         Ok(())
     }
@@ -783,24 +733,44 @@ impl LocalStore for TauriLocalStore {
         since: &str,
         limit: i64,
     ) -> Result<Vec<HashMap<String, DbValue>>, SyncError> {
-        use tauri_plugin_sql::Value;
-
         let sql = format!(
             "SELECT * FROM {} WHERE store_id = ?1 AND updated_at > ?2 ORDER BY updated_at ASC LIMIT ?3",
             table
         );
 
-        let rows = self
-            .db
-            .select(&sql, vec![
-                Value::Text(store_id.to_string()),
-                Value::Text(since.to_string()),
-                Value::Integer(limit),
-            ])
+        let rows = sqlx::query(&sql)
+            .bind(store_id)
+            .bind(since)
+            .bind(limit)
+            .fetch_all(&self.db)
             .await
             .map_err(|e| SyncError::Database(e.to_string()))?;
 
-        Ok(rows_to_map(rows))
+        let result = rows
+            .iter()
+            .map(|row| {
+                let mut map = HashMap::new();
+                for col in row.columns() {
+                    map.insert(col.name().to_string(), sqlite_val(row, col.ordinal()));
+                }
+                map
+            })
+            .collect();
+
+        Ok(result)
+    }
+}
+
+/// Convert a sqlx SqliteRow column at index to DbValue.
+fn sqlite_val(row: &sqlx::sqlite::SqliteRow, i: usize) -> DbValue {
+    if let Ok(val) = row.try_get::<String, usize>(i) {
+        DbValue::Text(val)
+    } else if let Ok(val) = row.try_get::<i64, usize>(i) {
+        DbValue::Integer(val)
+    } else if let Ok(val) = row.try_get::<f64, usize>(i) {
+        DbValue::Real(val)
+    } else {
+        DbValue::Null
     }
 }
 
@@ -929,16 +899,15 @@ impl CloudStore for PgCloudStore {
 
     async fn write_conflict_log(&self, entry: &ConflictEntry) -> Result<(), SyncError> {
         sqlx::query(
-            "INSERT INTO sync_logs (entity, entity_id, store_id, local_version, cloud_version, verdict, created_at) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            "INSERT INTO sync_logs (entity, entity_id, store_id, local_updated_at, cloud_updated_at, verdict, created_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, datetime('now'))",
         )
         .bind(&entry.entity)
         .bind(entry.entity_id)
         .bind(&entry.store_id)
-        .bind(&entry.local_version)
-        .bind(&entry.cloud_version)
+        .bind(&entry.local_updated_at)
+        .bind(&entry.cloud_updated_at)
         .bind(&entry.verdict)
-        .bind(&entry.created_at)
         .execute(&self.pool)
         .await
         .map_err(|e| SyncError::Database(format!("Failed to write conflict log: {}", e)))?;
@@ -955,7 +924,6 @@ fn pg_row_to_dbvalue(row: &sqlx::postgres::PgRow, i: usize) -> DbValue {
         None => DbValue::Null,
         Some(c) => {
             // Try common types — Postgres returns NULL for type mismatches via try_get
-            let name = c.name().to_string();
             // First try as text
             if let Ok(val) = row.try_get::<String, usize>(i) {
                 return DbValue::Text(val);
@@ -982,41 +950,7 @@ fn pg_row_to_dbvalue(row: &sqlx::postgres::PgRow, i: usize) -> DbValue {
 // Helpers
 // ──────────────────────────────────────────────
 
-fn as_i64(val: &tauri_plugin_sql::Value) -> Option<i64> {
-    match val {
-        tauri_plugin_sql::Value::Integer(n) => Some(*n),
-        tauri_plugin_sql::Value::Text(s) => s.parse().ok(),
-        _ => None,
-    }
-}
 
-fn as_str(val: &tauri_plugin_sql::Value) -> Option<&str> {
-    match val {
-        tauri_plugin_sql::Value::Text(s) => Some(s.as_str()),
-        _ => None,
-    }
-}
-
-fn rows_to_map(
-    rows: Vec<HashMap<String, tauri_plugin_sql::Value>>,
-) -> Vec<HashMap<String, DbValue>> {
-    rows.into_iter()
-        .map(|row| {
-            row.into_iter()
-                .map(|(k, v)| {
-                    let dbv = match v {
-                        tauri_plugin_sql::Value::Null => DbValue::Null,
-                        tauri_plugin_sql::Value::Text(s) => DbValue::Text(s),
-                        tauri_plugin_sql::Value::Integer(n) => DbValue::Integer(n),
-                        tauri_plugin_sql::Value::Real(f) => DbValue::Real(f),
-                        tauri_plugin_sql::Value::Blob(_) => DbValue::Null,
-                    };
-                    (k, dbv)
-                })
-                .collect()
-        })
-        .collect()
-}
 
 // ──────────────────────────────────────────────
 // Tests

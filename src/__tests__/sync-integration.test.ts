@@ -597,7 +597,7 @@ describe("useSync hook behavior", () => {
 
     mockInvoke.mockResolvedValueOnce(JSON.stringify(expectedResult));
 
-    const result: string = await mockInvoke("sync_now");
+    const result = (await mockInvoke("sync_now")) as string;
     const parsed: SyncResult = JSON.parse(result);
 
     expect(parsed.pushed).toBe(3);
@@ -643,11 +643,7 @@ describe("useSync hook behavior", () => {
   });
 
   it("detects offline state via navigator.onLine", () => {
-    // Simulate offline
-    const originalOnLine = navigator.onLine;
-
-    // We can't easily override navigator.onLine in jsdom,
-    // but we can verify the useSync hook handles it via the
+    // Verify the useSync hook handles it via the
     // online/offline event pattern (tested by the hook itself)
     expect(typeof navigator.onLine).toBe("boolean");
   });

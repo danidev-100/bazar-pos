@@ -188,7 +188,7 @@ export default function POSPage() {
   const handleAddToCart = useCallback(
     (product: { id: number; name: string; price: number }) => {
       if (!product.price || product.price <= 0) {
-        showNotification("Product has no price");
+        showNotification("El producto no tiene precio");
         setTimeout(() => dismissNotification(), 3000);
         return;
       }
@@ -200,7 +200,7 @@ export default function POSPage() {
   function handleCheckout() {
     const store = useProductsStore.getState();
     if (store.products.length === 0) {
-      showNotification("Add products before checking out");
+      showNotification("Agregá productos antes de cobrar");
       setTimeout(() => dismissNotification(), 3000);
       return;
     }
@@ -214,7 +214,7 @@ export default function POSPage() {
 
   function handlePrint() {
     // Placeholder — will wire to actual printer in PR 5
-    showNotification("Print functionality coming in a future update");
+    showNotification("La impresión estará disponible en una futura actualización");
     setTimeout(() => dismissNotification(), 3000);
   }
 

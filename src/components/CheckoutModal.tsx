@@ -57,7 +57,7 @@ export default function CheckoutModal({
 
   function handleConfirm() {
     if (isEmpty) {
-      setError("Cart is empty");
+      setError("El carrito está vacío");
       return;
     }
     if (!paymentMethod) {
@@ -101,11 +101,11 @@ export default function CheckoutModal({
         <div className="p-6 space-y-5">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-pos-text">Checkout</h2>
+            <h2 className="text-lg font-bold text-pos-text">Cobrar</h2>
             <button
               onClick={handleCancel}
               className="text-pos-muted text-xl leading-none touch-target w-10 h-10 flex items-center justify-center rounded-lg hover:bg-pos-background transition-colors"
-              aria-label="Close checkout"
+              aria-label="Cerrar cobro"
             >
               ✕
             </button>

@@ -1,5 +1,3 @@
-use tauri::Manager;
-
 mod pdf;
 mod printer;
 mod sync;
@@ -69,6 +67,6 @@ pub fn run() {
 
 /// Returns an empty migration list. Migrations will be generated from
 /// Drizzle schema definitions in later phases.
-fn migrations() -> Vec<&'static tauri_plugin_sql::Migration> {
+fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![]
 }

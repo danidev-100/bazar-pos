@@ -33,7 +33,7 @@ function flattenCategories(
   parentId: number | null,
   depth: number,
   result: { id: number; label: string }[],
-): void {
+): { id: number; label: string }[] {
   cats
     .filter((c) => c.parent_id === parentId)
     .forEach((c) => {
@@ -43,6 +43,7 @@ function flattenCategories(
       });
       flattenCategories(cats, c.id, depth + 1, result);
     });
+  return result;
 }
 
 // ──────────────────────────────────────────────

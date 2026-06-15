@@ -13,10 +13,10 @@ type PageDef = {
 
 const PAGES: PageDef[] = [
   { id: "pos", label: "POS", icon: "🛒" },
-  { id: "products", label: "Products", icon: "📦" },
-  { id: "cash-closing", label: "Cash", icon: "💰" },
-  { id: "billing", label: "Billing", icon: "🧾" },
-  { id: "stats", label: "Stats", icon: "📊" },
+  { id: "products", label: "Productos", icon: "📦" },
+  { id: "cash-closing", label: "Caja", icon: "💰" },
+  { id: "billing", label: "Facturación", icon: "🧾" },
+  { id: "stats", label: "Estadísticas", icon: "📊" },
 ];
 
 // ──────────────────────────────────────────────
@@ -24,9 +24,9 @@ const PAGES: PageDef[] = [
 // ──────────────────────────────────────────────
 
 const STORE_OPTIONS = [
-  { id: "store_1", name: "Main Store" },
-  { id: "store_2", name: "Branch 2" },
-  { id: "store_3", name: "Branch 3" },
+  { id: "store_1", name: "Tienda Principal" },
+  { id: "store_2", name: "Sucursal 2" },
+  { id: "store_3", name: "Sucursal 3" },
 ];
 
 // ──────────────────────────────────────────────
@@ -73,7 +73,7 @@ export default function NavigationBar() {
       {/* Store selector */}
       <div className="flex items-center gap-2">
         <label htmlFor="store-selector" className="text-sm text-white/70">
-          Store:
+          Tienda:
         </label>
         <select
           id="store-selector"

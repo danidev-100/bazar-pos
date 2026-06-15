@@ -1,5 +1,4 @@
 import { drizzle } from "drizzle-orm/sqlite-proxy";
-import type { SqliteQueryResult } from "drizzle-orm/sqlite-proxy";
 import Database from "@tauri-apps/plugin-sql";
 import * as schema from "./schema";
 
@@ -28,23 +27,17 @@ async function getTauriDb(): Promise<Database> {
  * ```
  */
 export const localDb = drizzle<typeof schema>(
-  async (sql: string, params: any[], method: "all" | "run" | "values") => {
+  async (sql: string, params: any[], method: "all" | "run" | "values" | "get") => {
     const db = await getTauriDb();
 
     if (method === "run") {
       const result = await db.execute(sql, params);
-      return {
-        rows: [],
-        rowsAffected: result.rowsAffected ?? 0,
-      } satisfies SqliteQueryResult;
+      return { rows: [], rowsAffected: result.rowsAffected ?? 0 };
     }
 
-    // method === "all" or "values"
+    // method === "all" or "values" or "get"
     const rows = await db.select<Record<string, unknown>[]>(sql, params);
-    return {
-      rows,
-      rowsAffected: rows.length,
-    } satisfies SqliteQueryResult;
+    return { rows, rowsAffected: rows.length };
   },
   { schema },
 );

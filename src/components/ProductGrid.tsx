@@ -56,7 +56,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or barcode…"
+          placeholder="Buscá por nombre o código…"
           aria-label="Search products"
           className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface"
         />
@@ -66,13 +66,13 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       {hasNoProducts ? (
         <div className="flex items-center justify-center flex-1">
           <p className="text-sm text-pos-muted italic">
-            No products in this store. Add products in the Products page first.
+            No hay productos en esta tienda. Agregá productos desde la página Productos.
           </p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex items-center justify-center flex-1">
           <p className="text-sm text-pos-muted italic">
-            No products match "{search}"
+            No hay productos que coincidan con "{search}"
           </p>
         </div>
       ) : (
@@ -99,7 +99,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
               {product.stock <= 5 && (
                 <span className="text-xs text-pos-danger mt-1 font-medium">
-                  {product.stock === 0 ? "Out of stock" : `Only ${product.stock} left`}
+                  {product.stock === 0 ? "Sin stock" : `Solo quedan ${product.stock}`}
                 </span>
               )}
 

@@ -11,7 +11,7 @@ import * as schema from "./schema";
  * cloud access before the sync engine is built.
  */
 export const cloudDb = drizzle<typeof schema>(
-  async (_sql: string, _params: any[], _method: "all" | "run" | "values") => {
+  async (_sql: string, _params: any[], _method: "all" | "execute") => {
     throw new Error(
       "[cloudDb] PostgreSQL client is not available yet. " +
         "The sync engine (PR 7) will wire this connection through Tauri commands.",

@@ -43,7 +43,7 @@ export const stores = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (table) => [index("idx_stores_name").on(table.name)],
+  (table) => ({ nameIdx: index("idx_stores_name").on(table.name) }),
 );
 
 // ──────────────────────────────────────────────
@@ -58,10 +58,10 @@ export const categories = sqliteTable(
     parent_id: integer("parent_id").references((): any => categories.id),
     ...syncColumns,
   },
-  (table) => [
-    uniqueIndex("idx_categories_store_name").on(table.store_id, table.name),
-    index("idx_categories_parent").on(table.parent_id),
-  ],
+  (table) => ({
+    storeNameIdx: uniqueIndex("idx_categories_store_name").on(table.store_id, table.name),
+    parentIdx: index("idx_categories_parent").on(table.parent_id),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -79,14 +79,14 @@ export const products = sqliteTable(
     category_id: integer("category_id").references((): any => categories.id),
     ...syncColumns,
   },
-  (table) => [
-    uniqueIndex("idx_products_store_barcode").on(
+  (table) => ({
+    storeBarcodeIdx: uniqueIndex("idx_products_store_barcode").on(
       table.store_id,
       table.barcode,
     ),
-    index("idx_products_category").on(table.category_id),
-    index("idx_products_name").on(table.name),
-  ],
+    categoryIdx: index("idx_products_category").on(table.category_id),
+    nameIdx: index("idx_products_name").on(table.name),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -109,11 +109,11 @@ export const stockMovements = sqliteTable(
     user_id: text("user_id"),
     ...syncColumns,
   },
-  (table) => [
-    index("idx_stock_movements_product").on(table.product_id),
-    index("idx_stock_movements_type").on(table.type),
-    index("idx_stock_movements_created").on(table.created_at),
-  ],
+  (table) => ({
+    productIdx: index("idx_stock_movements_product").on(table.product_id),
+    typeIdx: index("idx_stock_movements_type").on(table.type),
+    createdIdx: index("idx_stock_movements_created").on(table.created_at),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -134,10 +134,10 @@ export const shifts = sqliteTable(
       .default("open"),
     ...syncColumns,
   },
-  (table) => [
-    index("idx_shifts_store_status").on(table.store_id, table.status),
-    index("idx_shifts_employee").on(table.employee_name),
-  ],
+  (table) => ({
+    storeStatusIdx: index("idx_shifts_store_status").on(table.store_id, table.status),
+    employeeIdx: index("idx_shifts_employee").on(table.employee_name),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -162,11 +162,11 @@ export const sales = sqliteTable(
     shift_id: integer("shift_id").references((): any => shifts.id),
     ...syncColumns,
   },
-  (table) => [
-    index("idx_sales_store_created").on(table.store_id, table.created_at),
-    index("idx_sales_shift").on(table.shift_id),
-    index("idx_sales_status").on(table.status),
-  ],
+  (table) => ({
+    storeCreatedIdx: index("idx_sales_store_created").on(table.store_id, table.created_at),
+    shiftIdx: index("idx_sales_shift").on(table.shift_id),
+    statusIdx: index("idx_sales_status").on(table.status),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -189,10 +189,10 @@ export const saleItems = sqliteTable(
     subtotal: real("subtotal").notNull(),
     ...syncColumns,
   },
-  (table) => [
-    index("idx_sale_items_sale").on(table.sale_id),
-    index("idx_sale_items_product").on(table.product_id),
-  ],
+  (table) => ({
+    saleIdx: index("idx_sale_items_sale").on(table.sale_id),
+    productIdx: index("idx_sale_items_product").on(table.product_id),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -214,10 +214,10 @@ export const cashClosings = sqliteTable(
     notes: text("notes"),
     ...syncColumns,
   },
-  (table) => [
-    index("idx_cash_closings_shift").on(table.shift_id),
-    index("idx_cash_closings_store").on(table.store_id),
-  ],
+  (table) => ({
+    shiftIdx: index("idx_cash_closings_shift").on(table.shift_id),
+    storeIdx: index("idx_cash_closings_store").on(table.store_id),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -236,14 +236,14 @@ export const invoices = sqliteTable(
     total: real("total").notNull(),
     ...syncColumns,
   },
-  (table) => [
-    uniqueIndex("idx_invoices_store_number").on(
+  (table) => ({
+    storeNumberIdx: uniqueIndex("idx_invoices_store_number").on(
       table.store_id,
       table.invoice_number,
     ),
-    index("idx_invoices_sale").on(table.sale_id),
-    index("idx_invoices_created").on(table.created_at),
-  ],
+    saleIdx: index("idx_invoices_sale").on(table.sale_id),
+    createdIdx: index("idx_invoices_created").on(table.created_at),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -263,9 +263,7 @@ export const invoiceItems = sqliteTable(
     subtotal: real("subtotal").notNull(),
     ...syncColumns,
   },
-  (table) => [
-    index("idx_invoice_items_invoice").on(table.invoice_id),
-  ],
+  (table) => ({ invoiceIdx: index("idx_invoice_items_invoice").on(table.invoice_id) }),
 );
 
 // ──────────────────────────────────────────────
@@ -294,11 +292,11 @@ export const syncQueue = sqliteTable(
     retry_count: integer("retry_count").notNull().default(0),
     payload: text("payload"),
   },
-  (table) => [
-    index("idx_sync_queue_status").on(table.status),
-    index("idx_sync_queue_entity").on(table.entity),
-    index("idx_sync_queue_created").on(table.created_at),
-  ],
+  (table) => ({
+    statusIdx: index("idx_sync_queue_status").on(table.status),
+    entityIdx: index("idx_sync_queue_entity").on(table.entity),
+    createdIdx: index("idx_sync_queue_created").on(table.created_at),
+  }),
 );
 
 // ──────────────────────────────────────────────
@@ -321,8 +319,8 @@ export const syncLogs = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (table) => [
-    index("idx_sync_logs_entity").on(table.entity),
-    index("idx_sync_logs_created").on(table.created_at),
-  ],
+  (table) => ({
+    entityIdx: index("idx_sync_logs_entity").on(table.entity),
+    createdIdx: index("idx_sync_logs_created").on(table.created_at),
+  }),
 );

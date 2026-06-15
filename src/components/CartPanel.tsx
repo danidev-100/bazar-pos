@@ -29,10 +29,10 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-          Cart
+          Carrito
           {count > 0 && (
             <span className="text-pos-muted font-normal normal-case ml-1">
-              — {count} item{count !== 1 ? "s" : ""}
+              — {count} {count === 1 ? "producto" : "productos"}
             </span>
           )}
         </h2>
@@ -43,7 +43,7 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
         {isEmpty ? (
           <div className="flex items-center justify-center h-48">
             <p className="text-sm text-pos-muted italic">
-              Cart is empty. Tap a product to add it.
+              El carrito está vacío. Tocá un producto para agregarlo.
             </p>
           </div>
         ) : (
@@ -60,7 +60,7 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
                 <button
                   onClick={() => removeItem(item.productId)}
                   className="text-pos-danger text-lg leading-none touch-target w-8 h-8 flex items-center justify-center rounded-lg hover:bg-pos-danger/10 transition-colors"
-                  aria-label={`Remove ${item.productName} from cart`}
+                  aria-label={`Eliminar ${item.productName} del carrito`}
                 >
                   ✕
                 </button>
@@ -69,7 +69,7 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
               {/* Price + quantity controls */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-mono text-pos-muted">
-                  ${item.unitPrice.toFixed(2)} each
+                  ${item.unitPrice.toFixed(2)} c/u
                 </span>
 
                 <div className="flex items-center gap-1">
@@ -78,7 +78,7 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
                       updateQuantity(item.productId, item.quantity - 1)
                     }
                     className="w-9 h-9 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-lg text-pos-text font-bold text-lg touch-target hover:bg-pos-muted/10 transition-colors"
-                    aria-label={`Decrease quantity of ${item.productName}`}
+                    aria-label={`Disminuir cantidad de ${item.productName}`}
                   >
                     −
                   </button>
@@ -92,7 +92,7 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
                       updateQuantity(item.productId, item.quantity + 1)
                     }
                     className="w-9 h-9 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-lg text-pos-text font-bold text-lg touch-target hover:bg-pos-muted/10 transition-colors"
-                    aria-label={`Increase quantity of ${item.productName}`}
+                    aria-label={`Aumentar cantidad de ${item.productName}`}
                   >
                     +
                   </button>
@@ -121,7 +121,7 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
 
           {/* Tax (placeholder — 0% for now) */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-pos-muted">Tax</span>
+            <span className="text-pos-muted">Impuesto</span>
             <span className="font-mono font-medium">$0.00</span>
           </div>
 
@@ -138,7 +138,7 @@ export default function CartPanel({ onCheckout }: CartPanelProps) {
             onClick={onCheckout}
             className="w-full py-3 bg-pos-accent text-white rounded-xl font-bold text-base touch-target hover:opacity-90 transition-opacity active:scale-[0.98]"
           >
-            Checkout — ${total.toFixed(2)}
+            Cobrar — ${total.toFixed(2)}
           </button>
         </div>
       )}
