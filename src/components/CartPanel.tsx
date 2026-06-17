@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAppStore } from "@/store";
 import { useAuthStore } from "@/store/auth";
 import { useCashClosingStore } from "@/store/cash-closing";
@@ -46,10 +47,16 @@ export default function CartPanel({
   const openShift = getOpenShift(storeId);
   const hasOpenShift = openShift !== null;
 
+  const [showCloseModal, setShowCloseModal] = useState(false);
+
   function handleCloseShift() {
+    setShowCloseModal(true);
+  }
+
+  function confirmCloseShift() {
     if (!openShift) return;
-    if (!confirm(`¿Cerrar turno de ${openShift.employee}?`)) return;
     closeShift(openShift.id);
+    setShowCloseModal(false);
     onCloseShift?.();
   }
 
@@ -220,6 +227,37 @@ export default function CartPanel({
           >
             Cobrar — ${total.toFixed(2)}
           </button>
+        </div>
+      )}
+
+      {/* ── Shift Close Confirmation Modal ── */}
+      {showCloseModal && openShift && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-pos-surface rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div className="text-5xl mb-4">🔒</div>
+            <h3 className="text-base font-semibold text-pos-text mb-2">
+              Cerrar Turno
+            </h3>
+            <p className="text-sm text-pos-muted mb-6">
+              ¿Está seguro de cerrar el turno de <strong>{openShift.employee}</strong>?
+              <br />
+              No podrá registrar más ventas hasta abrir uno nuevo.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setShowCloseModal(false)}
+                className="px-5 py-2.5 text-sm text-pos-text border border-pos-muted/30 rounded-xl touch-target hover:bg-pos-background/50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmCloseShift}
+                className="px-5 py-2.5 text-sm bg-pos-danger text-white rounded-xl font-medium touch-target hover:opacity-90"
+              >
+                Cerrar Turno
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

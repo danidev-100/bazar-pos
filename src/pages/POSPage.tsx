@@ -261,9 +261,22 @@ export default function POSPage() {
   const { scanFlash } = useBarcodeScan(storeProducts, {
     onMatch: useCallback(
       (id: number, name: string, price: number) => {
+        if (!hasOpenShift) {
+          showNotification("Abrí un turno antes de vender");
+          setTimeout(() => dismissNotification(), 4000);
+          return;
+        }
+        const prod = useProductsStore.getState().products.find(
+          (p) => p.id === id,
+        );
+        if (prod && prod.stock <= 0) {
+          showNotification(`"${name}" no tiene stock disponible`);
+          setTimeout(() => dismissNotification(), 4000);
+          return;
+        }
         addItem(id, name, price);
       },
-      [addItem],
+      [addItem, showNotification, dismissNotification, hasOpenShift],
     ),
     onMiss: useCallback(
       (barcode: string) => {
@@ -297,14 +310,30 @@ export default function POSPage() {
 
   const handleAddToCart = useCallback(
     (product: { id: number; name: string; price: number }) => {
+      // Check open shift
+      if (!hasOpenShift) {
+        showNotification("Abrí un turno antes de vender");
+        setTimeout(() => dismissNotification(), 4000);
+        return;
+      }
+      // Check price
       if (!product.price || product.price <= 0) {
         showNotification("El producto no tiene precio");
         setTimeout(() => dismissNotification(), 3000);
         return;
       }
+      // Check stock
+      const prod = useProductsStore.getState().products.find(
+        (p) => p.id === product.id,
+      );
+      if (prod && prod.stock <= 0) {
+        showNotification(`"${product.name}" no tiene stock disponible`);
+        setTimeout(() => dismissNotification(), 4000);
+        return;
+      }
       addItem(product.id, product.name, product.price);
     },
-    [addItem, showNotification, dismissNotification],
+    [addItem, showNotification, dismissNotification, hasOpenShift],
   );
 
   function handleCheckout() {
