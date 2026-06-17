@@ -14,6 +14,7 @@ import CustomersPage from "@/pages/CustomersPage";
 import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import DashboardPage from "@/pages/DashboardPage";
+import UserManagementPage from "@/pages/UserManagementPage";
 import LoginPage from "@/pages/LoginPage";
 
 // ──────────────────────────────────────────────
@@ -30,7 +31,7 @@ const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
   stats: StatsPage,
   admin: AdminPage,
   login: LoginPage,
-  "user-management": DashboardPage, // placeholder — will be replaced in PR 2
+  "user-management": UserManagementPage,
 };
 
 // ──────────────────────────────────────────────

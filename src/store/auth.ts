@@ -81,7 +81,19 @@ export async function hashPassword(password: string): Promise<string> {
 function loadUsers(): AuthUser[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
-    if (raw) return JSON.parse(raw) as AuthUser[];
+    if (raw) {
+      const users = JSON.parse(raw) as AuthUser[];
+      // Migrate existing users without a role field
+      return users.map((u) => {
+        if (!u.role) {
+          return {
+            ...u,
+            role: "custom" as Role,
+          };
+        }
+        return u;
+      });
+    }
   } catch {
     // localStorage unavailable
   }
