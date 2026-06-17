@@ -389,6 +389,7 @@ export default function POSPage() {
             <CartPanel
               onCheckout={handleCheckout}
               onSelectCustomer={() => setShowCustomerSelect(true)}
+              onOpenShift={handleOpenShift}
             />
           </aside>
         </>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAppStore, type CompletedSale } from "@/store";
+import { useAuthStore } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
 import { useCashClosingStore, type Shift } from "@/store/cash-closing";
 import ShiftPanel from "@/components/ShiftPanel";
@@ -19,6 +20,10 @@ export default function CashClosingPage() {
 
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const currentUser = useAuthStore((s) => s.currentUser);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const isAdmin = hasPermission("configuracion");
 
   const currentShift = getOpenShift(storeId);
   const storeShifts = getShiftsByStore(storeId);
@@ -61,6 +66,69 @@ export default function CashClosingPage() {
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
           Cierre de Caja
         </h2>
+
+        {/* ── Admin: Cashier Summary ── */}
+        {isAdmin && storeShifts.length > 0 && (
+          <div className="mb-6 bg-pos-background/30 rounded-xl border border-pos-muted/10 p-4">
+            <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide mb-3">
+              Resumen de Cajeros
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-pos-muted border-b border-pos-muted/20">
+                    <th className="text-left py-1.5 pr-2 font-medium">Cajero</th>
+                    <th className="text-left py-1.5 px-2 font-medium">Turno</th>
+                    <th className="text-right py-1.5 px-2 font-medium">Ventas</th>
+                    <th className="text-right py-1.5 px-2 font-medium">Efectivo</th>
+                    <th className="text-right py-1.5 px-2 font-medium">Tarjeta</th>
+                    <th className="text-right py-1.5 px-2 font-medium">Total</th>
+                    <th className="text-center py-1.5 pl-2 font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {storeShifts.map((shift) => {
+                    const shiftSales = completedSales.filter((s) => {
+                      const t = new Date(s.date).getTime();
+                      const open = new Date(shift.openTime).getTime();
+                      const close = shift.closeTime
+                        ? new Date(shift.closeTime).getTime()
+                        : Date.now();
+                      return t >= open && t <= close;
+                    });
+                    const cashTotal = shiftSales
+                      .filter((s) => s.paymentMethod === "cash")
+                      .reduce((sum, s) => sum + s.total, 0);
+                    const cardTotal = shiftSales
+                      .filter((s) => s.paymentMethod === "card")
+                      .reduce((sum, s) => sum + s.total, 0);
+                    const total = Math.round((cashTotal + cardTotal) * 100) / 100;
+
+                    return (
+                      <tr key={shift.id} className="border-b border-pos-muted/10 hover:bg-pos-background/50">
+                        <td className="py-2 pr-2 font-medium text-pos-text">{shift.employee}</td>
+                        <td className="py-2 px-2 text-pos-muted">
+                          {new Date(shift.openTime).toLocaleDateString()}
+                        </td>
+                        <td className="py-2 px-2 text-right font-mono">{shiftSales.length}</td>
+                        <td className="py-2 px-2 text-right font-mono">${cashTotal.toFixed(2)}</td>
+                        <td className="py-2 px-2 text-right font-mono">${cardTotal.toFixed(2)}</td>
+                        <td className="py-2 px-2 text-right font-mono font-bold">${total.toFixed(2)}</td>
+                        <td className="py-2 pl-2 text-center">
+                          {shift.status === "open" ? (
+                            <span className="text-pos-success font-medium">● Abierto</span>
+                          ) : (
+                            <span className="text-pos-muted">Cerrado</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* If there's an open shift, show the ShiftPanel */}
         {currentShift ? (

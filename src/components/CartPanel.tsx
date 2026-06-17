@@ -1,5 +1,7 @@
 import { useAppStore } from "@/store";
 import { useAuthStore } from "@/store/auth";
+import { useCashClosingStore } from "@/store/cash-closing";
+import { useActiveStore } from "@/store/context";
 
 // ──────────────────────────────────────────────
 // Props
@@ -8,6 +10,8 @@ import { useAuthStore } from "@/store/auth";
 type CartPanelProps = {
   onCheckout: () => void;
   onSelectCustomer?: () => void;
+  onOpenShift?: () => void;
+  onCloseShift?: () => void;
 };
 
 // ──────────────────────────────────────────────
@@ -17,6 +21,8 @@ type CartPanelProps = {
 export default function CartPanel({
   onCheckout,
   onSelectCustomer,
+  onOpenShift,
+  onCloseShift,
 }: CartPanelProps) {
   const items = useAppStore((s) => s.items);
   const addItem = useAppStore((s) => s.addItem);
@@ -29,16 +35,28 @@ export default function CartPanel({
   const selectCartItem = useAppStore((s) => s.selectCartItem);
   const clearSelectedCartItem = useAppStore((s) => s.clearSelectedCartItem);
   const currentUser = useAuthStore((s) => s.currentUser);
+  const { storeId } = useActiveStore();
+  const getOpenShift = useCashClosingStore((s) => s.getOpenShift);
+  const closeShift = useCashClosingStore((s) => s.closeShift);
 
   const total = cartTotal();
   const count = itemCount();
   const isEmpty = items.length === 0;
   const cashierName = currentUser?.name ?? "—";
+  const openShift = getOpenShift(storeId);
+  const hasOpenShift = openShift !== null;
+
+  function handleCloseShift() {
+    if (!openShift) return;
+    if (!confirm(`¿Cerrar turno de ${openShift.employee}?`)) return;
+    closeShift(openShift.id);
+    onCloseShift?.();
+  }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header — shows cashier name */}
-      <div className="flex items-center justify-between mb-3">
+      {/* Header — cashier name + shift controls */}
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
           Cajero: <span className="font-mono normal-case">{cashierName}</span>
           {count > 0 && (
@@ -47,6 +65,35 @@ export default function CartPanel({
             </span>
           )}
         </h2>
+      </div>
+
+      {/* Shift status bar */}
+      <div className="flex items-center justify-between mb-3 px-2 py-1.5 bg-pos-background/50 rounded-lg text-xs">
+        {hasOpenShift ? (
+          <>
+            <span className="text-pos-success font-medium">
+              ● Turno abierto
+            </span>
+            <button
+              onClick={handleCloseShift}
+              className="text-pos-danger hover:text-pos-danger/80 touch-target px-2 py-0.5 rounded"
+            >
+              Cerrar
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-pos-muted">Sin turno abierto</span>
+            {onOpenShift && (
+              <button
+                onClick={onOpenShift}
+                className="text-pos-secondary hover:text-pos-secondary/80 touch-target px-2 py-0.5 rounded font-medium"
+              >
+                Abrir Turno
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       {/* Selected customer */}
