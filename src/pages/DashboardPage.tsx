@@ -101,7 +101,7 @@ function ShieldIcon() {
 
 const MODULES: ModuleConfig[] = [
   { label: "Ventas",       icon: <SaleIcon />,       target: "pos",       permission: "ventas" },
-  { label: "Inventario",   icon: <PackageIcon />,    target: "products" },
+  { label: "Inventario",   icon: <PackageIcon />,    target: "products",  permission: "configuracion" },
   { label: "Clientes",     icon: <UsersIcon />,      target: "customers", permission: "clientes" },
   { label: "Proveedores",  icon: <TruckIcon />,      target: null },
   { label: "Pedidos",      icon: <ClipboardIcon />,  target: null },

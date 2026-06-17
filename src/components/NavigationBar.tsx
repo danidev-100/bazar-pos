@@ -16,10 +16,10 @@ type PageDef = {
 
 const ALL_PAGES: PageDef[] = [
   { id: "dashboard", label: "Inicio", icon: "🏠" },
-  { id: "pos", label: "POS", icon: "🛒" },
-  { id: "products", label: "Productos", icon: "📦" },
-  { id: "cash-closing", label: "Caja", icon: "💰" },
-  { id: "billing", label: "Facturación", icon: "🧾", permission: "ventas" },
+  { id: "pos", label: "POS", icon: "🛒", permission: "ventas" },
+  { id: "cash-closing", label: "Caja", icon: "💰", permission: "ventas" },
+  { id: "products", label: "Productos", icon: "📦", permission: "configuracion" },
+  { id: "billing", label: "Facturación", icon: "🧾", permission: "configuracion" },
   { id: "customers", label: "Clientes", icon: "👥", permission: "clientes" },
   { id: "stats", label: "Estadísticas", icon: "📊", permission: "estadisticas" },
   { id: "admin", label: "Admin", icon: "🔒", permission: "configuracion" },

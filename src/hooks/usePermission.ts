@@ -7,16 +7,17 @@ import type { Page } from "@/store";
 
 const PAGE_PERMISSIONS: Partial<Record<Page, Permission>> = {
   pos: "ventas",
-  billing: "ventas",
+  "cash-closing": "ventas",
   customers: "clientes",
   stats: "estadisticas",
+  products: "configuracion",
+  billing: "configuracion",
   admin: "configuracion",
-  "cash-closing": "configuracion",
   "user-management": "configuracion",
 };
 
 // Pages that require no permission (just needs auth)
-const PUBLIC_PAGES: Page[] = ["dashboard", "products", "login"];
+const PUBLIC_PAGES: Page[] = ["dashboard", "login"];
 
 // ──────────────────────────────────────────────
 // Hook

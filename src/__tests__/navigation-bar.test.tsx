@@ -122,7 +122,7 @@ describe("NavigationBar — permission filtering", () => {
     expect(screen.queryByText("Admin")).toBeNull();
   });
 
-  it("always shows unconditional pages (dashboard, pos, products, cash-closing)", async () => {
+  it("shows only Inicio when user has no permissions", async () => {
     await useAuthStore.getState().init();
     await useAuthStore.getState().addUser({
       name: "limited",
@@ -135,12 +135,13 @@ describe("NavigationBar — permission filtering", () => {
 
     renderNav();
 
+    // Dashboard is the only unconditional page
     expect(screen.getByText("Inicio")).toBeInTheDocument();
-    expect(screen.getByText("POS")).toBeInTheDocument();
-    expect(screen.getByText("Productos")).toBeInTheDocument();
-    expect(screen.getByText("Caja")).toBeInTheDocument();
 
-    // Permission-gated pages should be hidden
+    // All permission-gated pages should be hidden
+    expect(screen.queryByText("POS")).toBeNull();
+    expect(screen.queryByText("Caja")).toBeNull();
+    expect(screen.queryByText("Productos")).toBeNull();
     expect(screen.queryByText("Facturación")).toBeNull();
     expect(screen.queryByText("Clientes")).toBeNull();
     expect(screen.queryByText("Estadísticas")).toBeNull();
