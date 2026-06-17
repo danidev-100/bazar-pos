@@ -13,6 +13,7 @@ type PageDef = {
 };
 
 const PAGES: PageDef[] = [
+  { id: "dashboard", label: "Inicio", icon: "🏠" },
   { id: "pos", label: "POS", icon: "🛒" },
   { id: "products", label: "Productos", icon: "📦" },
   { id: "cash-closing", label: "Caja", icon: "💰" },

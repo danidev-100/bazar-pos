@@ -11,12 +11,14 @@ import BillingPage from "@/pages/BillingPage";
 import CustomersPage from "@/pages/CustomersPage";
 import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
+import DashboardPage from "@/pages/DashboardPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component
 // ──────────────────────────────────────────────
 
 const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
+  dashboard: DashboardPage,
   pos: POSPage,
   products: ProductsPage,
   "cash-closing": CashClosingPage,
