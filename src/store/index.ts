@@ -14,7 +14,9 @@ export type Page =
   | "stats"
   | "admin"
   | "customers"
-  | "dashboard";
+  | "dashboard"
+  | "login"
+  | "user-management";
 
 // ──────────────────────────────────────────────
 // Cart item
@@ -276,5 +278,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectCustomer: (customer) => set({ selectedCustomer: customer }),
 }));
 
-// Re-export admin store for convenience
+// Re-export stores for convenience
 export { useAdminStore } from "./admin";
+export { useAuthStore } from "./auth";
