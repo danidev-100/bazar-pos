@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useAdminStore, hashPin, type BulkPriceOpts } from "@/store/admin";
+import { useAdminStore, type BulkPriceOpts } from "@/store/admin";
 import { useProductsStore } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
+import { useAuthStore } from "@/store/auth";
 import AdminRoute from "@/components/AdminRoute";
+import AdminPage from "@/pages/AdminPage";
+import { StoreProvider } from "@/store/context";
 import { useAppStore } from "@/store";
 
 // ──────────────────────────────────────────────
@@ -13,10 +16,7 @@ import { useAppStore } from "@/store";
 
 /** Clear localStorage and reset admin store between tests. */
 function resetStore() {
-  localStorage.removeItem("admin_pin_hash");
   useAdminStore.setState({
-    isUnlocked: false,
-    pinHash: null,
     theme: "light",
     preview: null,
   });
@@ -27,190 +27,64 @@ beforeEach(() => {
 });
 
 // ──────────────────────────────────────────────
-// hashPin utility
-// ──────────────────────────────────────────────
-
-describe("hashPin", () => {
-  it("produces a 64-char hex string", async () => {
-    const hash = await hashPin("1234");
-    expect(hash).toMatch(/^[0-9a-f]{64}$/);
-  });
-
-  it("produces deterministic output for the same input", async () => {
-    const hash1 = await hashPin("1234");
-    const hash2 = await hashPin("1234");
-    expect(hash1).toBe(hash2);
-  });
-
-  it("produces different output for different inputs", async () => {
-    const hash1 = await hashPin("1234");
-    const hash2 = await hashPin("5678");
-    expect(hash1).not.toBe(hash2);
-  });
-});
-
-// ──────────────────────────────────────────────
-// Admin store — PIN set
-// ──────────────────────────────────────────────
-
-describe("Admin store — setPin", () => {
-  it("stores the SHA-256 hash in localStorage", async () => {
-    const store = useAdminStore.getState();
-    await store.setPin("1234");
-
-    const stored = localStorage.getItem("admin_pin_hash");
-    expect(stored).toMatch(/^[0-9a-f]{64}$/);
-
-    // Verify it's actually the SHA-256 of "1234"
-    const expectedHash = await hashPin("1234");
-    expect(stored).toBe(expectedHash);
-  });
-
-  it("updates pinHash in the store", async () => {
-    const store = useAdminStore.getState();
-    expect(store.pinHash).toBeNull();
-
-    await store.setPin("1234");
-    const hash = useAdminStore.getState().pinHash;
-    expect(hash).toMatch(/^[0-9a-f]{64}$/);
-  });
-
-  it("overwrites an existing PIN", async () => {
-    const store = useAdminStore.getState();
-    await store.setPin("1234");
-    const firstHash = useAdminStore.getState().pinHash;
-
-    await store.setPin("5678");
-    const secondHash = useAdminStore.getState().pinHash;
-
-    expect(secondHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(secondHash).not.toBe(firstHash);
-  });
-});
-
-// ──────────────────────────────────────────────
-// Admin store — unlock / lock
-// ──────────────────────────────────────────────
-
-describe("Admin store — unlock / lock", () => {
-  it("unlocks with the correct PIN", async () => {
-    const store = useAdminStore.getState();
-    await store.setPin("1234");
-
-    const result = await useAdminStore.getState().unlock("1234");
-    expect(result).toBe(true);
-    expect(useAdminStore.getState().isUnlocked).toBe(true);
-  });
-
-  it("rejects an incorrect PIN", async () => {
-    const store = useAdminStore.getState();
-    await store.setPin("1234");
-
-    const result = await useAdminStore.getState().unlock("5678");
-    expect(result).toBe(false);
-    expect(useAdminStore.getState().isUnlocked).toBe(false);
-  });
-
-  it("rejects unlock when no PIN is set", async () => {
-    const result = await useAdminStore.getState().unlock("1234");
-    expect(result).toBe(false);
-    expect(useAdminStore.getState().isUnlocked).toBe(false);
-  });
-
-  it("locks and clears isUnlocked", async () => {
-    const store = useAdminStore.getState();
-    await store.setPin("1234");
-    await useAdminStore.getState().unlock("1234");
-    expect(useAdminStore.getState().isUnlocked).toBe(true);
-
-    useAdminStore.getState().lock();
-    expect(useAdminStore.getState().isUnlocked).toBe(false);
-  });
-
-  it("stays locked after reload (in-memory state)", () => {
-    // Simulate a "reload" by checking fresh store state
-    expect(useAdminStore.getState().isUnlocked).toBe(false);
-  });
-});
-
-// ──────────────────────────────────────────────
-// Admin store — change PIN
-// ──────────────────────────────────────────────
-
-describe("Admin store — changePin", () => {
-  it("changes PIN when old PIN is correct", async () => {
-    const store = useAdminStore.getState();
-    await store.setPin("1234");
-
-    const result = await useAdminStore.getState().changePin("1234", "5678");
-    expect(result).toBe(true);
-
-    // New PIN should work for unlock
-    const unlockOk = await useAdminStore.getState().unlock("5678");
-    expect(unlockOk).toBe(true);
-
-    // Old PIN should no longer work
-    const unlockOld = await useAdminStore.getState().unlock("1234");
-    expect(unlockOld).toBe(false);
-  });
-
-  it("rejects change when old PIN is incorrect", async () => {
-    const store = useAdminStore.getState();
-    await store.setPin("1234");
-
-    const result = await useAdminStore.getState().changePin("wrong", "5678");
-    expect(result).toBe(false);
-
-    // Old PIN should still work
-    const unlockOk = await useAdminStore.getState().unlock("1234");
-    expect(unlockOk).toBe(true);
-  });
-
-  it("sets first PIN via changePin when none exists", async () => {
-    const result = await useAdminStore.getState().changePin("", "1234");
-    expect(result).toBe(true);
-
-    const unlockOk = await useAdminStore.getState().unlock("1234");
-    expect(unlockOk).toBe(true);
-  });
-});
-
-// ──────────────────────────────────────────────
 // AdminRoute component
 // ──────────────────────────────────────────────
 
 describe("AdminRoute", () => {
   beforeEach(() => {
-    // Ensure we're not on admin page
-    useAppStore.getState().setPage("pos");
+    // Reset auth state
+    useAuthStore.setState({
+      users: [],
+      currentUser: null,
+      _hydrated: false,
+    });
+    localStorage.removeItem("auth_users");
+    localStorage.removeItem("auth_current_user_id");
+    useAppStore.getState().setPage("admin");
   });
 
-  it("renders PIN entry screen when locked", () => {
+  it("renders children when user has configuracion permission", async () => {
+    await useAuthStore.getState().init();
+    await useAuthStore.getState().login("admin", "admin");
+
     render(
       <AdminRoute>
         <div data-testid="admin-content">Secret Admin Stuff</div>
       </AdminRoute>,
     );
 
-    expect(screen.getByText("Acceso Admin")).toBeTruthy();
+    expect(screen.getByTestId("admin-content")).toBeInTheDocument();
+  });
+
+  it("renders null when user does not have configuracion permission", async () => {
+    await useAuthStore.getState().init();
+    await useAuthStore.getState().addUser({
+      name: "limited",
+      password: "pass",
+      permissions: ["ventas"],
+      active: true,
+    });
+    await useAuthStore.getState().login("limited", "pass");
+
+    render(
+      <AdminRoute>
+        <div data-testid="admin-content">Secret Admin Stuff</div>
+      </AdminRoute>,
+    );
+
     expect(screen.queryByTestId("admin-content")).toBeNull();
   });
 
-  it("renders PIN setup screen when no PIN is set", () => {
-    render(
-      <AdminRoute>
-        <div data-testid="admin-content">Secret Admin Stuff</div>
-      </AdminRoute>,
-    );
-
-    expect(
-      screen.getByText("Configurá un PIN de admin para acceder a la administración"),
-    ).toBeTruthy();
-    expect(screen.getByLabelText("Confirmar PIN")).toBeTruthy();
-  });
-
-  it("renders unlock screen when PIN is set", async () => {
-    await useAdminStore.getState().setPin("1234");
+  it("redirects to dashboard when user lacks configuracion permission", async () => {
+    await useAuthStore.getState().init();
+    await useAuthStore.getState().addUser({
+      name: "limited",
+      password: "pass",
+      permissions: ["ventas"],
+      active: true,
+    });
+    await useAuthStore.getState().login("limited", "pass");
+    useAppStore.setState({ page: "admin" });
 
     render(
       <AdminRoute>
@@ -218,52 +92,15 @@ describe("AdminRoute", () => {
       </AdminRoute>,
     );
 
-    expect(
-      screen.getByText("Ingresá tu PIN para desbloquear el modo admin"),
-    ).toBeTruthy();
-    expect(screen.queryByLabelText("Confirmar PIN")).toBeNull();
-    expect(screen.getByPlaceholderText("Ingresá PIN")).toBeTruthy();
-  });
-
-  it("renders children when unlocked", async () => {
-    await useAdminStore.getState().setPin("1234");
-    await useAdminStore.getState().unlock("1234");
-
-    render(
-      <AdminRoute>
-        <div data-testid="admin-content">Secret Admin Stuff</div>
-      </AdminRoute>,
-    );
-
-    expect(screen.getByTestId("admin-content")).toBeTruthy();
-    expect(screen.queryByText("Acceso Admin")).toBeNull();
-  });
-
-  it("allows user to unlock via PIN entry", async () => {
-    const user = userEvent.setup();
-    await useAdminStore.getState().setPin("1234");
-
-    render(
-      <AdminRoute>
-        <div data-testid="admin-content">Secret Admin Stuff</div>
-      </AdminRoute>,
-    );
-
-    const input = screen.getByPlaceholderText("Ingresá PIN");
-    await user.type(input, "1234");
-
-    const unlockBtn = screen.getByText("Desbloquear");
-    await user.click(unlockBtn);
-
-    // Wait for async unlock to complete and re-render
     await waitFor(() => {
-      expect(screen.getByTestId("admin-content")).toBeTruthy();
+      expect(useAppStore.getState().page).toBe("dashboard");
     });
   });
 
-  it("shows error on wrong PIN", async () => {
-    const user = userEvent.setup();
-    await useAdminStore.getState().setPin("1234");
+  it("redirects to dashboard when not authenticated", async () => {
+    await useAuthStore.getState().init();
+    // Not logged in
+    useAppStore.setState({ page: "admin" });
 
     render(
       <AdminRoute>
@@ -271,31 +108,8 @@ describe("AdminRoute", () => {
       </AdminRoute>,
     );
 
-    const input = screen.getByPlaceholderText("Ingresá PIN");
-    await user.type(input, "9999");
-
-    const unlockBtn = screen.getByText("Desbloquear");
-    await user.click(unlockBtn);
-
-    // userEvent wraps in act — the async state update should flush
-    await waitFor(() => {
-      expect(screen.getByText("PIN incorrecto")).toBeTruthy();
-    });
-  });
-
-  it("dismiss button navigates to POS", async () => {
-    const user = userEvent.setup();
-
-    render(
-      <AdminRoute>
-        <div data-testid="admin-content">Secret Admin Stuff</div>
-      </AdminRoute>,
-    );
-
-    const cancelBtn = screen.getByText("Cancelar");
-    await user.click(cancelBtn);
-
-    expect(useAppStore.getState().page).toBe("pos");
+    // Without currentUser, hasPermission returns false
+    expect(screen.queryByTestId("admin-content")).toBeNull();
   });
 });
 
@@ -310,8 +124,6 @@ describe("Bulk price preview", () => {
   beforeEach(() => {
     // Reset all relevant stores
     useAdminStore.setState({
-      isUnlocked: false,
-      pinHash: null,
       theme: "light",
       preview: null,
       pendingBulkOpts: null,
@@ -621,8 +433,6 @@ describe("Bulk price confirm", () => {
 
   beforeEach(() => {
     useAdminStore.setState({
-      isUnlocked: false,
-      pinHash: null,
       theme: "light",
       preview: null,
       pendingBulkOpts: null,
@@ -930,5 +740,87 @@ describe("Dark theme toggle", () => {
 
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     localStorage.removeItem("admin_theme");
+  });
+});
+
+// ──────────────────────────────────────────────
+// Settings Tab — AdminPage (Task 3.2)
+// ──────────────────────────────────────────────
+
+function renderAdminPage() {
+  return render(
+    <StoreProvider initialStoreId="store_1">
+      <AdminPage />
+    </StoreProvider>,
+  );
+}
+
+describe("AdminPage — Settings Tab", () => {
+  beforeEach(async () => {
+    // Reset auth store and login as admin
+    useAuthStore.setState({
+      users: [],
+      currentUser: null,
+      _hydrated: false,
+    });
+    localStorage.removeItem("auth_users");
+    localStorage.removeItem("auth_current_user_id");
+    useAppStore.setState({ page: "admin" });
+    await useAuthStore.getState().init();
+    await useAuthStore.getState().login("admin", "admin");
+  });
+
+  it("shows Gestionar Usuarios link in settings tab", async () => {
+    const user = userEvent.setup();
+    renderAdminPage();
+
+    // Click Configuración tab
+    await user.click(screen.getByText("Configuración"));
+
+    expect(screen.getByText("Gestionar Usuarios")).toBeInTheDocument();
+  });
+
+  it("does not render PIN form elements", async () => {
+    const user = userEvent.setup();
+    renderAdminPage();
+
+    await user.click(screen.getByText("Configuración"));
+
+    // PIN fields should NOT exist
+    expect(screen.queryByLabelText("PIN Actual")).toBeNull();
+    expect(screen.queryByLabelText("Nuevo PIN")).toBeNull();
+    expect(screen.queryByLabelText("Confirmar Nuevo PIN")).toBeNull();
+    expect(screen.queryByText("Cambiar PIN")).toBeNull();
+    expect(screen.queryByText("Configurar PIN")).toBeNull();
+    expect(screen.queryByText("Bloquear Admin")).toBeNull();
+  });
+
+  it("still shows Theme section", async () => {
+    const user = userEvent.setup();
+    renderAdminPage();
+
+    await user.click(screen.getByText("Configuración"));
+
+    expect(screen.getByText("Tema")).toBeInTheDocument();
+    expect(screen.getByText("Modo Claro")).toBeInTheDocument();
+  });
+
+  it("navigates to user-management page when clicking Gestionar Usuarios", async () => {
+    const user = userEvent.setup();
+    renderAdminPage();
+
+    await user.click(screen.getByText("Configuración"));
+    await user.click(screen.getByText("Gestionar Usuarios"));
+
+    expect(useAppStore.getState().page).toBe("user-management");
+  });
+
+  it("shows current user name in settings", async () => {
+    const user = userEvent.setup();
+    renderAdminPage();
+
+    await user.click(screen.getByText("Configuración"));
+
+    expect(screen.getByText("admin")).toBeInTheDocument();
   });
 });

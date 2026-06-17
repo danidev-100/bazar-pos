@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import ProductForm from "@/components/ProductForm";
 import ProductsPage from "@/pages/ProductsPage";
 import { useAdminStore } from "@/store/admin";
+import { useAuthStore } from "@/store/auth";
 import { useBrandsStore } from "@/store/brands";
 import { useProductsStore } from "@/store/products";
 import { StoreProvider } from "@/store/context";
@@ -14,13 +15,30 @@ import { StoreProvider } from "@/store/context";
 
 function resetStores() {
   useAdminStore.setState({
-    isUnlocked: false,
-    pinHash: null,
     theme: "light",
     preview: null,
   });
+  useAuthStore.setState({
+    users: [],
+    currentUser: null,
+    _hydrated: true,
+  });
   useBrandsStore.setState({ brands: [] });
   useProductsStore.setState({ products: [], categories: [], stockMovements: [] });
+}
+
+/** Simulate a logged-in admin user with configuracion permission. */
+function loginAsAdmin() {
+  useAuthStore.setState({
+    currentUser: {
+      id: "test-admin",
+      name: "admin",
+      passwordHash: "hash",
+      permissions: ["ventas", "clientes", "estadisticas", "configuracion"],
+      active: true,
+      createdAt: new Date().toISOString(),
+    },
+  });
 }
 
 beforeEach(() => {
@@ -54,7 +72,7 @@ describe("ProductForm — cost & brand fields", () => {
   });
 
   it("shows cost price and brand fields when admin is unlocked", async () => {
-    useAdminStore.setState({ isUnlocked: true });
+    loginAsAdmin();
     renderForm();
 
     expect(screen.getByLabelText(/cost price/i)).toBeInTheDocument();
@@ -62,7 +80,7 @@ describe("ProductForm — cost & brand fields", () => {
   });
 
   it("shows brand options from the brands store", async () => {
-    useAdminStore.setState({ isUnlocked: true });
+    loginAsAdmin();
     useBrandsStore.setState({
       brands: [
         { id: 1, name: "Coca-Cola", store_id: "store_1" },
@@ -84,7 +102,7 @@ describe("ProductForm — cost & brand fields", () => {
   });
 
   it("only shows brands for the active store (store_2 brands hidden)", async () => {
-    useAdminStore.setState({ isUnlocked: true });
+    loginAsAdmin();
     useBrandsStore.setState({
       brands: [
         { id: 3, name: "Store2Brand", store_id: "store_2" },
@@ -100,7 +118,7 @@ describe("ProductForm — cost & brand fields", () => {
   });
 
   it("saves costPrice and brandId when submitting", async () => {
-    useAdminStore.setState({ isUnlocked: true });
+    loginAsAdmin();
     useBrandsStore.setState({
       brands: [
         { id: 10, name: "TestBrand", store_id: "store_1" },
@@ -148,7 +166,7 @@ describe("ProductForm — cost & brand fields", () => {
   });
 
   it("pre-fills costPrice and brandId when editing a product", async () => {
-    useAdminStore.setState({ isUnlocked: true });
+    loginAsAdmin();
     useBrandsStore.setState({
       brands: [
         { id: 99, name: "ExistingBrand", store_id: "store_1" },
@@ -249,7 +267,7 @@ describe("ProductsPage — cost & brand columns", () => {
   });
 
   it("shows cost and brand columns when admin is unlocked", () => {
-    useAdminStore.setState({ isUnlocked: true });
+    loginAsAdmin();
     seedData();
     renderPage();
 
@@ -267,7 +285,7 @@ describe("ProductsPage — cost & brand columns", () => {
   });
 
   it("shows — for products without costPrice", () => {
-    useAdminStore.setState({ isUnlocked: true });
+    loginAsAdmin();
     seedData();
     renderPage();
 
