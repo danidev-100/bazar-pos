@@ -165,8 +165,11 @@ export function useSync(options: UseSyncOptions = {}): SyncState & {
         return null;
       }
 
-      // Invoke the Tauri backend sync command
-      const rawResult: string = await invoke("sync_now");
+      // Invoke the Tauri backend sync command with the Neon URL
+      const databaseUrl = import.meta.env.VITE_SYNC_DATABASE_URL as string | undefined;
+      const rawResult: string = await invoke("sync_now", {
+        databaseUrl: databaseUrl || null,
+      });
       const result: SyncResult = JSON.parse(rawResult);
 
       setState({

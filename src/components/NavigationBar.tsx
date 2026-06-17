@@ -1,6 +1,9 @@
+import { useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, useAuthStore, type Page } from "@/store";
 import { type Permission } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
+import { getSyncState } from "@/hooks/useSync";
 import ThemeToggle from "@/components/ThemeToggle";
 
 // ──────────────────────────────────────────────
@@ -54,6 +57,33 @@ export default function NavigationBar() {
     return hasPermission(p.permission);
   });
 
+  // Manual sync trigger
+  const triggerSync = useCallback(async () => {
+    try {
+      const databaseUrl = import.meta.env.VITE_SYNC_DATABASE_URL as string | undefined;
+      await invoke("sync_now", { databaseUrl: databaseUrl || null });
+    } catch {
+      // Error is handled by the useSync hook's state
+    }
+  }, []);
+
+  // Sync status from the shared sync state
+  const syncState = getSyncState();
+  const syncStatus = syncState.status;
+  const syncError = syncState.error;
+  const lastSync = syncState.lastSyncedAt
+    ? new Date(syncState.lastSyncedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
+  const lastSyncDisplay = lastSync ?? "—";
+  const syncIcon =
+    syncStatus === "syncing"
+      ? "🔄"
+      : syncStatus === "success"
+        ? "☁️"
+        : syncStatus === "error"
+          ? "⚠️"
+          : "☁️";
+
   function handleStoreChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newStore = e.target.value;
     if (newStore === storeId) return;
@@ -90,8 +120,28 @@ export default function NavigationBar() {
         ))}
       </div>
 
-      {/* Right: user info + theme toggle + store selector */}
+      {/* Right: sync status + user info + theme toggle + store selector */}
       <div className="flex items-center gap-3">
+        {/* Sync status indicator */}
+        <button
+          onClick={triggerSync}
+          className="text-xs text-white/60 hover:text-white transition-colors touch-target flex items-center gap-1 px-2 py-1"
+          title={
+            syncStatus === "syncing"
+              ? "Sincronizando..."
+              : syncStatus === "success"
+                ? `Última sincro: ${lastSyncDisplay}`
+                : syncStatus === "error"
+                  ? `Error: ${syncError}`
+                  : "Sincronizar ahora"
+          }
+        >
+          <span>{syncIcon}</span>
+          {syncStatus === "syncing" && (
+            <span className="hidden sm:inline text-xs">Sync...</span>
+          )}
+        </button>
+
         {currentUser && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-white/80 hidden sm:inline">

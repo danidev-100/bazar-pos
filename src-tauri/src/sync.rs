@@ -189,6 +189,7 @@ mod types {
 /// All syncable entities and their corresponding table names.
 /// The sync engine uses this to build SQL dynamically.
 pub const SYNCABLE_ENTITIES: &[(&str, &str, &str)] = &[
+    ("brand", "brands", "id"),
     ("category", "categories", "id"),
     ("product", "products", "id"),
     ("stock_movement", "stock_movements", "id"),
@@ -556,8 +557,9 @@ struct PullResult {
 /// Opens the local SQLite database, creates a PgPool for the cloud,
 /// runs push → pull, and returns a JSON-serialized `SyncResult`.
 ///
-/// The cloud connection string comes from the `SYNC_DATABASE_URL` env var.
-pub async fn run_sync() -> Result<SyncResult, SyncError> {
+/// The cloud connection string can be passed from the frontend via
+/// `database_url`, or falls back to the `SYNC_DATABASE_URL` env var.
+pub async fn run_sync(database_url: Option<String>) -> Result<SyncResult, SyncError> {
     let config = SyncConfig::default();
 
     // ── Open local SQLite (sqlx direct) ──
@@ -566,16 +568,18 @@ pub async fn run_sync() -> Result<SyncResult, SyncError> {
         .map_err(|e| SyncError::Database(format!("Failed to open local DB: {}", e)))?;
 
     // ── Open cloud PostgreSQL connection ──
-    let database_url = std::env::var("SYNC_DATABASE_URL")
-        .unwrap_or_else(|_| config.database_url.clone());
+    let db_url = database_url
+        .or_else(|| std::env::var("SYNC_DATABASE_URL").ok())
+        .filter(|s| !s.is_empty())
+        .unwrap_or(config.database_url);
 
-    if database_url.is_empty() {
+    if db_url.is_empty() {
         return Err(SyncError::Database(
-            "SYNC_DATABASE_URL is not set and no database_url in config".to_string(),
+            "No database_url provided and SYNC_DATABASE_URL is not set".to_string(),
         ));
     }
 
-    let pool = sqlx::PgPool::connect(&database_url)
+    let pool = sqlx::PgPool::connect(&db_url)
         .await
         .map_err(|e| SyncError::Network(format!("Failed to connect to cloud DB: {}", e)))?;
 

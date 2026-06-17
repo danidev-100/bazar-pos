@@ -25,9 +25,12 @@ fn print_receipt(invoice_data: String) -> Result<String, String> {
 /// This is an async command because it performs database I/O over the
 /// network. Returns a JSON-serialised `SyncResult` with counts of
 /// pushed/pulled rows, conflicts, and any errors.
+///
+/// The `database_url` parameter is optional — if omitted, the command
+/// falls back to the `SYNC_DATABASE_URL` environment variable.
 #[tauri::command]
-async fn sync_now() -> Result<String, String> {
-    let result = sync::run_sync()
+async fn sync_now(database_url: Option<String>) -> Result<String, String> {
+    let result = sync::run_sync(database_url)
         .await
         .map_err(|e| format!("Sync failed: {}", e))?;
 

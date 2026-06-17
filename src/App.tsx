@@ -3,6 +3,7 @@ import { useAppStore, type Page } from "@/store";
 import { useAdminStore } from "@/store/admin";
 import { useAuthStore } from "@/store/auth";
 import { usePermission } from "@/hooks/usePermission";
+import { useSync } from "@/hooks/useSync";
 import { StoreProvider } from "@/store/context";
 import AdminRoute from "@/components/AdminRoute";
 import NavigationBar from "@/components/NavigationBar";
@@ -56,6 +57,9 @@ export default function App() {
   useEffect(() => {
     init();
   }, [init]);
+
+  // Start hourly sync
+  useSync();
 
   // Sync theme class on mount and on change
   useEffect(() => {
