@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
-import { useAdminStore } from "@/store/admin";
+import { useAuthStore } from "@/store/auth";
 import BrandFilter from "@/components/BrandFilter";
 import CategoryTree from "@/components/CategoryTree";
 import ProductForm from "@/components/ProductForm";
@@ -27,7 +27,7 @@ export default function ProductsPage() {
   const products = useProductsStore((s) => s.products);
   const categories = useProductsStore((s) => s.categories);
   const brands = useBrandsStore((s) => s.brands);
-  const isUnlocked = useAdminStore((s) => s.isUnlocked);
+  const isUnlocked = useAuthStore((s) => s.hasPermission("configuracion"));
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,

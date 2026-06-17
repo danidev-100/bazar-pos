@@ -5,7 +5,7 @@ import {
   type Category,
 } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
-import { useAdminStore } from "@/store/admin";
+import { useAuthStore } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
 
 // ──────────────────────────────────────────────
@@ -72,7 +72,7 @@ export default function ProductForm({
   const addProduct = useProductsStore((s) => s.addProduct);
   const updateProduct = useProductsStore((s) => s.updateProduct);
   const brands = useBrandsStore((s) => s.brands);
-  const isUnlocked = useAdminStore((s) => s.isUnlocked);
+  const isUnlocked = useAuthStore((s) => s.hasPermission("configuracion"));
 
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [error, setError] = useState<string | null>(null);
