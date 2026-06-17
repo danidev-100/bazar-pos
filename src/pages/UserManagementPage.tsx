@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { useAuthStore, type AuthUser, type Permission } from "@/store/auth";
+import {
+  useAuthStore,
+  type AuthUser,
+  type Permission,
+  type Role,
+  ROLE_PERMISSIONS,
+} from "@/store/auth";
 
 // ──────────────────────────────────────────────
 // Permission labels
@@ -19,6 +25,11 @@ const ALL_PERMISSIONS: Permission[] = [
   "configuracion",
 ];
 
+const ROLE_LABELS: Record<Role, string> = {
+  admin: "Admin",
+  custom: "Personalizado",
+};
+
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
@@ -28,6 +39,7 @@ type ModalMode = "add" | "edit";
 type FormData = {
   name: string;
   password: string;
+  role: Role;
   permissions: Permission[];
   active: boolean;
 };
@@ -48,6 +60,7 @@ export default function UserManagementPage() {
   const [form, setForm] = useState<FormData>({
     name: "",
     password: "",
+    role: "custom",
     permissions: [],
     active: true,
   });
@@ -59,7 +72,13 @@ export default function UserManagementPage() {
   function openAddModal() {
     setModalMode("add");
     setEditingUser(null);
-    setForm({ name: "", password: "", permissions: [], active: true });
+    setForm({
+      name: "",
+      password: "",
+      role: "custom",
+      permissions: [],
+      active: true,
+    });
     setError(null);
   }
 
@@ -69,6 +88,7 @@ export default function UserManagementPage() {
     setForm({
       name: user.name,
       password: "",
+      role: user.role,
       permissions: [...user.permissions],
       active: user.active,
     });
@@ -82,6 +102,19 @@ export default function UserManagementPage() {
   }
 
   // ── Form handlers ──
+
+  function handleRoleChange(role: Role) {
+    setForm((prev) => ({
+      ...prev,
+      role,
+      permissions:
+        role === "admin"
+          ? [...ALL_PERMISSIONS]
+          : prev.permissions.length === ALL_PERMISSIONS.length
+            ? []
+            : prev.permissions,
+    }));
+  }
 
   function togglePermission(perm: Permission) {
     setForm((prev) => {
@@ -115,14 +148,18 @@ export default function UserManagementPage() {
         await addUser({
           name: form.name.trim(),
           password: form.password,
-          permissions: form.permissions,
+          role: form.role,
+          permissions:
+            form.role === "admin" ? undefined : form.permissions,
           active: form.active,
         });
       } else if (editingUser) {
         await updateUser(editingUser.id, {
           name: form.name.trim() || undefined,
           password: form.password || undefined,
-          permissions: form.permissions,
+          role: form.role,
+          permissions:
+            form.role === "admin" ? undefined : form.permissions,
           active: form.active,
         });
       }
@@ -140,7 +177,7 @@ export default function UserManagementPage() {
   }
 
   function isAdmin(user: AuthUser): boolean {
-    return user.name === "admin";
+    return user.role === "admin";
   }
 
   // ── Sorted users ──
@@ -230,22 +267,47 @@ export default function UserManagementPage() {
               />
             </div>
 
+            {/* Role */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-pos-text mb-1">
+                Rol
+              </label>
+              <select
+                value={form.role}
+                onChange={(e) => handleRoleChange(e.target.value as Role)}
+                className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface text-pos-text"
+              >
+                <option value="custom">{ROLE_LABELS.custom}</option>
+                <option value="admin">{ROLE_LABELS.admin}</option>
+              </select>
+            </div>
+
             {/* Permissions */}
             <div className="mb-3">
               <label className="block text-sm font-medium text-pos-text mb-2">
                 Permisos
+                {form.role === "admin" && (
+                  <span className="text-pos-muted font-normal ml-1">
+                    (rol admin tiene todos)
+                  </span>
+                )}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {ALL_PERMISSIONS.map((perm) => (
                   <label
                     key={perm}
-                    className="flex items-center gap-2 p-2 rounded-lg border border-pos-muted/10 hover:bg-pos-background/50 cursor-pointer touch-target"
+                    className={`flex items-center gap-2 p-2 rounded-lg border ${
+                      form.role === "admin"
+                        ? "border-pos-secondary/20 bg-pos-secondary/5 cursor-default"
+                        : "border-pos-muted/10 hover:bg-pos-background/50 cursor-pointer"
+                    } touch-target`}
                   >
                     <input
                       type="checkbox"
                       checked={form.permissions.includes(perm)}
                       onChange={() => togglePermission(perm)}
-                      className="rounded border-pos-muted/30 text-pos-secondary focus:ring-pos-secondary"
+                      disabled={form.role === "admin"}
+                      className="rounded border-pos-muted/30 text-pos-secondary focus:ring-pos-secondary disabled:opacity-60"
                       aria-label={PERMISSION_LABELS[perm]}
                     />
                     <span className="text-sm text-pos-text">
@@ -298,6 +360,7 @@ export default function UserManagementPage() {
             <thead>
               <tr className="text-pos-muted border-b border-pos-muted/20">
                 <th className="text-left py-2 pr-2 font-medium">Nombre</th>
+                <th className="text-left py-2 px-2 font-medium">Rol</th>
                 <th className="text-left py-2 px-2 font-medium">Permisos</th>
                 <th className="text-center py-2 px-2 font-medium">Estado</th>
                 <th className="text-right py-2 pl-2 font-medium">Acciones</th>
@@ -315,12 +378,23 @@ export default function UserManagementPage() {
                       {isAdmin(user) && (
                         <span
                           className="text-xs text-pos-muted"
-                          title="Administrador — no se puede eliminar"
+                          title="Admin — no se puede eliminar"
                         >
                           🔒
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td className="py-2 px-2">
+                    <span
+                      className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
+                        user.role === "admin"
+                          ? "bg-pos-secondary/15 text-pos-secondary"
+                          : "bg-pos-muted/10 text-pos-muted"
+                      }`}
+                    >
+                      {ROLE_LABELS[user.role]}
+                    </span>
                   </td>
                   <td className="py-2 px-2">
                     <div className="flex flex-wrap gap-1">

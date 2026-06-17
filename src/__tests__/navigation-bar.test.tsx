@@ -72,6 +72,7 @@ describe("NavigationBar — permission filtering", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["ventas", "clientes", "configuracion"],
       active: true,
     });
@@ -91,6 +92,7 @@ describe("NavigationBar — permission filtering", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["ventas", "estadisticas", "configuracion"],
       active: true,
     });
@@ -109,6 +111,7 @@ describe("NavigationBar — permission filtering", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["ventas"],
       active: true,
     });
@@ -124,6 +127,7 @@ describe("NavigationBar — permission filtering", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: [],
       active: true,
     });
@@ -191,3 +195,4 @@ describe("NavigationBar — user info", () => {
     expect(useAppStore.getState().page).toBe("login");
   });
 });
+

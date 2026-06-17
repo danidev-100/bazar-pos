@@ -34,6 +34,7 @@ function loginAsAdmin() {
       id: "test-admin",
       name: "admin",
       passwordHash: "hash",
+      role: "admin",
       permissions: ["ventas", "clientes", "estadisticas", "configuracion"],
       active: true,
       createdAt: new Date().toISOString(),

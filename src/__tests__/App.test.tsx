@@ -49,6 +49,7 @@ describe("App — auth gate", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["ventas"],
       active: true,
     });
@@ -80,3 +81,4 @@ describe("App — auth gate", () => {
     expect(screen.queryByText("Inicio")).toBeNull();
   });
 });
+

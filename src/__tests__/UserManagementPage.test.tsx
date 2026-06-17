@@ -174,6 +174,7 @@ describe("UserManagementPage", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["ventas"],
       active: true,
     });
@@ -218,6 +219,7 @@ describe("UserManagementPage", () => {
     await useAuthStore.getState().addUser({
       name: "deleteme",
       password: "pass",
+      role: "custom",
       permissions: [],
       active: true,
     });
@@ -282,3 +284,4 @@ describe("UserManagementPage", () => {
     });
   });
 });
+

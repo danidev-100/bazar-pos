@@ -35,6 +35,7 @@ describe("Auth store — first-run bootstrap", () => {
     const users = useAuthStore.getState().users;
     expect(users).toHaveLength(1);
     expect(users[0].name).toBe("admin");
+    expect(users[0].role).toBe("admin");
     expect(users[0].permissions).toEqual([
       "ventas",
       "clientes",
@@ -57,6 +58,7 @@ describe("Auth store — first-run bootstrap", () => {
           id: "existing-id",
           name: "existing",
           passwordHash: "abc",
+          role: "custom",
           permissions: ["ventas"],
           active: true,
           createdAt: new Date().toISOString(),
@@ -154,22 +156,38 @@ describe("Auth store — logout", () => {
 // ──────────────────────────────────────────────
 
 describe("Auth store — hasPermission", () => {
-  it("returns true when user has the permission", async () => {
+  it("returns true when user has admin role", async () => {
     const store = useAuthStore.getState();
     await store.init();
     await store.login("admin", "admin");
 
+    // Admin role has all permissions regardless of stored permissions
     expect(useAuthStore.getState().hasPermission("ventas")).toBe(true);
     expect(useAuthStore.getState().hasPermission("configuracion")).toBe(true);
   });
 
-  it("returns false when user does not have the permission", async () => {
+  it("returns true when custom user has the specific permission", async () => {
     const store = useAuthStore.getState();
     await store.init();
-    // Add user with only "ventas"
     await store.addUser({
       name: "vendedor",
       password: "pass",
+      role: "custom",
+      permissions: ["ventas"],
+      active: true,
+    });
+    await store.login("vendedor", "pass");
+
+    expect(useAuthStore.getState().hasPermission("ventas")).toBe(true);
+  });
+
+  it("returns false when custom user does not have the permission", async () => {
+    const store = useAuthStore.getState();
+    await store.init();
+    await store.addUser({
+      name: "vendedor",
+      password: "pass",
+      role: "custom",
       permissions: ["ventas"],
       active: true,
     });
@@ -199,6 +217,7 @@ describe("Auth store — addUser", () => {
     await useAuthStore.getState().addUser({
       name: "newuser",
       password: "secret123",
+      role: "custom",
       permissions: ["ventas"],
       active: true,
     });
@@ -208,6 +227,7 @@ describe("Auth store — addUser", () => {
     const added = users.find((u) => u.name === "newuser");
     expect(added).toBeDefined();
     expect(added!.passwordHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(added!.role).toBe("custom");
     expect(added!.permissions).toEqual(["ventas"]);
     expect(added!.active).toBe(true);
   });
@@ -220,6 +240,7 @@ describe("Auth store — addUser", () => {
       addUser({
         name: "admin",
         password: "pass",
+        role: "custom",
         permissions: [],
         active: true,
       }),
@@ -249,6 +270,7 @@ describe("Auth store — updateUser", () => {
     await useAuthStore.getState().addUser({
       name: "user2",
       password: "pass",
+      role: "custom",
       permissions: [],
       active: true,
     });
@@ -266,6 +288,7 @@ describe("Auth store — deleteUser", () => {
     await useAuthStore.getState().addUser({
       name: "user2",
       password: "pass",
+      role: "custom",
       permissions: [],
       active: true,
     });

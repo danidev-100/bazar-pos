@@ -34,6 +34,7 @@ describe("usePermission", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["clientes"],
       active: true,
     });
@@ -107,3 +108,4 @@ describe("usePermission", () => {
     expect(withAuth.current).toBe(true);
   });
 });
+

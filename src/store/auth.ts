@@ -6,13 +6,21 @@ import { create } from "zustand";
 
 export type Permission = "ventas" | "clientes" | "estadisticas" | "configuracion";
 
+export type Role = "admin" | "custom";
+
 export type AuthUser = {
   id: string;
   name: string;
   passwordHash: string;
+  role: Role;
   permissions: Permission[];
   active: boolean;
   createdAt: string;
+};
+
+export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
+  admin: ["ventas", "clientes", "estadisticas", "configuracion"],
+  custom: [],
 };
 
 export type LoginResult = {
@@ -32,7 +40,8 @@ export type AuthStore = {
   addUser: (data: {
     name: string;
     password: string;
-    permissions: Permission[];
+    role: Role;
+    permissions?: Permission[];
     active: boolean;
   }) => Promise<void>;
   updateUser: (
@@ -40,6 +49,7 @@ export type AuthStore = {
     data: {
       name?: string;
       password?: string;
+      role?: Role;
       permissions?: Permission[];
       active?: boolean;
     },
@@ -141,6 +151,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         id: crypto.randomUUID(),
         name: "admin",
         passwordHash: adminHash,
+        role: "admin",
         permissions: [...ALL_PERMISSIONS],
         active: true,
         createdAt: new Date().toISOString(),
@@ -208,7 +219,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       id: crypto.randomUUID(),
       name: data.name,
       passwordHash: await hashPassword(data.password),
-      permissions: data.permissions,
+      role: data.role,
+      permissions: data.permissions ?? ROLE_PERMISSIONS[data.role],
       active: data.active,
       createdAt: new Date().toISOString(),
     };
@@ -237,10 +249,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     const user = users[index];
+    const role = data.role ?? user.role;
+    const permissions =
+      data.permissions ??
+      (data.role ? ROLE_PERMISSIONS[data.role] : user.permissions);
+
     const updated: AuthUser = {
       ...user,
       name: data.name ?? user.name,
-      permissions: data.permissions ?? user.permissions,
+      role,
+      permissions,
       active: data.active ?? user.active,
       passwordHash: data.password
         ? await hashPassword(data.password)
@@ -264,8 +282,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   deleteUser: (id) => {
     const { users } = get();
     const user = users.find((u) => u.id === id);
-    // Cannot delete the default admin user (name === "admin")
-    if (user && user.name === "admin") return;
+    // Cannot delete users with admin role
+    if (user && user.role === "admin") return;
 
     const updated = users.filter((u) => u.id !== id);
     set({ users: updated });
@@ -283,6 +301,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   hasPermission: (permission: Permission): boolean => {
     const { currentUser } = get();
     if (!currentUser) return false;
+    // Admin role gets all permissions automatically
+    if (currentUser.role === "admin") return true;
     return currentUser.permissions.includes(permission);
   },
 }));

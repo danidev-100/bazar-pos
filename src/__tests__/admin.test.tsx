@@ -61,6 +61,7 @@ describe("AdminRoute", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["ventas"],
       active: true,
     });
@@ -80,6 +81,7 @@ describe("AdminRoute", () => {
     await useAuthStore.getState().addUser({
       name: "limited",
       password: "pass",
+      role: "custom",
       permissions: ["ventas"],
       active: true,
     });
@@ -824,3 +826,4 @@ describe("AdminPage — Settings Tab", () => {
     expect(screen.getByText("admin")).toBeInTheDocument();
   });
 });
+
