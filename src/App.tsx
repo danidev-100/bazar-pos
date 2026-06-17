@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useAppStore, type Page } from "@/store";
 import { useAdminStore } from "@/store/admin";
+import { useAuthStore } from "@/store/auth";
+import { usePermission } from "@/hooks/usePermission";
 import { StoreProvider } from "@/store/context";
 import AdminRoute from "@/components/AdminRoute";
 import NavigationBar from "@/components/NavigationBar";
@@ -12,6 +14,7 @@ import CustomersPage from "@/pages/CustomersPage";
 import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import DashboardPage from "@/pages/DashboardPage";
+import LoginPage from "@/pages/LoginPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component
@@ -26,7 +29,15 @@ const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
   customers: CustomersPage,
   stats: StatsPage,
   admin: AdminPage,
+  login: LoginPage,
+  "user-management": DashboardPage, // placeholder — will be replaced in PR 2
 };
+
+// ──────────────────────────────────────────────
+// Pages that require admin permission
+// ──────────────────────────────────────────────
+
+const ADMIN_PAGES: Page[] = ["admin", "user-management", "cash-closing"];
 
 // ──────────────────────────────────────────────
 // App shell
@@ -34,8 +45,16 @@ const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
 
 export default function App() {
   const page = useAppStore((s) => s.page);
+  const setPage = useAppStore((s) => s.setPage);
   const theme = useAdminStore((s) => s.theme);
-  const PageComponent = PAGE_COMPONENTS[page];
+  const currentUser = useAuthStore((s) => s.currentUser);
+  const init = useAuthStore((s) => s.init);
+  const hasAccess = usePermission(page);
+
+  // Hydrate auth store on mount
+  useEffect(() => {
+    init();
+  }, [init]);
 
   // Sync theme class on mount and on change
   useEffect(() => {
@@ -46,23 +65,37 @@ export default function App() {
     }
   }, [theme]);
 
+  // Permission gate: redirect unpermitted pages to dashboard
+  useEffect(() => {
+    if (currentUser !== null && !hasAccess && page !== "login") {
+      setPage("dashboard");
+    }
+  }, [currentUser, hasAccess, page, setPage]);
+
+  // ── Render ──
+
+  const isAuthenticated = currentUser !== null;
+  const PageComponent = PAGE_COMPONENTS[page];
+  const needsAdminGate = ADMIN_PAGES.includes(page);
+
   return (
     <StoreProvider initialStoreId="store_1">
-      <div className="flex flex-col h-screen w-screen overflow-hidden">
-        {/* Navigation bar — fixed at top */}
-        <NavigationBar />
-
-        {/* Main content area — switches page by state */}
-        <main className="flex-1 overflow-auto p-4">
-          {page === "admin" ? (
-            <AdminRoute>
+      {isAuthenticated ? (
+        <div className="flex flex-col h-screen w-screen overflow-hidden">
+          <NavigationBar />
+          <main className="flex-1 overflow-auto p-4">
+            {needsAdminGate ? (
+              <AdminRoute>
+                <PageComponent />
+              </AdminRoute>
+            ) : (
               <PageComponent />
-            </AdminRoute>
-          ) : (
-            <PageComponent />
-          )}
-        </main>
-      </div>
+            )}
+          </main>
+        </div>
+      ) : (
+        <LoginPage />
+      )}
     </StoreProvider>
   );
 }
