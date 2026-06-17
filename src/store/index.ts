@@ -13,7 +13,8 @@ export type Page =
   | "billing"
   | "stats"
   | "admin"
-  | "customers";
+  | "customers"
+  | "dashboard";
 
 // ──────────────────────────────────────────────
 // Cart item
@@ -126,7 +127,7 @@ let nextSaleId = 1;
 
 export const useAppStore = create<AppStore>((set, get) => ({
   // ── Defaults ──
-  page: "pos",
+  page: "dashboard",
   busy: false,
   notification: null,
   items: [],
