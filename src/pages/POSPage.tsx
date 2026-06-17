@@ -3,6 +3,8 @@ import { useAppStore } from "@/store";
 import { useProductsStore } from "@/store/products";
 import { useActiveStore } from "@/store/context";
 import { useInvoicesStore } from "@/store/invoices";
+import { useAuthStore } from "@/store/auth";
+import { useCashClosingStore } from "@/store/cash-closing";
 import { exportInvoicePdf } from "@/lib/pdf-export";
 import ProductGrid from "@/components/ProductGrid";
 import CartPanel from "@/components/CartPanel";
@@ -173,12 +175,20 @@ export default function POSPage() {
   const addItem = useAppStore((s) => s.addItem);
   const lastCompletedSale = useAppStore((s) => s.lastCompletedSale);
   const dismissReceipt = useAppStore((s) => s.dismissReceipt);
+  const setPage = useAppStore((s) => s.setPage);
+  const currentUser = useAuthStore((s) => s.currentUser);
+  const getOpenShift = useCashClosingStore((s) => s.getOpenShift);
+  const openShift = useCashClosingStore((s) => s.openShift);
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const hintShown = useRef(false);
+
+  // Check for open shift
+  const openShiftData = getOpenShift(storeId);
+  const hasOpenShift = openShiftData !== null;
 
   // Seed demo products on first mount
   useEffect(() => {
@@ -199,8 +209,14 @@ export default function POSPage() {
     onCheckout: useCallback(() => {
       const { items } = useAppStore.getState();
       if (items.length === 0) return;
+      const openShift = useCashClosingStore.getState().getOpenShift(storeId);
+      if (!openShift) {
+        useAppStore.getState().showNotification("Abrí un turno en Caja antes de cobrar");
+        setTimeout(() => useAppStore.getState().dismissNotification(), 4000);
+        return;
+      }
       setShowCheckout(true);
-    }, []),
+    }, [storeId]),
     onFocusSearch: useCallback(() => {
       searchInputRef.current?.focus();
       searchInputRef.current?.select();
@@ -266,6 +282,19 @@ export default function POSPage() {
     }
   }, [lastCompletedSale]);
 
+  // Auto-open shift with current user if none exists
+  function handleOpenShift() {
+    try {
+      const employee = currentUser?.name ?? "Cajero";
+      openShift(employee, storeId);
+      showNotification(`Turno abierto — ${employee}`);
+      setTimeout(() => dismissNotification(), 3000);
+    } catch {
+      showNotification("Ya hay un turno abierto");
+      setTimeout(() => dismissNotification(), 3000);
+    }
+  }
+
   const handleAddToCart = useCallback(
     (product: { id: number; name: string; price: number }) => {
       if (!product.price || product.price <= 0) {
@@ -279,6 +308,11 @@ export default function POSPage() {
   );
 
   function handleCheckout() {
+    if (!hasOpenShift) {
+      showNotification("Abrí un turno en Caja antes de cobrar");
+      setTimeout(() => dismissNotification(), 4000);
+      return;
+    }
     const store = useProductsStore.getState();
     if (store.products.length === 0) {
       showNotification("Agregá productos antes de cobrar");
@@ -316,18 +350,49 @@ export default function POSPage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
-      {/* ── Left: Product Grid ── */}
-      <section className={`flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto ${scanFlash ? "scan-flash" : ""}`}>
-        <ProductGrid onAddToCart={handleAddToCart} searchInputRef={searchInputRef} />
-      </section>
+      {/* ── Cash Register Gate ── */}
+      {!hasOpenShift ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-sm">
+            <div className="text-6xl mb-4">🔒</div>
+            <h2 className="text-lg font-semibold text-pos-text mb-2">
+              No hay caja abierta
+            </h2>
+            <p className="text-sm text-pos-muted mb-6">
+              Necesitás abrir un turno antes de poder vender. Tus ventas se registran dentro del turno abierto.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleOpenShift}
+                className="px-6 py-3 bg-pos-secondary text-white rounded-xl font-medium text-sm touch-target hover:opacity-90 transition-opacity"
+              >
+                Abrir Turno como {currentUser?.name ?? "Cajero"}
+              </button>
+              <button
+                onClick={() => setPage("cash-closing")}
+                className="text-sm text-pos-secondary hover:underline touch-target"
+              >
+                Ir a Caja
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ── Left: Product Grid ── */}
+          <section className={`flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto ${scanFlash ? "scan-flash" : ""}`}>
+            <ProductGrid onAddToCart={handleAddToCart} searchInputRef={searchInputRef} />
+          </section>
 
-      {/* ── Right: Cart Panel ── */}
-      <aside className="w-full lg:w-96 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto max-h-64 lg:max-h-full">
-        <CartPanel
-          onCheckout={handleCheckout}
-          onSelectCustomer={() => setShowCustomerSelect(true)}
-        />
-      </aside>
+          {/* ── Right: Cart Panel ── */}
+          <aside className="w-full lg:w-96 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto max-h-64 lg:max-h-full">
+            <CartPanel
+              onCheckout={handleCheckout}
+              onSelectCustomer={() => setShowCustomerSelect(true)}
+            />
+          </aside>
+        </>
+      )}
 
       {/* ── Customer Select Modal ── */}
       {showCustomerSelect && (

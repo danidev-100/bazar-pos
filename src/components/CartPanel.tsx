@@ -1,4 +1,5 @@
 import { useAppStore } from "@/store";
+import { useAuthStore } from "@/store/auth";
 
 // ──────────────────────────────────────────────
 // Props
@@ -27,17 +28,19 @@ export default function CartPanel({
   const selectedCartItemId = useAppStore((s) => s.selectedCartItemId);
   const selectCartItem = useAppStore((s) => s.selectCartItem);
   const clearSelectedCartItem = useAppStore((s) => s.clearSelectedCartItem);
+  const currentUser = useAuthStore((s) => s.currentUser);
 
   const total = cartTotal();
   const count = itemCount();
   const isEmpty = items.length === 0;
+  const cashierName = currentUser?.name ?? "—";
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header — shows cashier name */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-          Carrito
+          Cajero: <span className="font-mono normal-case">{cashierName}</span>
           {count > 0 && (
             <span className="text-pos-muted font-normal normal-case ml-1">
               — {count} {count === 1 ? "producto" : "productos"}

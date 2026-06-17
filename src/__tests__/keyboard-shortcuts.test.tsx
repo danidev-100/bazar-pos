@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useAppStore } from "@/store";
+import { useAuthStore } from "@/store/auth";
+import { useCashClosingStore } from "@/store/cash-closing";
 import POSPage from "@/pages/POSPage";
 import { StoreProvider } from "@/store/context";
 
@@ -9,7 +11,7 @@ import { StoreProvider } from "@/store/context";
 // Helpers
 // ──────────────────────────────────────────────
 
-function resetStore() {
+function resetStores() {
   useAppStore.setState({
     items: [],
     lastCompletedSale: null,
@@ -19,10 +21,36 @@ function resetStore() {
     selectedCustomer: null,
     selectedCartItemId: null,
   });
+  useAuthStore.setState({
+    users: [],
+    currentUser: null,
+    _hydrated: false,
+  });
+  useCashClosingStore.setState({ shifts: [] });
+}
+
+function loginAndOpenShift() {
+  // Set logged-in user
+  useAuthStore.setState({
+    currentUser: {
+      id: "test-user",
+      name: "Test Cajero",
+      passwordHash: "hash",
+      role: "admin",
+      permissions: ["ventas", "clientes", "estadisticas", "configuracion"],
+      active: true,
+      createdAt: new Date().toISOString(),
+    },
+    _hydrated: true,
+  });
+  // Open a shift for the default store
+  const cashClosing = useCashClosingStore.getState();
+  cashClosing.openShift("Test Cajero", "store_1");
 }
 
 beforeEach(() => {
-  resetStore();
+  resetStores();
+  loginAndOpenShift();
 });
 
 // ──────────────────────────────────────────────
@@ -66,8 +94,8 @@ describe("Keyboard shortcuts — input gate", () => {
     const store = useAppStore.getState();
     store.addItem(1, "Coca-Cola 500ml", 150);
 
-    // Click on a non-input element (the cart panel heading)
-    const heading = screen.getByText("Carrito");
+    // Click on a non-input element (the cart panel heading shows cashier name)
+    const heading = screen.getByText(/Cajero:/);
     await user.click(heading);
 
     // Press F1 — should open checkout since we're not in an input
