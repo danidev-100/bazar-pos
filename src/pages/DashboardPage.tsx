@@ -1,4 +1,5 @@
 import { useAppStore, type Page } from "@/store";
+import { useAuthStore, type Permission } from "@/store/auth";
 
 // ──────────────────────────────────────────────
 // Types
@@ -8,6 +9,7 @@ export type ModuleConfig = {
   label: string;
   icon: React.ReactNode;
   target: Page | null;
+  permission?: Permission;
 };
 
 // ──────────────────────────────────────────────
@@ -98,14 +100,14 @@ function ShieldIcon() {
 // ──────────────────────────────────────────────
 
 const MODULES: ModuleConfig[] = [
-  { label: "Ventas",       icon: <SaleIcon />,       target: "pos" },
+  { label: "Ventas",       icon: <SaleIcon />,       target: "pos",       permission: "ventas" },
   { label: "Inventario",   icon: <PackageIcon />,    target: "products" },
-  { label: "Clientes",     icon: <UsersIcon />,      target: "customers" },
+  { label: "Clientes",     icon: <UsersIcon />,      target: "customers", permission: "clientes" },
   { label: "Proveedores",  icon: <TruckIcon />,      target: null },
   { label: "Pedidos",      icon: <ClipboardIcon />,  target: null },
-  { label: "Estadísticas", icon: <ChartIcon />,      target: "stats" },
-  { label: "Configuración",icon: <GearIcon />,       target: "admin" },
-  { label: "Usuarios",     icon: <ShieldIcon />,     target: "admin" },
+  { label: "Estadísticas", icon: <ChartIcon />,      target: "stats",    permission: "estadisticas" },
+  { label: "Configuración",icon: <GearIcon />,       target: "admin",    permission: "configuracion" },
+  { label: "Usuarios",     icon: <ShieldIcon />,     target: "admin",    permission: "configuracion" },
 ];
 
 // ──────────────────────────────────────────────
@@ -147,6 +149,19 @@ function ModuleCard({ label, icon, target }: ModuleConfig) {
 // ──────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const currentUser = useAuthStore((s) => s.currentUser);
+
+  // Filter modules by permission
+  const visibleModules = MODULES.filter((mod) => {
+    // Disabled placeholders (Proveedores, Pedidos) always show
+    if (mod.target === null) return true;
+    // Modules without permission requirement always show (Inventario)
+    if (!mod.permission) return true;
+    // Check if user has the required permission
+    return currentUser !== null && hasPermission(mod.permission);
+  });
+
   return (
     <div className="flex flex-col gap-6 h-full p-4 md:p-6 lg:p-8 overflow-y-auto">
       {/* Header */}
@@ -159,7 +174,7 @@ export default function DashboardPage() {
 
       {/* Responsive card grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {MODULES.map((mod) => (
+        {visibleModules.map((mod) => (
           <ModuleCard key={mod.label} {...mod} />
         ))}
       </div>

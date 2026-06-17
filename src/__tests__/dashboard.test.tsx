@@ -3,12 +3,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DashboardPage from "@/pages/DashboardPage";
 import { useAppStore } from "@/store";
+import { useAuthStore } from "@/store/auth";
 
 // ──────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────
 
-function resetStore() {
+function resetStores() {
   useAppStore.setState({
     page: "dashboard",
     items: [],
@@ -19,10 +20,31 @@ function resetStore() {
     selectedCustomer: null,
     selectedCartItemId: null,
   });
+  useAuthStore.setState({
+    users: [],
+    currentUser: null,
+    _hydrated: false,
+  });
+}
+
+function loginAsAdmin() {
+  useAuthStore.setState({
+    currentUser: {
+      id: "test-admin",
+      name: "admin",
+      passwordHash: "hash",
+      role: "admin",
+      permissions: ["ventas", "clientes", "estadisticas", "configuracion"],
+      active: true,
+      createdAt: new Date().toISOString(),
+    },
+    _hydrated: true,
+  });
 }
 
 beforeEach(() => {
-  resetStore();
+  resetStores();
+  loginAsAdmin();
 });
 
 // ──────────────────────────────────────────────
@@ -98,7 +120,8 @@ describe("DashboardPage", () => {
 
   it("2.1 — disabled Proveedores card does NOT navigate", async () => {
     const user = userEvent.setup();
-    resetStore();
+    resetStores();
+    loginAsAdmin();
     render(<DashboardPage />);
 
     // Verify the page stays at "dashboard" after clicking Proveedores
@@ -108,7 +131,8 @@ describe("DashboardPage", () => {
 
   it("2.1 — disabled Pedidos card does NOT navigate", async () => {
     const user = userEvent.setup();
-    resetStore();
+    resetStores();
+    loginAsAdmin();
     render(<DashboardPage />);
 
     await user.click(screen.getByText("Pedidos"));
