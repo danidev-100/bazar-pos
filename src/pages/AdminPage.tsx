@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useAdminStore } from "@/store/admin";
-import { useAppStore } from "@/store";
+import { useAppStore, useAuthStore, useAdminStore } from "@/store";
 import BrandList from "@/components/BrandList";
 import BulkPriceModal from "@/components/BulkPriceModal";
 
@@ -112,157 +111,32 @@ function BulkPriceTab() {
 // ──────────────────────────────────────────────
 
 function SettingsTab() {
-  const isUnlocked = useAdminStore((s) => s.isUnlocked);
-  const pinHash = useAdminStore((s) => s.pinHash);
-  const lock = useAdminStore((s) => s.lock);
-  const setPin = useAdminStore((s) => s.setPin);
-  const changePin = useAdminStore((s) => s.changePin);
   const theme = useAdminStore((s) => s.theme);
   const toggleTheme = useAdminStore((s) => s.toggleTheme);
   const setPage = useAppStore((s) => s.setPage);
-
-  const [currentPin, setCurrentPin] = useState("");
-  const [newPin, setNewPin] = useState("");
-  const [confirmNewPin, setConfirmNewPin] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function handleChangePin(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!newPin) {
-      setError("Ingresá un nuevo PIN");
-      return;
-    }
-    if (newPin !== confirmNewPin) {
-      setError("Los PINs nuevos no coinciden");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      if (pinHash) {
-        // Changing existing PIN — verify old one
-        const ok = await changePin(currentPin, newPin);
-        if (!ok) {
-          setError("El PIN actual es incorrecto");
-          return;
-        }
-      } else {
-        // Setting first PIN
-        await setPin(newPin);
-      }
-
-      setSuccess("PIN actualizado correctamente");
-      setCurrentPin("");
-      setNewPin("");
-      setConfirmNewPin("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al actualizar el PIN");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleLock() {
-    lock();
-    setPage("pos");
-  }
+  const currentUser = useAuthStore((s) => s.currentUser);
 
   return (
     <div className="max-w-md space-y-8">
-      {/* PIN Change Section */}
+      {/* User Management Section */}
       <section>
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
-          {pinHash ? "Cambiar PIN" : "Configurar PIN"}
+          Usuario
         </h3>
-
-        {error && (
-          <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-sm rounded-lg px-3 py-2 mb-3">
-            {error}
+        <div className="flex items-center justify-between p-3 bg-pos-background/50 rounded-xl border border-pos-muted/10">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-pos-muted">Conectado como:</span>
+            <span className="text-sm font-medium text-pos-text">
+              {currentUser?.name ?? "—"}
+            </span>
           </div>
-        )}
-
-        {success && (
-          <div className="bg-pos-success/10 border border-pos-success/30 text-pos-success text-sm rounded-lg px-3 py-2 mb-3">
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleChangePin} className="space-y-3">
-          {pinHash && (
-            <div>
-              <label
-                htmlFor="settings-current-pin"
-                className="block text-sm font-medium text-pos-text mb-1"
-              >
-                PIN Actual
-              </label>
-              <input
-                id="settings-current-pin"
-                type="password"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={currentPin}
-                onChange={(e) => setCurrentPin(e.target.value)}
-                placeholder="Ingresá el PIN actual"
-                className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
-                maxLength={10}
-              />
-            </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="settings-new-pin"
-              className="block text-sm font-medium text-pos-text mb-1"
-            >
-              Nuevo PIN
-            </label>
-            <input
-              id="settings-new-pin"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={newPin}
-              onChange={(e) => setNewPin(e.target.value)}
-              placeholder="Ingresá el nuevo PIN"
-              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
-              maxLength={10}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="settings-confirm-pin"
-              className="block text-sm font-medium text-pos-text mb-1"
-            >
-              Confirmar Nuevo PIN
-            </label>
-            <input
-              id="settings-confirm-pin"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={confirmNewPin}
-              onChange={(e) => setConfirmNewPin(e.target.value)}
-              placeholder="Confirmá el nuevo PIN"
-              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
-              maxLength={10}
-            />
-          </div>
-
           <button
-            type="submit"
-            disabled={saving || !newPin || !confirmNewPin}
-            className="w-full px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50"
+            onClick={() => setPage("user-management")}
+            className="px-4 py-2 bg-pos-secondary text-white rounded-lg text-sm font-medium touch-target hover:opacity-90 transition-opacity"
           >
-            {saving ? "Guardando..." : pinHash ? "Cambiar PIN" : "Configurar PIN"}
+            Gestionar Usuarios
           </button>
-        </form>
+        </div>
       </section>
 
       {/* Theme Section */}
@@ -303,18 +177,6 @@ function SettingsTab() {
           </div>
         </button>
       </section>
-
-      {/* Lock Admin */}
-      {isUnlocked && (
-        <section>
-          <button
-            onClick={handleLock}
-            className="w-full px-4 py-2.5 bg-pos-danger/10 border border-pos-danger/30 text-pos-danger rounded-lg font-medium text-sm touch-target hover:bg-pos-danger/20"
-          >
-            Bloquear Admin
-          </button>
-        </section>
-      )}
     </div>
   );
 }
