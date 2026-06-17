@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useProductsStore } from "./products";
 import { type Customer } from "./customers";
 
 // ──────────────────────────────────────────────
@@ -250,6 +251,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
       lastCompletedSale: sale,
       completedSales: [...get().completedSales, sale],
     });
+
+    // ── Record stock movements for each item ──
+    const { recordMovement } = useProductsStore.getState();
+    for (const item of items) {
+      recordMovement({
+        product_id: item.productId,
+        type: "sale",
+        quantity: item.quantity,
+        delta: -item.quantity,
+        reference_id: `sale-${sale.id}`,
+        user_id: null,
+        store_id: sale.storeId,
+      });
+    }
 
     return sale;
   },

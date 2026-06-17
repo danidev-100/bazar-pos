@@ -234,17 +234,18 @@ describe("ProductsPage — cost & brand columns", () => {
     );
   }
 
-  it("hides cost and brand columns when admin is locked", () => {
+  it("hides cost column but shows brand column when admin is locked", () => {
     seedData();
     renderPage();
 
-    // Should not see column headers
+    // Cost column hidden (admin-gated)
     expect(screen.queryByText("Costo")).toBeNull();
-    expect(screen.queryByText("Marca")).toBeNull();
-
-    // Should not see cost values or brand names
     expect(screen.queryByText("$90.00")).toBeNull();
-    expect(screen.queryByText("Coca-Cola")).toBeNull();
+
+    // Brand column always visible now (not admin-gated)
+    expect(screen.getByText("Marca")).toBeInTheDocument();
+    // Brand name appears in BrandFilter sidebar + table cell
+    expect(screen.getAllByText("Coca-Cola").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows cost and brand columns when admin is unlocked", () => {
@@ -259,8 +260,10 @@ describe("ProductsPage — cost & brand columns", () => {
     // Cost value visible
     expect(screen.getByText("$90.00")).toBeInTheDocument();
 
-    // Brand name visible (from resolve)
-    expect(screen.getByText("Coca-Cola")).toBeInTheDocument();
+    // Brand name visible: once in BrandFilter sidebar + once in table cell
+    const brandInstances = screen.getAllByText("Coca-Cola");
+    expect(brandInstances.length).toBeGreaterThanOrEqual(2);
+    expect(brandInstances[0]).toBeInTheDocument();
   });
 
   it("shows — for products without costPrice", () => {

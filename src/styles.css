@@ -45,6 +45,14 @@
   --color-chart-bar: #60a5fa;
 }
 
+/* ── Dark mode form inputs ── */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: rgb(var(--color-pos-background));
+  color: rgb(var(--color-pos-text));
+}
+
 html,
 body,
 #root {

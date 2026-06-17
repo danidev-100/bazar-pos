@@ -3,6 +3,7 @@ import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
 import { useAdminStore } from "@/store/admin";
+import BrandFilter from "@/components/BrandFilter";
 import CategoryTree from "@/components/CategoryTree";
 import ProductForm from "@/components/ProductForm";
 import StockMovementLog from "@/components/StockMovementLog";
@@ -31,6 +32,7 @@ export default function ProductsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
+  const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
     null,
   );
@@ -40,7 +42,7 @@ export default function ProductsPage() {
   const storeCategories = categories.filter((c) => c.store_id === storeId);
 
   // Filter products by selected category (include subcategory products)
-  const filteredProducts = selectedCategoryId
+  const byCategory = selectedCategoryId
     ? storeProducts.filter((p) => {
         // Check if product's category is the selected one or a descendant
         const descendantIds = new Set<number>();
@@ -59,6 +61,11 @@ export default function ProductsPage() {
       })
     : storeProducts;
 
+  // Filter products by selected brand
+  const filteredProducts = selectedBrandId
+    ? byCategory.filter((p) => p.brandId === selectedBrandId)
+    : byCategory;
+
   const selectedProduct = selectedProductId
     ? storeProducts.find((p) => p.id === selectedProductId) ?? null
     : null;
@@ -69,6 +76,12 @@ export default function ProductsPage() {
 
   function handleCategorySelect(id: number | null) {
     setSelectedCategoryId(id);
+    setSelectedProductId(null);
+    setCenterView({ kind: "list" });
+  }
+
+  function handleBrandSelect(id: number | null) {
+    setSelectedBrandId(id);
     setSelectedProductId(null);
     setCenterView({ kind: "list" });
   }
@@ -88,12 +101,17 @@ export default function ProductsPage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
-      {/* ── Left panel: Category tree ── */}
-      <aside className="w-full lg:w-64 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full">
+      {/* ── Left panel: Category tree + Brand filter ── */}
+      <aside className="w-full lg:w-64 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full flex flex-col gap-4">
         <CategoryTree
           selectedId={selectedCategoryId}
           onSelect={handleCategorySelect}
           onEdit={handleCategoryEdit}
+        />
+        <hr className="border-pos-muted/10" />
+        <BrandFilter
+          selectedId={selectedBrandId}
+          onSelect={handleBrandSelect}
         />
       </aside>
 
@@ -105,7 +123,7 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
                 Productos
-                {selectedCategoryId && (
+                {(selectedCategoryId || selectedBrandId) && (
                   <span className="text-pos-muted font-normal normal-case ml-1">
                     (filtrados)
                   </span>
@@ -151,11 +169,9 @@ export default function ProductsPage() {
                       <th className="text-right py-2 px-2 font-medium">
                         Stock
                       </th>
-                      {isUnlocked && (
                         <th className="text-left py-2 px-2 font-medium">
                           Marca
                         </th>
-                      )}
                       <th className="text-left py-2 px-2 font-medium">
                         Categoría
                       </th>
@@ -169,9 +185,7 @@ export default function ProductsPage() {
                       const cat = storeCategories.find(
                         (c) => c.id === p.category_id,
                       );
-                      const brand = isUnlocked
-                        ? brands.find((b) => b.id === p.brandId)
-                        : null;
+                      const brand = brands.find((b) => b.id === p.brandId);
                       return (
                         <tr
                           key={p.id}
@@ -205,11 +219,9 @@ export default function ProductsPage() {
                           >
                             {p.stock}
                           </td>
-                          {isUnlocked && (
                             <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
                               {brand?.name ?? "—"}
                             </td>
-                          )}
                           <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
                             {cat?.name ?? "—"}
                           </td>
