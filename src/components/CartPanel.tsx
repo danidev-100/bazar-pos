@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "@/store";
+import { useProductsStore } from "@/store/products";
 import { useAuthStore } from "@/store/auth";
 import { useCashClosingStore } from "@/store/cash-closing";
 import { useActiveStore } from "@/store/context";
@@ -36,6 +37,7 @@ export default function CartPanel({
   const selectCartItem = useAppStore((s) => s.selectCartItem);
   const clearSelectedCartItem = useAppStore((s) => s.clearSelectedCartItem);
   const currentUser = useAuthStore((s) => s.currentUser);
+  const products = useProductsStore((s) => s.products);
   const { storeId } = useActiveStore();
   const getOpenShift = useCashClosingStore((s) => s.getOpenShift);
   const closeShift = useCashClosingStore((s) => s.closeShift);
@@ -48,6 +50,34 @@ export default function CartPanel({
   const hasOpenShift = openShift !== null;
 
   const [showCloseModal, setShowCloseModal] = useState(false);
+
+  // Returns max quantity available for a product based on stock
+  function getMaxQuantity(productId: number): number {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return Infinity;
+    // Total of this product already in cart
+    const inCart = items
+      .filter((i) => i.productId === productId)
+      .reduce((sum, i) => sum + i.quantity, 0);
+    // Remaining stock = product stock - already in cart + current item (to allow holding current)
+    return Math.max(0, product.stock);
+  }
+
+  function safeUpdateQuantity(productId: number, qty: number) {
+    const maxQty = getMaxQuantity(productId);
+    if (qty > maxQty) {
+      setStockError(productId);
+      return;
+    }
+    updateQuantity(productId, Math.max(1, qty));
+  }
+
+  const [stockError, setStockErrorState] = useState<number | null>(null);
+
+  function setStockError(productId: number) {
+    setStockErrorState(productId);
+    setTimeout(() => setStockErrorState(null), 2500);
+  }
 
   function handleCloseShift() {
     setShowCloseModal(true);
@@ -163,7 +193,7 @@ export default function CartPanel({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() =>
-                      updateQuantity(item.productId, item.quantity - 1)
+                      safeUpdateQuantity(item.productId, item.quantity - 1)
                     }
                     className="w-9 h-9 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-lg text-pos-text font-bold text-lg touch-target hover:bg-pos-muted/10 transition-colors"
                     aria-label={`Disminuir cantidad de ${item.productName}`}
@@ -171,13 +201,24 @@ export default function CartPanel({
                     −
                   </button>
 
-                  <span className="w-10 text-center text-sm font-bold font-mono text-pos-text tabular-nums">
-                    {item.quantity}
-                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={getMaxQuantity(item.productId)}
+                    value={item.quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val >= 1) {
+                        safeUpdateQuantity(item.productId, val);
+                      }
+                    }}
+                    className="w-14 text-center text-sm font-bold font-mono text-pos-text bg-pos-background border border-pos-muted/20 rounded-lg px-1 py-1.5 focus:outline-none focus:ring-2 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    aria-label={`Cantidad de ${item.productName}`}
+                  />
 
                   <button
                     onClick={() =>
-                      updateQuantity(item.productId, item.quantity + 1)
+                      safeUpdateQuantity(item.productId, item.quantity + 1)
                     }
                     className="w-9 h-9 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-lg text-pos-text font-bold text-lg touch-target hover:bg-pos-muted/10 transition-colors"
                     aria-label={`Aumentar cantidad de ${item.productName}`}
@@ -185,6 +226,13 @@ export default function CartPanel({
                     +
                   </button>
                 </div>
+
+                {/* Stock warning */}
+                {stockError === item.productId && (
+                  <div className="text-[10px] text-pos-danger mt-1 text-right">
+                    Stock insuficiente
+                  </div>
+                )}
               </div>
 
               {/* Line subtotal */}
