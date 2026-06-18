@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CompletedSale } from "@/store";
+import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -31,6 +32,7 @@ export type Invoice = {
 // ──────────────────────────────────────────────
 
 let nextInvoiceId = 1;
+let nextInvoiceItemId = 1;
 
 /**
  * Build the formatted invoice number for a store and sequential counter.
@@ -114,6 +116,27 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
       invoices: [...get().invoices, invoice],
       counters: { ...get().counters, [storeId]: nextNum },
     });
+
+    // Persist to SQLite
+    const now = new Date().toISOString();
+    execute(
+      `INSERT INTO invoices (id, invoice_number, sale_id, customer_name, total, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
+      [invoice.id, invoice.sequentialNumber, invoice.saleId, invoice.customer, invoice.total, storeId, now, now],
+    )
+      .then(async () => {
+        await enqueueSync("invoice", invoice.id, "insert", storeId);
+
+        // ── Persist invoice items ──
+        for (const item of invoice.items) {
+          const invoiceItemId = nextInvoiceItemId++;
+          await execute(
+            `INSERT INTO invoice_items (id, invoice_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+            [invoiceItemId, invoice.id, item.productName, item.quantity, item.unitPrice, item.subtotal, storeId, now, now],
+          );
+          await enqueueSync("invoice_item", invoiceItemId, "insert", storeId);
+        }
+      })
+      .catch(() => {});
 
     return invoice;
   },

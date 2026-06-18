@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useProductsStore } from "./products";
 import { type Customer } from "./customers";
+import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Page navigation enum (no React Router)
@@ -123,6 +124,7 @@ function calcSubtotal(qty: number, price: number): number {
 }
 
 let nextSaleId = 1;
+let nextSaleItemId = 1;
 
 // ──────────────────────────────────────────────
 // Store factory
@@ -238,6 +240,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       );
     }
 
+    const resolvedStoreId = storeId ?? "store_1";
+
     const sale: CompletedSale = {
       id: nextSaleId++,
       items: items.map((i) => ({ ...i })),
@@ -246,7 +250,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       amountPaid: amountPaid ?? null,
       change,
       date: new Date().toISOString(),
-      storeId: storeId ?? "store_1",
+      storeId: resolvedStoreId,
       customerName: customerName ?? null,
     };
 
@@ -269,6 +273,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
         store_id: sale.storeId,
       });
     }
+
+    // ── Persist sale to SQLite ──
+    const now = new Date().toISOString();
+    const cashAmount = paymentMethod === "cash" ? (amountPaid ?? null) : null;
+    const cardAmount = paymentMethod === "card" ? total : null;
+    execute(
+      `INSERT INTO sales (id, total, payment_method, cash_amount, card_amount, change, status, customer_name, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')`,
+      [sale.id, total, paymentMethod, cashAmount, cardAmount, change, "completed", sale.customerName, resolvedStoreId, now, now],
+    )
+      .then(async () => {
+        await enqueueSync("sale", sale.id, "insert", resolvedStoreId);
+
+        // ── Persist sale items ──
+        for (const item of sale.items) {
+          const saleItemId = nextSaleItemId++;
+          await execute(
+            `INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+            [saleItemId, sale.id, item.productId, item.productName, item.quantity, item.unitPrice, item.subtotal, resolvedStoreId, now, now],
+          );
+          await enqueueSync("sale_item", saleItemId, "insert", resolvedStoreId);
+        }
+      })
+      .catch(() => {});
 
     return sale;
   },

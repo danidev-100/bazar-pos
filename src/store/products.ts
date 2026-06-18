@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -128,6 +129,16 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       brandId: data.brandId ?? null,
     };
     set({ products: [...get().products, product] });
+
+    // Persist to SQLite
+    const now = new Date().toISOString();
+    execute(
+      `INSERT INTO products (id, barcode, name, price, cost_price, stock, category_id, brand_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')`,
+      [product.id, product.barcode, product.name, product.price, product.costPrice, product.stock, product.category_id, product.brandId, product.store_id, now, now],
+    )
+      .then(() => enqueueSync("product", product.id, "insert", product.store_id))
+      .catch(() => {});
+
     return product;
   },
 
@@ -151,13 +162,33 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         p.id === id ? { ...p, ...updates } : p,
       ),
     });
+
+    // Persist to SQLite
+    const current = get().products.find((p) => p.id === id);
+    if (current) {
+      const now = new Date().toISOString();
+      execute(
+        `UPDATE products SET barcode=$1, name=$2, price=$3, cost_price=$4, stock=$5, category_id=$6, brand_id=$7, store_id=$8, updated_at=$9, sync_status='pending' WHERE id=$10`,
+        [current.barcode, current.name, current.price, current.costPrice, current.stock, current.category_id, current.brandId, current.store_id, now, id],
+      )
+        .then(() => enqueueSync("product", id, "update", current.store_id))
+        .catch(() => {});
+    }
   },
 
   deleteProduct: (id) => {
+    const existing = get().products.find((p) => p.id === id);
     set({
       products: get().products.filter((p) => p.id !== id),
       stockMovements: get().stockMovements.filter((m) => m.product_id !== id),
     });
+
+    // Delete from SQLite
+    if (existing) {
+      execute(`DELETE FROM products WHERE id=$1`, [id])
+        .then(() => enqueueSync("product", id, "delete", existing.store_id))
+        .catch(() => {});
+    }
   },
 
   getProductsByStore: (storeId) =>
@@ -180,6 +211,16 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 
     const category: Category = { id: nextCategoryId++, ...data };
     set({ categories: [...get().categories, category] });
+
+    // Persist to SQLite
+    const now = new Date().toISOString();
+    execute(
+      `INSERT INTO categories (id, name, parent_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+      [category.id, category.name, category.parent_id, category.store_id, now, now],
+    )
+      .then(() => enqueueSync("category", category.id, "insert", category.store_id))
+      .catch(() => {});
+
     return category;
   },
 
@@ -207,6 +248,18 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         c.id === id ? { ...c, ...updates } : c,
       ),
     });
+
+    // Persist to SQLite
+    const current = get().categories.find((c) => c.id === id);
+    if (current) {
+      const now = new Date().toISOString();
+      execute(
+        `UPDATE categories SET name=$1, parent_id=$2, store_id=$3, updated_at=$4, sync_status='pending' WHERE id=$5`,
+        [current.name, current.parent_id, current.store_id, now, id],
+      )
+        .then(() => enqueueSync("category", id, "update", current.store_id))
+        .catch(() => {});
+    }
   },
 
   deleteCategory: (id) => {
@@ -223,6 +276,9 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     idsToDelete.add(id);
     collect(id);
 
+    // Capture categories before deletion
+    const deletedCategories = get().categories.filter((c) => idsToDelete.has(c.id));
+
     // Uncategorize products that belong to deleted categories
     set({
       categories: get().categories.filter((c) => !idsToDelete.has(c.id)),
@@ -232,6 +288,13 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
           : p,
       ),
     });
+
+    // Persist: delete from SQLite + enqueue sync for each deleted category
+    for (const cat of deletedCategories) {
+      execute(`DELETE FROM categories WHERE id=$1`, [cat.id])
+        .then(() => enqueueSync("category", cat.id, "delete", cat.store_id))
+        .catch(() => {});
+    }
   },
 
   getCategoriesByStore: (storeId) =>
@@ -251,16 +314,35 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 
     const { products } = get();
     const product = products.find((p) => p.id === data.product_id);
+    let newStock: number | null = null;
     if (product) {
-      const newStock = product.stock + data.delta;
+      newStock = product.stock + data.delta;
       set({
         stockMovements: [...get().stockMovements, movement],
         products: products.map((p) =>
-          p.id === data.product_id ? { ...p, stock: newStock } : p,
+          p.id === data.product_id ? { ...p, stock: newStock! } : p,
         ),
       });
     } else {
       set({ stockMovements: [...get().stockMovements, movement] });
+    }
+
+    // Persist movement to SQLite
+    execute(
+      `INSERT INTO stock_movements (id, product_id, type, quantity, delta, reference_id, user_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+      [movement.id, movement.product_id, movement.type, movement.quantity, movement.delta, movement.reference_id, movement.user_id, movement.store_id, movement.created_at, movement.created_at],
+    )
+      .then(() => enqueueSync("stock_movement", movement.id, "insert", movement.store_id))
+      .catch(() => {});
+
+    // Also persist the product stock update
+    if (product && newStock !== null) {
+      execute(
+        `UPDATE products SET stock=$1, updated_at=$2, sync_status='pending' WHERE id=$3`,
+        [newStock, movement.created_at, data.product_id],
+      )
+        .then(() => enqueueSync("product", data.product_id, "update", product.store_id))
+        .catch(() => {});
     }
 
     return movement;
