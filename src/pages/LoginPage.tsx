@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "@/store";
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore, type Permission } from "@/store/auth";
 
 // ──────────────────────────────────────────────
 // Component
@@ -23,7 +23,12 @@ export default function LoginPage() {
     try {
       const result = await login(name, password);
       if (result.success) {
-        setPage("dashboard");
+        // If user only has "ventas" permission, go straight to POS
+        const user = useAuthStore.getState().currentUser;
+        const perms = user?.permissions ?? [];
+        const hasOnlyVentas =
+          perms.length === 1 && perms[0] === "ventas";
+        setPage(hasOnlyVentas ? "pos" : "dashboard");
       } else {
         setError(result.error ?? "Error desconocido");
       }
