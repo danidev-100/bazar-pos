@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CompletedSale } from "@/store";
+import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -123,21 +124,44 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
     };
 
     set({ shifts: [...get().shifts, shift] });
+
+    // Persist to SQLite
+    const now = shift.openTime;
+    execute(
+      `INSERT INTO shifts (id, employee_name, open_time, status, store_id, created_at, updated_at, sync_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
+      [shift.id, shift.employee, now, "open", storeId, now, now],
+    )
+      .then(() => enqueueSync("shift", shift.id, "insert", storeId))
+      .catch(() => {});
+
     return shift;
   },
 
   closeShift: (shiftId) => {
+    const shift = get().shifts.find((s) => s.id === shiftId);
+    if (!shift) return;
+
+    const now = new Date().toISOString();
     set({
       shifts: get().shifts.map((s) =>
         s.id === shiftId
           ? {
               ...s,
               status: "closed" as const,
-              closeTime: new Date().toISOString(),
+              closeTime: now,
             }
           : s,
       ),
     });
+
+    // Update SQLite
+    execute(
+      `UPDATE shifts SET close_time=$1, status='closed', updated_at=$2, sync_status='pending' WHERE id=$3`,
+      [now, now, shiftId],
+    )
+      .then(() => enqueueSync("shift", shiftId, "update", shift.storeId))
+      .catch(() => {});
   },
 
   reconcile: (shiftId, declaredCash, completedSales) => {
@@ -156,6 +180,7 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
     const variance = computeVariance(declaredCash, expectedTotal);
     const reconciliationStatus = variance === 0 ? "matched" : "mismatch";
 
+    const reconciledAt = new Date().toISOString();
     set({
       shifts: get().shifts.map((s) =>
         s.id === shiftId
@@ -164,11 +189,33 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
               declaredCash,
               variance,
               reconciliationStatus,
-              reconciledAt: new Date().toISOString(),
+              reconciledAt,
             }
           : s,
       ),
     });
+
+    // Write to cash_closings table + enqueue (use capture shift.storeId)
+    const storeId = shift.storeId;
+    execute(
+      `INSERT INTO cash_closings (shift_id, declared_cash, expected_cash, card_total, variance, status, store_id, created_at, updated_at, sync_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+      [
+        shiftId,
+        declaredCash,
+        salesCash,
+        0,
+        variance,
+        reconciliationStatus,
+        storeId,
+        reconciledAt,
+        reconciledAt,
+      ],
+    )
+      .then(() =>
+        enqueueSync("cash_closing", shiftId, "insert", storeId),
+      )
+      .catch(() => {});
   },
 
   getShiftSummary: (shiftId, completedSales) => {

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -53,6 +54,16 @@ export const useBrandsStore = create<BrandsStore>((set, get) => ({
 
     const brand: Brand = { id: nextBrandId++, ...data };
     set({ brands: [...get().brands, brand] });
+
+    // Persist to SQLite
+    const now = new Date().toISOString();
+    execute(
+      `INSERT INTO brands (id, name, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, 'pending')`,
+      [brand.id, brand.name, brand.store_id, now, now],
+    )
+      .then(() => enqueueSync("brand", brand.id, "insert", brand.store_id))
+      .catch(() => {});
+
     return brand;
   },
 
@@ -79,12 +90,39 @@ export const useBrandsStore = create<BrandsStore>((set, get) => ({
         b.id === id ? { ...b, ...updates } : b,
       ),
     });
+
+    // Update SQLite
+    const current = get().brands.find((b) => b.id === id);
+    if (current) {
+      const now = new Date().toISOString();
+      execute(
+        `UPDATE brands SET name=$1, store_id=$2, updated_at=$3, sync_status='pending' WHERE id=$4`,
+        [
+          updates.name ?? current.name,
+          updates.store_id ?? current.store_id,
+          now,
+          id,
+        ],
+      )
+        .then(() => enqueueSync("brand", id, "update", current.store_id))
+        .catch(() => {});
+    }
   },
 
   deleteBrand: (id) => {
+    const existing = get().brands.find((b) => b.id === id);
     set({
       brands: get().brands.filter((b) => b.id !== id),
     });
+
+    // Delete from SQLite
+    execute(`DELETE FROM brands WHERE id=$1`, [id])
+      .then(() => {
+        if (existing) {
+          enqueueSync("brand", id, "delete", existing.store_id);
+        }
+      })
+      .catch(() => {});
   },
 
   getBrandsByStore: (storeId) =>
