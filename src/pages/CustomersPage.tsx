@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useActiveStore } from "@/store/context";
 import { useCustomersStore, type Customer } from "@/store/customers";
 import CustomerForm from "@/components/CustomerForm";
+import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
 // Views
@@ -44,6 +45,33 @@ export default function CustomersPage() {
     );
   }, [storeCustomers, search]);
 
+  const customerColumns: ExportColumn[] = [
+    { header: "Nombre", key: "nombre" },
+    { header: "Teléfono", key: "telefono" },
+    { header: "Email", key: "email" },
+    { header: "CUIT", key: "cuit" },
+  ];
+
+  const exportCustomersPdf = useCallback(() => {
+    const data = filteredCustomers.map((c) => ({
+      nombre: c.name,
+      telefono: c.phone || "—",
+      email: c.email || "—",
+      cuit: c.cuit || "—",
+    }));
+    exportTableToPdf(data, customerColumns, "Clientes");
+  }, [filteredCustomers]);
+
+  const exportCustomersExcel = useCallback(() => {
+    const data = filteredCustomers.map((c) => ({
+      nombre: c.name,
+      telefono: c.phone || "",
+      email: c.email || "",
+      cuit: c.cuit || "",
+    }));
+    exportToExcel(data, customerColumns, "Clientes");
+  }, [filteredCustomers]);
+
   function handleCancel() {
     setView({ kind: "list" });
   }
@@ -66,12 +94,30 @@ export default function CustomersPage() {
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-bold text-pos-text">Clientes</h1>
         {view.kind === "list" && (
-          <button
-            onClick={() => setView({ kind: "create" })}
-            className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90 whitespace-nowrap"
-          >
-            + Nuevo Cliente
-          </button>
+          <div className="flex items-center gap-2">
+            {filteredCustomers.length > 0 && (
+              <>
+                <button
+                  onClick={exportCustomersExcel}
+                  className="text-xs px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50 whitespace-nowrap"
+                >
+                  Excel
+                </button>
+                <button
+                  onClick={exportCustomersPdf}
+                  className="text-xs px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50 whitespace-nowrap"
+                >
+                  PDF
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setView({ kind: "create" })}
+              className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90 whitespace-nowrap"
+            >
+              + Nuevo Cliente
+            </button>
+          </div>
         )}
       </div>
 

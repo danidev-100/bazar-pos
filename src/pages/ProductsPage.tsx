@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
@@ -7,6 +7,7 @@ import BrandFilter from "@/components/BrandFilter";
 import CategoryTree from "@/components/CategoryTree";
 import ProductForm from "@/components/ProductForm";
 import StockMovementLog from "@/components/StockMovementLog";
+import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
 // Views for the center panel
@@ -70,6 +71,50 @@ export default function ProductsPage() {
     ? storeProducts.find((p) => p.id === selectedProductId) ?? null
     : null;
 
+  const productExportColumns: ExportColumn[] = [
+    { header: "Nombre", key: "nombre" },
+    { header: "Código", key: "codigo" },
+    { header: "Precio", key: "precio" },
+    ...(isUnlocked ? [{ header: "Costo", key: "costo" }] : []),
+    { header: "Stock", key: "stock" },
+    { header: "Marca", key: "marca" },
+    { header: "Categoría", key: "categoria" },
+  ];
+
+  const exportProductData = useCallback(() => {
+    const data = filteredProducts.map((p) => {
+      const cat = storeCategories.find((c) => c.id === p.category_id);
+      const brand = brands.find((b) => b.id === p.brandId);
+      return {
+        nombre: p.name,
+        codigo: p.barcode ?? "—",
+        precio: `$${p.price.toFixed(2)}`,
+        ...(isUnlocked ? { costo: `$${p.costPrice.toFixed(2)}` } : {}),
+        stock: p.stock,
+        marca: brand?.name ?? "—",
+        categoria: cat?.name ?? "—",
+      };
+    });
+    exportTableToPdf(data, productExportColumns, "Productos");
+  }, [filteredProducts, storeCategories, brands, isUnlocked]);
+
+  const exportProductExcel = useCallback(() => {
+    const data = filteredProducts.map((p) => {
+      const cat = storeCategories.find((c) => c.id === p.category_id);
+      const brand = brands.find((b) => b.id === p.brandId);
+      return {
+        nombre: p.name,
+        codigo: p.barcode ?? "",
+        precio: p.price,
+        ...(isUnlocked ? { costo: p.costPrice } : {}),
+        stock: p.stock,
+        marca: brand?.name ?? "",
+        categoria: cat?.name ?? "",
+      };
+    });
+    exportToExcel(data, productExportColumns, "Productos");
+  }, [filteredProducts, storeCategories, brands, isUnlocked]);
+
   function handleCategoryEdit(cat: Category) {
     setCenterView({ kind: "edit-category", category: cat });
   }
@@ -120,7 +165,7 @@ export default function ProductsPage() {
         {centerView.kind === "list" && (
           <>
             {/* Header */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
                 Productos
                 {(selectedCategoryId || selectedBrandId) && (
@@ -132,12 +177,30 @@ export default function ProductsPage() {
                   — {filteredProducts.length}
                 </span>
               </h2>
-              <button
-                onClick={() => setCenterView({ kind: "create" })}
-                className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
-              >
-                + Agregar Producto
-              </button>
+              <div className="flex items-center gap-2">
+                {filteredProducts.length > 0 && (
+                  <>
+                    <button
+                      onClick={exportProductExcel}
+                      className="text-xs px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                    >
+                      Excel
+                    </button>
+                    <button
+                      onClick={exportProductData}
+                      className="text-xs px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                    >
+                      PDF
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setCenterView({ kind: "create" })}
+                  className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
+                >
+                  + Agregar Producto
+                </button>
+              </div>
             </div>
 
             {/* Product table */}

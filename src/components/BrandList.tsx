@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useBrandsStore, type Brand } from "@/store/brands";
 import { useActiveStore } from "@/store/context";
 import BrandForm from "./BrandForm";
+import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
 // Component
@@ -39,6 +40,20 @@ export default function BrandList() {
     setIsCreating(false);
   }
 
+  const brandColumns: ExportColumn[] = [
+    { header: "Nombre", key: "nombre" },
+  ];
+
+  const exportBrandsPdf = useCallback(() => {
+    const data = storeBrands.map((b) => ({ nombre: b.name }));
+    exportTableToPdf(data, brandColumns, "Marcas");
+  }, [storeBrands]);
+
+  const exportBrandsExcel = useCallback(() => {
+    const data = storeBrands.map((b) => ({ nombre: b.name }));
+    exportToExcel(data, brandColumns, "Marcas");
+  }, [storeBrands]);
+
   function handleDelete(e: React.MouseEvent, brand: Brand) {
     e.stopPropagation();
     if (!confirm(`¿Eliminar la marca "${brand.name}"?`)) return;
@@ -55,14 +70,32 @@ export default function BrandList() {
             — {storeBrands.length}
           </span>
         </h3>
-        {!isCreating && !editingBrand && (
-          <button
-            onClick={handleCreate}
-            className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
-          >
-            + Agregar Marca
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {storeBrands.length > 0 && !isCreating && !editingBrand && (
+            <>
+              <button
+                onClick={exportBrandsExcel}
+                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+              >
+                Excel
+              </button>
+              <button
+                onClick={exportBrandsPdf}
+                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+              >
+                PDF
+              </button>
+            </>
+          )}
+          {!isCreating && !editingBrand && (
+            <button
+              onClick={handleCreate}
+              className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
+            >
+              + Agregar Marca
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Create / Edit form inline */}

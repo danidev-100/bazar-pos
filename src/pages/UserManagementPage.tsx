@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   useAuthStore,
   type AuthUser,
@@ -6,6 +6,7 @@ import {
   type Role,
   ROLE_PERMISSIONS,
 } from "@/store/auth";
+import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
 // Permission labels
@@ -184,6 +185,38 @@ export default function UserManagementPage() {
 
   const sortedUsers = [...users].sort((a, b) => a.name.localeCompare(b.name));
 
+  // ── Export ──
+
+  const userColumns: ExportColumn[] = [
+    { header: "Nombre", key: "nombre" },
+    { header: "Rol", key: "rol" },
+    { header: "Permisos", key: "permisos" },
+    { header: "Estado", key: "estado" },
+  ];
+
+  const exportUsersPdf = useCallback(() => {
+    const data = sortedUsers.map((u) => ({
+      nombre: u.name,
+      rol: ROLE_LABELS[u.role],
+      permisos:
+        u.permissions.length > 0
+          ? u.permissions.map((p) => PERMISSION_LABELS[p]).join(", ")
+          : "—",
+      estado: u.active ? "Activo" : "Inactivo",
+    }));
+    exportTableToPdf(data, userColumns, "Usuarios");
+  }, [sortedUsers]);
+
+  const exportUsersExcel = useCallback(() => {
+    const data = sortedUsers.map((u) => ({
+      nombre: u.name,
+      rol: ROLE_LABELS[u.role],
+      permisos: u.permissions.map((p) => PERMISSION_LABELS[p]).join(", "),
+      estado: u.active ? "Activo" : "Inactivo",
+    }));
+    exportToExcel(data, userColumns, "Usuarios");
+  }, [sortedUsers]);
+
   return (
     <div>
       {/* Header */}
@@ -195,12 +228,30 @@ export default function UserManagementPage() {
           </span>
         </h2>
         {modalMode === null && (
-          <button
-            onClick={openAddModal}
-            className="text-sm px-4 py-2 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
-          >
-            + Agregar Usuario
-          </button>
+          <div className="flex items-center gap-2">
+            {users.length > 0 && (
+              <>
+                <button
+                  onClick={exportUsersExcel}
+                  className="text-sm px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                >
+                  Excel
+                </button>
+                <button
+                  onClick={exportUsersPdf}
+                  className="text-sm px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                >
+                  PDF
+                </button>
+              </>
+            )}
+            <button
+              onClick={openAddModal}
+              className="text-sm px-4 py-2 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
+            >
+              + Agregar Usuario
+            </button>
+          </div>
         )}
       </div>
 

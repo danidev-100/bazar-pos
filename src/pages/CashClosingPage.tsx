@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAppStore, type CompletedSale } from "@/store";
 import { useAuthStore } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
@@ -6,6 +6,7 @@ import { useCashClosingStore, type Shift } from "@/store/cash-closing";
 import ShiftPanel from "@/components/ShiftPanel";
 import ReconciliationForm from "@/components/ReconciliationForm";
 import ClosureReport from "@/components/ClosureReport";
+import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
 // Component
@@ -39,6 +40,57 @@ export default function CashClosingPage() {
   const selectedShift: Shift | null =
     storeShifts.find((s) => s.id === selectedShiftId) ?? null;
 
+  // ── Export handlers ──
+
+  const shiftColumns: ExportColumn[] = [
+    { header: "Cajero", key: "cajero" },
+    { header: "Turno", key: "turno" },
+    { header: "Apertura", key: "apertura" },
+    { header: "Ventas", key: "ventas" },
+    { header: "Efectivo", key: "efectivo" },
+    { header: "Tarjeta", key: "tarjeta" },
+    { header: "Total", key: "total" },
+    { header: "Estado", key: "estado" },
+  ];
+
+  const shiftExportData = useMemo(() => {
+    return storeShifts.map((shift) => {
+      const shiftSales = completedSales.filter((s) => {
+        const t = new Date(s.date).getTime();
+        const open = new Date(shift.openTime).getTime();
+        const close = shift.closeTime
+          ? new Date(shift.closeTime).getTime()
+          : Date.now();
+        return t >= open && t <= close;
+      });
+      const cashTotal = shiftSales
+        .filter((s) => s.paymentMethod === "cash")
+        .reduce((sum, s) => sum + s.total, 0);
+      const cardTotal = shiftSales
+        .filter((s) => s.paymentMethod === "card")
+        .reduce((sum, s) => sum + s.total, 0);
+      const total = Math.round((cashTotal + cardTotal) * 100) / 100;
+      return {
+        cajero: shift.employee,
+        turno: new Date(shift.openTime).toLocaleDateString(),
+        apertura: `$${shift.openingBalance.toFixed(2)}`,
+        ventas: shiftSales.length,
+        efectivo: `$${cashTotal.toFixed(2)}`,
+        tarjeta: `$${cardTotal.toFixed(2)}`,
+        total: `$${total.toFixed(2)}`,
+        estado: shift.status === "open" ? "Abierto" : "Cerrado",
+      };
+    });
+  }, [storeShifts, completedSales]);
+
+  const exportShiftsExcel = useCallback(() => {
+    exportToExcel(shiftExportData, shiftColumns, "Cierre-de-Caja");
+  }, [shiftExportData]);
+
+  const exportShiftsPdf = useCallback(() => {
+    exportTableToPdf(shiftExportData, shiftColumns, "Cierre de Caja");
+  }, [shiftExportData]);
+
   // Determine which panels to show based on selected shift state
   const showReconciliation =
     selectedShift &&
@@ -70,9 +122,27 @@ export default function CashClosingPage() {
         {/* ── Admin: Cashier Summary ── */}
         {isAdmin && storeShifts.length > 0 && (
           <div className="mb-6 bg-pos-background/30 rounded-xl border border-pos-muted/10 p-4">
-            <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide mb-3">
-              Resumen de Cajeros
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide">
+                Resumen de Cajeros
+              </h3>
+              {storeShifts.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={exportShiftsExcel}
+                    className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+                  >
+                    Excel
+                  </button>
+                  <button
+                    onClick={exportShiftsPdf}
+                    className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+                  >
+                    PDF
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>

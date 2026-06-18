@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useActiveStore } from "@/store/context";
 import {
   useExpensesStore,
@@ -17,6 +17,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
 // Types
@@ -89,6 +90,77 @@ export default function ExpensesPage() {
       total: summary.byCategory[cat].total,
     }));
   }, [summary]);
+
+  // ── Export handlers ──
+
+  const expenseRegisterColumns: ExportColumn[] = [
+    { header: "Fecha", key: "fecha" },
+    { header: "Categoría", key: "categoria" },
+    { header: "Descripción", key: "descripcion" },
+    { header: "Monto", key: "monto" },
+    { header: "Pago", key: "pago" },
+  ];
+
+  const exportRegisterPdf = useCallback(() => {
+    const data = monthExpenses.map((exp) => {
+      const [y, m, d] = exp.date.split("-");
+      return {
+        fecha: `${d}/${m}`,
+        categoria: CATEGORY_LABELS[exp.category],
+        descripcion: exp.description,
+        monto: `$${exp.amount.toFixed(2)}`,
+        pago: paymentLabel(exp.paymentMethod),
+      };
+    });
+    exportTableToPdf(data, expenseRegisterColumns, `Gastos del Mes`);
+  }, [monthExpenses]);
+
+  const exportRegisterExcel = useCallback(() => {
+    const data = monthExpenses.map((exp) => ({
+      fecha: exp.date,
+      categoria: CATEGORY_LABELS[exp.category],
+      descripcion: exp.description,
+      monto: exp.amount,
+      pago: paymentLabel(exp.paymentMethod),
+    }));
+    exportToExcel(data, expenseRegisterColumns, "Gastos");
+  }, [monthExpenses]);
+
+  const summaryColumns: ExportColumn[] = [
+    { header: "Categoría", key: "categoria" },
+    { header: "Total", key: "total" },
+    { header: "Cantidad", key: "cantidad" },
+  ];
+
+  const exportSummaryPdf = useCallback(() => {
+    const data = EXPENSE_CATEGORIES.filter(
+      (cat) => summary.byCategory[cat].total > 0,
+    ).map((cat) => ({
+      categoria: CATEGORY_LABELS[cat],
+      total: `$${summary.byCategory[cat].total.toFixed(2)}`,
+      cantidad: summary.byCategory[cat].count,
+    }));
+    exportTableToPdf(
+      data,
+      summaryColumns,
+      `Resumen ${months[summaryMonth - 1]} ${summaryYear}`,
+    );
+  }, [summary, summaryYear, summaryMonth]);
+
+  const exportSummaryExcel = useCallback(() => {
+    const data = EXPENSE_CATEGORIES.filter(
+      (cat) => summary.byCategory[cat].total > 0,
+    ).map((cat) => ({
+      categoria: CATEGORY_LABELS[cat],
+      total: summary.byCategory[cat].total,
+      cantidad: summary.byCategory[cat].count,
+    }));
+    exportToExcel(
+      data,
+      summaryColumns,
+      `Resumen ${months[summaryMonth - 1]} ${summaryYear}`,
+    );
+  }, [summary, summaryYear, summaryMonth]);
 
   // ── Handlers ──
 
@@ -173,6 +245,8 @@ export default function ExpensesPage() {
           onEdit={openEditModal}
           onDelete={handleDelete}
           paymentLabel={paymentLabel}
+          onExportPdf={exportRegisterPdf}
+          onExportExcel={exportRegisterExcel}
         />
       ) : (
         <SummaryTab
@@ -183,6 +257,8 @@ export default function ExpensesPage() {
           summary={summary}
           chartData={chartData}
           paymentLabel={paymentLabel}
+          onExportPdf={exportSummaryPdf}
+          onExportExcel={exportSummaryExcel}
         />
       )}
 
@@ -237,23 +313,43 @@ function RegisterTab({
   onEdit,
   onDelete,
   paymentLabel,
+  onExportPdf,
+  onExportExcel,
 }: {
   monthExpenses: Expense[];
   onAdd: () => void;
   onEdit: (e: Expense) => void;
   onDelete: (id: number) => void;
   paymentLabel: (m: PaymentMethod) => string;
+  onExportPdf: () => void;
+  onExportExcel: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {/* Quick-add button */}
-      <div>
+      {/* Quick-add + export buttons */}
+      <div className="flex items-center gap-2">
         <button
           onClick={onAdd}
           className="px-4 py-2 bg-pos-secondary text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
         >
           + Nuevo Gasto
         </button>
+        {monthExpenses.length > 0 && (
+          <>
+            <button
+              onClick={onExportExcel}
+              className="px-4 py-2 text-sm border border-pos-muted/30 text-pos-text rounded-lg hover:bg-pos-background/50 transition-colors"
+            >
+              Excel
+            </button>
+            <button
+              onClick={onExportPdf}
+              className="px-4 py-2 text-sm border border-pos-muted/30 text-pos-text rounded-lg hover:bg-pos-background/50 transition-colors"
+            >
+              PDF
+            </button>
+          </>
+        )}
       </div>
 
       {/* Expenses table */}
@@ -342,6 +438,8 @@ function SummaryTab({
   summary,
   chartData,
   paymentLabel,
+  onExportPdf,
+  onExportExcel,
 }: {
   summaryYear: number;
   summaryMonth: number;
@@ -350,11 +448,17 @@ function SummaryTab({
   summary: MonthlySummary;
   chartData: { category: string; total: number }[];
   paymentLabel: (m: PaymentMethod) => string;
+  onExportPdf: () => void;
+  onExportExcel: () => void;
 }) {
+  const hasData = EXPENSE_CATEGORIES.some(
+    (cat) => summary.byCategory[cat].total > 0,
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Month/Year selector */}
-      <div className="flex items-center gap-3">
+      {/* Month/Year selector + export */}
+      <div className="flex items-center gap-3 flex-wrap">
         <select
           value={summaryMonth}
           onChange={(e) => onMonthChange(Number(e.target.value))}
@@ -377,6 +481,22 @@ function SummaryTab({
             </option>
           ))}
         </select>
+        {hasData && (
+          <>
+            <button
+              onClick={onExportExcel}
+              className="px-4 py-2 text-sm border border-pos-muted/30 text-pos-text rounded-lg hover:bg-pos-background/50 transition-colors"
+            >
+              Excel
+            </button>
+            <button
+              onClick={onExportPdf}
+              className="px-4 py-2 text-sm border border-pos-muted/30 text-pos-text rounded-lg hover:bg-pos-background/50 transition-colors"
+            >
+              PDF
+            </button>
+          </>
+        )}
       </div>
 
       {/* Summary by category */}

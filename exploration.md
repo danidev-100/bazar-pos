@@ -1,94 +1,81 @@
-## Exploration: Stock Deduction During Sales
+## Exploration: Neon Sync Integration (neon-sync)
 
 ### Current State
 
-**STOCK IS NEVER DEDUCTED DURING SALES.** This is the single most important finding.
+The sync engine is ALREADY FULLY IMPLEMENTED in Rust (1494 lines, 10 tests). The Tauri command `sync_now` is registered. The frontend `useSync` hook exists with auto-sync, manual trigger, and offline detection. The sync-engine spec is written. **But the integration is incomplete** — no migrations exist, env vars aren't loaded at runtime, `brands` is missing from `SYNCABLE_ENTITIES`, and the cloud DB schema hasn't been created/verified.
 
-The `checkout()` function in `src/store/index.ts` (lines 218-255) records a sale in memory but **never calls `recordMovement()`** to deduct stock. The product stock quantity stays frozen at its initial value forever.
+### What Exists (✅)
 
-The spec at `openspec/specs/products-stock/spec.md` explicitly states: *"A POS sale deducts 3 units"* — but this was never wired up.
+| Layer | Status | Details |
+|-------|--------|---------|
+| Rust sync engine | ✅ Complete | `SyncEngine<L,C>` with push/pull, LW-W, conflict logging, 10 tests |
+| Tauri command | ✅ Registered | `sync_now` in `lib.rs` with proper async handler |
+| Local store impl | ✅ Complete | `TauriLocalStore` via `sqlx::SqlitePool` — full dynamic SQL |
+| Cloud store impl | ✅ Complete | `PgCloudStore` via `sqlx::PgPool` — full dynamic SQL with LW-W |
+| Schema — sync columns | ✅ Complete | All 10 entities use `...syncColumns` (store_id, updated_at, sync_status) |
+| Schema — sync_queue | ✅ Complete | Tracks row-level ops per entity |
+| Schema — sync_logs | ✅ Complete | Conflict audit trail |
+| Drizzle configs | ✅ Both | `drizzle.config.local.ts` (SQLite) + `drizzle.config.cloud.ts` (PostgreSQL) |
+| Frontend hook | ✅ Complete | `useSync.ts` — auto 60min timer, manual trigger, offline detection, reactive state |
+| Integration tests | ✅ Complete | `sync-integration.test.ts` — 827 lines, 12 tests, `InMemorySyncSimulator` |
+| Spec | ✅ Written | `openspec/specs/sync-engine/spec.md` — R1-R4 covered |
+| .env.local | ✅ Exists | Real Neon connection string at `SYNC_DATABASE_URL` |
 
-### Affected Areas
+### What's Missing (❌)
 
-- `src/store/index.ts` — `checkout()` function (lines 218-255): no stock deduction, no stock validation
-- `src/components/CheckoutModal.tsx` — calls `checkout()` then `onComplete()`, no stock operations
-- `src/store/products.ts` — `recordMovement()` (lines 245-267): exists, works perfectly, but is NEVER called from the sales flow
-- `src/pages/POSPage.tsx` — orchestrates POS flow (add to cart → checkout → receipt), no stock awareness
-- `src/components/ProductGrid.tsx` — shows `stock` badges ("Solo quedan X") but stock is never updated
-- `openspec/specs/products-stock/spec.md` — spec says sale deduction should happen but implementation is missing
-- `openspec/specs/pos-sales/spec.md` — checkout spec doesn't mention stock deduction
-
-### Sale Flow Step by Step
-
-```
-1. POSPage renders ProductGrid + CartPanel
-2. User taps product          →  addItem(id, name, price)     [app store]
-3. User adjusts quantity      →  updateQuantity(productId, qty) [app store]
-4. User taps "Cobrar"        →  CheckoutModal opens
-5. User selects payment       →  handles cash amount or card
-6. User taps "Confirmar"     →  checkout(paymentMethod, amount, storeId, customerName)
-                                       │
-                                       ▼
-                               checkout() in store/index.ts:
-                                 │
-                                 ├── Calculates total, change
-                                 ├── Validates payment >= total
-                                 ├── Creates CompletedSale record
-                                 ├── Clears cart (items = [])
-                                 ├── Pushes to completedSales[]
-                                 └── ✗ NEVER deducts stock ✗
-                                       │
-                                       ▼
-7. ReceiptPreview shown       →  lastCompletedSale displayed
-8. Optional: generate invoice →  useInvoicesStore.generateInvoice(sale)
-```
+| Priority | Item | File/Area | Impact |
+|----------|------|-----------|--------|
+| 🔴 P0 | Drizzle migrations never generated | `drizzle/local/` and `drizzle/cloud/` don't exist | Local DB tables don't exist; sync crashes on first run |
+| 🔴 P0 | `migrations()` returns empty vec | `lib.rs:70-72` | Tauri SQL plugin doesn't create tables |
+| 🔴 P0 | No dotenv loading in Rust | `sync.rs:569` uses `std::env::var` but nothing loads `.env` | `SYNC_DATABASE_URL` is empty at runtime → sync fails |
+| 🔴 P0 | Cloud schema never created | No `db:push:cloud` run | Neon DB has no tables — pull returns nothing, push fails |
+| 🟡 P1 | `brands` NOT in SYNCABLE_ENTITIES | `sync.rs:191-201` | Brands won't sync across stores |
+| 🟡 P1 | Cloud schema has SQLite colon syntax | `drizzle.config.cloud.ts` → `db/schema.ts` with `sqliteTable` | Drizzle must translate SQLite → PostgreSQL; may fail on some constructs |
+| 🟡 P1 | Env var name mismatch | `drizzle.config.cloud.ts` uses `CLOUD_DATABASE_URL`, others use `SYNC_DATABASE_URL` | Cloud DB push command won't find the connection string |
+| 🟡 P1 | `useSync` not instantiated | `App.tsx` — never calls `useSync()` | Background sync timer never starts |
+| 🟡 P1 | No Sync UI component | Nowhere in `src/components/` or `src/pages/` | User can't trigger sync or see status |
+| 🟢 P2 | Migrations format: Drizzle → Tauri SQL plugin | Generated Drizzle SQL must be converted to `tauri_plugin_sql::Migration[]` | Tauri SQL plugin uses its own migration format, not raw SQL files |
+| 🟢 P2 | `collect_store_ids()` is hardcoded | `sync.rs:530` returns `vec!["store_1"]` | Multi-store sync won't work properly |
 
 ### Approaches
 
-1. **Wire stock deduction into `checkout()`** — The fix
-   - Pros: Single change point, guarantees deduction always happens
-   - Cons: Tightens coupling between app store and products store
-   - Effort: Low — add ~10 lines in `checkout()` to iterate items and call `recordMovement()` for each
+1. **Minimal integration (recommended for first PR)**
+   - Generate Drizzle migrations → convert to Tauri format
+   - Add `dotenvy` crate + load in `setup()`
+   - Fix env var name mismatch
+   - Add `brands` to SYNCABLE_ENTITIES
+   - Wire `useSync` in App.tsx
+   - Push migrations to Neon
+   - Pros: Gets sync WORKING end-to-end in ~half a day
+   - Cons: Primitive store_id resolution remains hardcoded
+   - Effort: Medium (~4-6 hours)
 
-2. **Move stock deduction to the CheckoutModal (`handleConfirm`)** — Decoupled approach
-   - Pros: Keeps stores independent
-   - Cons: Easy to forget — every checkout pathway must manually deduct
-   - Effort: Low-Medium
+2. **Full integration + Sync UI**
+   - Everything in Approach 1
+   - Build a SyncIndicator component (status badge + manual sync button)
+   - Build a SyncSettings page or section
+   - Pros: Production-ready experience
+   - Cons: More frontend work
+   - Effort: Medium-High (~8-12 hours)
 
-3. **Build a full stock reservation system** — Hold stock when added to cart, confirm on payment
-   - Pros: Real-world accuracy, prevents overselling
-   - Cons: Massive scope increase, cart complexity, UX issues (what happens on abandonment?)
-   - Effort: High
+3. **Full integration + Sync UI + proper store resolution**
+   - Everything in Approach 2
+   - Implement `collect_store_ids()` from actual stores table
+   - Add proper per-store sync cursors
+   - Pros: Correct multi-store sync
+   - Cons: Scope increase significantly
+   - Effort: High (~16+ hours)
 
 ### Recommendation
 
-**Approach 1** — wire stock deduction directly into the `checkout()` function. It's the minimal, correct fix:
-
-```typescript
-// Inside checkout(), after creating the sale record, add:
-const productsStore = useProductsStore.getState();
-for (const item of items) {
-  productsStore.recordMovement({
-    product_id: item.productId,
-    type: "sale",
-    quantity: item.quantity,
-    delta: -item.quantity,
-    reference_id: `sale_${sale.id}`,
-    user_id: null,
-    store_id: storeId ?? "store_1",
-  });
-}
-```
-
-This is a 10-line change that matches the existing pattern (the tests already test this exact scenario). The `recordMovement()` function both creates a `stock_movements` entry AND updates `product.stock` in one call.
+**Approach 1 for the first iteration** — get sync actually working end-to-end. The Rust engine and frontend hook are already written. What's missing is the glue: migrations, env loading, one missing entity, and wiring the hook. That's the difference between "sync code exists" and "sync actually runs."
 
 ### Risks
 
-- **No stock validation**: The current spec allows negative stock ("track shortage" — R3 in products-stock spec). The fix should NOT block sales due to insufficient stock, per existing requirements. Only add validation if explicitly requested.
-- **Race conditions**: In-memory Zustand store means concurrent sales from different POS instances don't see each other's stock until sync. Acceptable in offline-first design.
-- **Missing `sale_items` persistence**: The `sale_items` DB table exists in the schema but is never written to. Only the in-memory `CompletedSale` record exists. If the user refreshes, sales are lost.
-- **All data is in-memory**: Zustand stores are not persisted to SQLite yet. Reloading the page loses everything.
+- **Drizzle cross-dialect compilation**: The schema uses `sqliteTable` with SQLite-specific default `(datetime('now'))`. Drizzle will need to translate these to PostgreSQL `NOW()`. May need manual review.
+- **Tauri SQL plugin migration format**: The plugin expects `Migration { version, description, sql }` where `sql` is a `&str` or `Cow<str>`. Generated Drizzle SQL files need to be embedded. Could use `include_str!()` for the SQL files.
+- **`sqlx::SqlitePool` vs `tauri-plugin-sql`**: The sync engine opens its OWN sqlx pool via `sqlx::SqlitePool::connect("sqlite:pos.db")`, while the Tauri SQL plugin also manages the same SQLite DB. Two concurrent sqlx connections to the same DB file from different crates could cause locking issues. This needs testing.
+- **Env vars in production builds**: `std::env::var` works in development but for production Tauri builds, env vars won't be available. Need to pass the connection string via Tauri configuration or an encrypted config file.
 
 ### Ready for Proposal
-
-**Yes.** The finding is clear: stock deduction is missing. The fix is small, well-understood, and has existing test coverage to validate against. Ready to create a proposal for this change.
+**Yes.** The exploration is complete. The remaining work is well-understood, ordered by priority, and has clear acceptance criteria.
