@@ -24,6 +24,7 @@ export default function ShiftPanel({
   const closeShift = useCashClosingStore((s) => s.closeShift);
 
   const [employee, setEmployee] = useState("");
+  const [openingAmount, setOpeningAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -37,10 +38,13 @@ export default function ShiftPanel({
       return;
     }
 
+    const balance = parseFloat(openingAmount) || 0;
+
     try {
-      openShift(trimmed, storeId);
-      setSuccess(`Turno abierto para ${trimmed}`);
+      openShift(trimmed, storeId, balance);
+      setSuccess(`Turno abierto para ${trimmed} — $${balance.toFixed(2)} de apertura`);
       setEmployee("");
+      setOpeningAmount("");
       onShiftChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al abrir el turno");
@@ -81,6 +85,10 @@ export default function ShiftPanel({
           <div className="text-sm text-pos-text">
             <span className="text-pos-muted">Empleado:</span>{" "}
             {currentShift.employee}
+          </div>
+          <div className="text-sm text-pos-text">
+            <span className="text-pos-muted">Apertura:</span>{" "}
+            <span className="font-mono">${currentShift.openingBalance.toFixed(2)}</span>
           </div>
           <div className="text-xs text-pos-muted">
             Abierto {openTime.toLocaleDateString()} a las{" "}
@@ -138,8 +146,31 @@ export default function ShiftPanel({
           id="shift-employee"
           value={employee}
           onChange={(e) => setEmployee(e.target.value)}
-          placeholder="e.g. Juan Pérez"
+          placeholder="Ej: Juan Pérez"
           className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="shift-opening"
+          className="block text-sm font-medium text-pos-text mb-1"
+        >
+          Apertura de Caja ($)
+        </label>
+        <input
+          id="shift-opening"
+          type="text"
+          inputMode="decimal"
+          value={openingAmount}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
+              setOpeningAmount(val);
+            }
+          }}
+          placeholder="0.00"
+          className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         />
       </div>
 

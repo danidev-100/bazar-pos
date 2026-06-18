@@ -299,7 +299,7 @@ export default function POSPage() {
   function handleOpenShift() {
     try {
       const employee = currentUser?.name ?? "Cajero";
-      openShift(employee, storeId);
+      openShift(employee, storeId, 0);
       showNotification(`Turno abierto — ${employee}`);
       setTimeout(() => dismissNotification(), 3000);
     } catch {

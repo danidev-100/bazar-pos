@@ -108,9 +108,14 @@ export default function CartPanel({
       <div className="flex items-center justify-between mb-3 px-2 py-1.5 bg-pos-background/50 rounded-lg text-xs">
         {hasOpenShift ? (
           <>
-            <span className="text-pos-success font-medium">
-              ● Turno abierto
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-pos-success font-medium">● Abierto</span>
+              {openShift!.openingBalance > 0 && (
+                <span className="text-pos-muted font-mono">
+                  Apert.: ${openShift!.openingBalance.toFixed(2)}
+                </span>
+              )}
+            </div>
             <button
               onClick={handleCloseShift}
               className="text-pos-danger hover:text-pos-danger/80 touch-target px-2 py-0.5 rounded"

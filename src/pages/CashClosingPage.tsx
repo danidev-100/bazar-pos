@@ -79,6 +79,7 @@ export default function CashClosingPage() {
                   <tr className="text-pos-muted border-b border-pos-muted/20">
                     <th className="text-left py-1.5 pr-2 font-medium">Cajero</th>
                     <th className="text-left py-1.5 px-2 font-medium">Turno</th>
+                    <th className="text-right py-1.5 px-2 font-medium">Apertura</th>
                     <th className="text-right py-1.5 px-2 font-medium">Ventas</th>
                     <th className="text-right py-1.5 px-2 font-medium">Efectivo</th>
                     <th className="text-right py-1.5 px-2 font-medium">Tarjeta</th>
@@ -109,6 +110,9 @@ export default function CashClosingPage() {
                         <td className="py-2 pr-2 font-medium text-pos-text">{shift.employee}</td>
                         <td className="py-2 px-2 text-pos-muted">
                           {new Date(shift.openTime).toLocaleDateString()}
+                        </td>
+                        <td className="py-2 px-2 text-right font-mono text-pos-muted">
+                          ${shift.openingBalance.toFixed(2)}
                         </td>
                         <td className="py-2 px-2 text-right font-mono">{shiftSales.length}</td>
                         <td className="py-2 px-2 text-right font-mono">${cashTotal.toFixed(2)}</td>

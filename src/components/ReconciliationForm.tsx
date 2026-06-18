@@ -46,9 +46,22 @@ export default function ReconciliationForm({
 
         <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-pos-muted">Efectivo Esperado</span>
+            <span className="text-sm text-pos-muted">Apertura de Caja</span>
+            <span className="text-sm font-mono font-bold">
+              ${shift.openingBalance.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-pos-muted">Ventas Efectivo</span>
             <span className="text-sm font-mono font-bold">
               ${expectedCash.toFixed(2)}
+            </span>
+          </div>
+          <hr className="border-pos-muted/20" />
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Total Esperado</span>
+            <span className="text-sm font-mono font-bold text-pos-text">
+              ${(expectedCash + shift.openingBalance).toFixed(2)}
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -101,9 +114,22 @@ export default function ReconciliationForm({
 
       <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-pos-muted">Expected Cash</span>
+          <span className="text-sm text-pos-muted">Apertura de Caja</span>
+          <span className="text-sm font-mono font-bold text-pos-text">
+            ${shift.openingBalance.toFixed(2)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-pos-muted">Ventas Efectivo</span>
           <span className="text-sm font-mono font-bold text-pos-text">
             ${expectedCash.toFixed(2)}
+          </span>
+        </div>
+        <hr className="border-pos-muted/20" />
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Total Esperado</span>
+          <span className="text-sm font-mono font-bold text-pos-secondary">
+            ${(expectedCash + shift.openingBalance).toFixed(2)}
           </span>
         </div>
 
@@ -116,11 +142,16 @@ export default function ReconciliationForm({
           </label>
           <input
             id="declared-cash"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             value={declaredCash}
-            onChange={(e) => setDeclaredCash(e.target.value)}
+            onChange={(e) => {
+              // Only allow digits, one dot, and two decimal places
+              const val = e.target.value;
+              if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
+                setDeclaredCash(val);
+              }
+            }}
             placeholder="0.00"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-lg text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />

@@ -12,6 +12,7 @@ export type Shift = {
   closeTime: string | null;
   status: "open" | "closed";
   storeId: string;
+  openingBalance: number;
   declaredCash: number | null;
   variance: number | null;
   reconciliationStatus: "pending" | "matched" | "mismatch" | null;
@@ -66,8 +67,8 @@ export function computeVariance(
 export type CashClosingStore = {
   shifts: Shift[];
 
-  /** Open a new shift. Throws if an open shift exists for the store. */
-  openShift: (employee: string, storeId: string) => Shift;
+  /** Open a new shift with an opening cash balance. Throws if an open shift exists. */
+  openShift: (employee: string, storeId: string, openingBalance?: number) => Shift;
 
   /** Close an open shift. */
   closeShift: (shiftId: number) => void;
@@ -99,7 +100,7 @@ export type CashClosingStore = {
 export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
   shifts: [],
 
-  openShift: (employee, storeId) => {
+  openShift: (employee, storeId, openingBalance = 0) => {
     const open = get().shifts.find(
       (s) => s.storeId === storeId && s.status === "open",
     );
@@ -114,6 +115,7 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       closeTime: null,
       status: "open",
       storeId,
+      openingBalance: Math.max(0, openingBalance),
       declaredCash: null,
       variance: null,
       reconciliationStatus: null,
@@ -144,12 +146,14 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
     if (shift.status !== "closed")
       throw new Error("Cannot reconcile an open shift");
 
-    const expectedCash = computeExpectedCash(
+    const salesCash = computeExpectedCash(
       completedSales,
       shift.openTime,
       shift.closeTime!,
     );
-    const variance = computeVariance(declaredCash, expectedCash);
+    // Expected = sales in cash + opening balance
+    const expectedTotal = salesCash + (shift.openingBalance ?? 0);
+    const variance = computeVariance(declaredCash, expectedTotal);
     const reconciliationStatus = variance === 0 ? "matched" : "mismatch";
 
     set({
