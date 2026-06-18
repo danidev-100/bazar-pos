@@ -95,11 +95,21 @@ function ShieldIcon() {
   );
 }
 
+function ExpenseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+    </svg>
+  );
+}
+
 // ──────────────────────────────────────────────
 // Module definitions
 // ──────────────────────────────────────────────
 
 const MODULES: ModuleConfig[] = [
+  { label: "Gastos",       icon: <ExpenseIcon />,    target: "expenses",  permission: "configuracion" },
   { label: "Ventas",       icon: <SaleIcon />,       target: "pos",       permission: "ventas" },
   { label: "Inventario",   icon: <PackageIcon />,    target: "products",  permission: "configuracion" },
   { label: "Clientes",     icon: <UsersIcon />,      target: "customers", permission: "clientes" },

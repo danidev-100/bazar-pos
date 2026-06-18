@@ -52,14 +52,15 @@ beforeEach(() => {
 // ──────────────────────────────────────────────
 
 describe("DashboardPage", () => {
-  it("2.1/2.2 — renders 8 module cards as buttons", () => {
+  it("2.1/2.2 — renders 9 module cards as buttons", () => {
     render(<DashboardPage />);
     const cards = screen.getAllByRole("button");
-    expect(cards).toHaveLength(8);
+    expect(cards).toHaveLength(9);
   });
 
   it("2.1 — each card displays its label text", () => {
     render(<DashboardPage />);
+    expect(screen.getByText("Gastos")).toBeInTheDocument();
     expect(screen.getByText("Ventas")).toBeInTheDocument();
     expect(screen.getByText("Inventario")).toBeInTheDocument();
     expect(screen.getByText("Clientes")).toBeInTheDocument();

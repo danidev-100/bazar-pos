@@ -13,6 +13,7 @@ const PAGE_PERMISSIONS: Partial<Record<Page, Permission>> = {
   products: "configuracion",
   billing: "configuracion",
   admin: "configuracion",
+  expenses: "configuracion",
   "user-management": "configuracion",
 };
 

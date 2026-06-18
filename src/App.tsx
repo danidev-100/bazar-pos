@@ -16,6 +16,7 @@ import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import DashboardPage from "@/pages/DashboardPage";
 import UserManagementPage from "@/pages/UserManagementPage";
+import ExpensesPage from "@/pages/ExpensesPage";
 import LoginPage from "@/pages/LoginPage";
 
 // ──────────────────────────────────────────────
@@ -24,6 +25,7 @@ import LoginPage from "@/pages/LoginPage";
 
 const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
   dashboard: DashboardPage,
+  expenses: ExpensesPage,
   pos: POSPage,
   products: ProductsPage,
   "cash-closing": CashClosingPage,

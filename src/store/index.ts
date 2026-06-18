@@ -15,6 +15,7 @@ export type Page =
   | "admin"
   | "customers"
   | "dashboard"
+  | "expenses"
   | "login"
   | "user-management";
 
@@ -281,3 +282,4 @@ export const useAppStore = create<AppStore>((set, get) => ({
 // Re-export stores for convenience
 export { useAdminStore } from "./admin";
 export { useAuthStore } from "./auth";
+export { useExpensesStore } from "./expenses";
