@@ -251,6 +251,32 @@ export const cashClosings = pgTable(
 );
 
 // ──────────────────────────────────────────────
+// Expenses (syncable)
+// ──────────────────────────────────────────────
+
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    description: text("description").notNull(),
+    amount: doublePrecision("amount").notNull(),
+    category: text("category").notNull(),
+    date: text("date").notNull(),
+    payment_method: text("payment_method", { enum: ["cash", "card"] }).notNull(),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    storeIdx: index("idx_expenses_store").on(table.store_id),
+    dateIdx: index("idx_expenses_date").on(table.date),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Invoices (syncable)
 // ──────────────────────────────────────────────
 

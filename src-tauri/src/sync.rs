@@ -191,6 +191,7 @@ mod types {
 pub const SYNCABLE_ENTITIES: &[(&str, &str, &str)] = &[
     ("brand", "brands", "id"),
     ("category", "categories", "id"),
+    ("expense", "expenses", "id"),
     ("product", "products", "id"),
     ("stock_movement", "stock_movements", "id"),
     ("shift", "shifts", "id"),

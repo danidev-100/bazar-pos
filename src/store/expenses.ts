@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -200,6 +201,28 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
     const updated = [...expenses, expense];
     set({ expenses: updated });
     saveExpenses(updated);
+
+    // Persist to SQLite and enqueue sync
+    execute(
+      `INSERT INTO expenses (id, description, amount, category, date, payment_method, store_id, created_at, updated_at, sync_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+      [
+        expense.id,
+        expense.description,
+        expense.amount,
+        expense.category,
+        expense.date,
+        expense.paymentMethod,
+        expense.storeId,
+        expense.createdAt,
+        expense.updatedAt,
+      ],
+    )
+      .then(() =>
+        enqueueSync("expense", expense.id, "insert", expense.storeId),
+      )
+      .catch(() => {});
+
     return expense;
   },
 
@@ -225,12 +248,39 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
     );
     set({ expenses: updated });
     saveExpenses(updated);
+
+    // Update SQLite and enqueue sync
+    const now = new Date().toISOString();
+    execute(
+      `UPDATE expenses SET description=$1, amount=$2, category=$3, date=$4, payment_method=$5, updated_at=$6, sync_status='pending' WHERE id=$7`,
+      [
+        data.description ?? existing.description,
+        data.amount ?? existing.amount,
+        data.category ?? existing.category,
+        data.date ?? existing.date,
+        data.paymentMethod ?? existing.paymentMethod,
+        now,
+        id,
+      ],
+    )
+      .then(() => enqueueSync("expense", id, "update", existing.storeId))
+      .catch(() => {});
   },
 
   deleteExpense: (id) => {
+    const existing = get().expenses.find((e) => e.id === id);
     const updated = get().expenses.filter((e) => e.id !== id);
     set({ expenses: updated });
     saveExpenses(updated);
+
+    // Delete from SQLite and enqueue sync
+    execute(`DELETE FROM expenses WHERE id=$1`, [id])
+      .then(() => {
+        if (existing) {
+          enqueueSync("expense", id, "delete", existing.storeId);
+        }
+      })
+      .catch(() => {});
   },
 
   getExpensesByMonth: (year, month, storeId) => {
