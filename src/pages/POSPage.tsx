@@ -135,7 +135,7 @@ function seedDemoProducts() {
     barcode: "77912356",
     name: "Jugo Naranja 1L",
     price: 190,
-    stock: 25,
+    stock: 8,
     category_id: bebidas.id,
     store_id: "store_1",
   });

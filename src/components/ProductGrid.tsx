@@ -86,7 +86,7 @@ export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGrid
               onClick={() => handleTap(product)}
               className={`flex flex-col items-center justify-center bg-pos-surface border rounded-xl p-4 touch-target transition-all active:scale-95 ${
                 product.stock < 25
-                  ? "border-pos-danger/30 hover:border-pos-danger/60 bg-pos-danger/[0.03]"
+                  ? "border-pos-danger/50 hover:border-pos-danger bg-pos-danger/5"
                   : "border-pos-muted/10 hover:border-pos-secondary/50 hover:shadow-sm"
               }`}
               aria-label={`Agregar ${product.name} al carrito`}
