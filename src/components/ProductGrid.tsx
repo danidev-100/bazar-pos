@@ -104,11 +104,15 @@ export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGrid
                 ${product.price.toFixed(2)}
               </span>
 
-              {product.stock < 25 && (
-                <span className="text-xs text-pos-danger mt-1 font-medium">
-                  {product.stock === 0 ? "Sin stock" : `Stock: ${product.stock}`}
-                </span>
-              )}
+              <span className={`text-xs mt-1 font-medium ${
+                product.stock < 25
+                  ? "text-pos-danger"
+                  : product.stock < 50
+                    ? "text-pos-accent"
+                    : "text-pos-muted"
+              }`}>
+                Stock: {product.stock}
+              </span>
 
               {product.barcode && (
                 <span className="text-[10px] text-pos-muted mt-1 font-mono truncate max-w-full">
