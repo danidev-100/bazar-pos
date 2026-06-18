@@ -209,6 +209,16 @@ function ShiftList({
   selectedId: number | null;
   onSelect: (id: number | null) => void;
 }) {
+  const [employeeFilter, setEmployeeFilter] = useState<string>("all");
+
+  // Unique employees, sorted
+  const employees = [...new Set(shifts.map((s) => s.employee))].sort();
+
+  const filtered =
+    employeeFilter === "all"
+      ? shifts
+      : shifts.filter((s) => s.employee === employeeFilter);
+
   if (shifts.length === 0) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -219,11 +229,26 @@ function ShiftList({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide mb-3">
-        Historial de Turnos
-      </h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide">
+          Historial de Turnos
+        </h3>
+        <select
+          value={employeeFilter}
+          onChange={(e) => {
+            setEmployeeFilter(e.target.value);
+            onSelect(null);
+          }}
+          className="text-xs border border-pos-muted/20 rounded-lg px-2 py-1 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
+        >
+          <option value="all">Todos</option>
+          {employees.map((emp) => (
+            <option key={emp} value={emp}>{emp}</option>
+          ))}
+        </select>
+      </div>
 
-      {shifts.map((s) => {
+      {filtered.map((s) => {
         const isOpen = s.status === "open";
         const isSelected = s.id === selectedId;
 
