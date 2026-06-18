@@ -39,14 +39,16 @@ export default function CartPanel({
   const currentUser = useAuthStore((s) => s.currentUser);
   const products = useProductsStore((s) => s.products);
   const { storeId } = useActiveStore();
-  const getOpenShift = useCashClosingStore((s) => s.getOpenShift);
+  const shifts = useCashClosingStore((s) => s.shifts);
   const closeShift = useCashClosingStore((s) => s.closeShift);
 
   const total = cartTotal();
   const count = itemCount();
   const isEmpty = items.length === 0;
   const cashierName = currentUser?.name ?? "—";
-  const openShift = getOpenShift(storeId);
+  const openShift = shifts.find(
+    (s) => s.storeId === storeId && s.status === "open",
+  ) ?? null;
   const hasOpenShift = openShift !== null;
 
   const [showCloseModal, setShowCloseModal] = useState(false);

@@ -177,8 +177,8 @@ export default function POSPage() {
   const dismissReceipt = useAppStore((s) => s.dismissReceipt);
   const setPage = useAppStore((s) => s.setPage);
   const currentUser = useAuthStore((s) => s.currentUser);
-  const getOpenShift = useCashClosingStore((s) => s.getOpenShift);
-  const openShift = useCashClosingStore((s) => s.openShift);
+  const shifts = useCashClosingStore((s) => s.shifts);
+  const openShiftAction = useCashClosingStore((s) => s.openShift);
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -186,8 +186,10 @@ export default function POSPage() {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const hintShown = useRef(false);
 
-  // Check for open shift
-  const openShiftData = getOpenShift(storeId);
+  // Check for open shift (reactively — subscribes to shifts)
+  const openShiftData = shifts.find(
+    (s) => s.storeId === storeId && s.status === "open",
+  ) ?? null;
   const hasOpenShift = openShiftData !== null;
 
   // Seed demo products on first mount
@@ -299,7 +301,7 @@ export default function POSPage() {
   function handleOpenShift() {
     try {
       const employee = currentUser?.name ?? "Cajero";
-      openShift(employee, storeId, 0);
+      openShiftAction(employee, storeId, 0);
       showNotification(`Turno abierto — ${employee}`);
       setTimeout(() => dismissNotification(), 3000);
     } catch {
