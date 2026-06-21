@@ -12,6 +12,7 @@ export type Customer = {
 };
 
 let nextCustomerId = 1;
+export function setNextCustomerId(id: number) { nextCustomerId = id; }
 
 export type CustomersStore = {
   customers: Customer[];

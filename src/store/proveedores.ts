@@ -12,6 +12,7 @@ export type Proveedor = {
 };
 
 let nextProveedorId = 1;
+export function setNextProveedorId(id: number) { nextProveedorId = id; }
 
 export type ProveedoresStore = {
   proveedores: Proveedor[];

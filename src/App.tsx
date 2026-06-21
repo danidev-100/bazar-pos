@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/auth";
 import { usePermission } from "@/hooks/usePermission";
 import { useSync } from "@/hooks/useSync";
 import { StoreProvider } from "@/store/context";
+import { initAllStores } from "@/lib/init-stores";
 import AdminRoute from "@/components/AdminRoute";
 import NavigationBar from "@/components/NavigationBar";
 import ProductsPage from "@/pages/ProductsPage";
@@ -59,9 +60,10 @@ export default function App() {
   const init = useAuthStore((s) => s.init);
   const hasAccess = usePermission(page);
 
-  // Hydrate auth store on mount
+  // Hydrate auth store + load all data from SQLite on mount
   useEffect(() => {
     init();
+    initAllStores();
   }, [init]);
 
   // Start hourly sync

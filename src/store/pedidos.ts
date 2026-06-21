@@ -37,6 +37,8 @@ export function getStatusLabel(status: PedidoStatus): string {
 
 let nextPedidoId = 1;
 let nextPedidoItemId = 1;
+export function setNextPedidoId(id: number) { nextPedidoId = id; }
+export function setNextPedidoItemId(id: number) { nextPedidoItemId = id; }
 
 export type PedidosStore = {
   pedidos: Pedido[];

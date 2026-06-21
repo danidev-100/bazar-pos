@@ -128,9 +128,9 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
     // Persist to SQLite
     const now = shift.openTime;
     execute(
-      `INSERT INTO shifts (id, employee_name, open_time, status, store_id, created_at, updated_at, sync_status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
-      [shift.id, shift.employee, now, "open", storeId, now, now],
+      `INSERT INTO shifts (id, employee_name, open_time, status, opening_balance, store_id, created_at, updated_at, sync_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
+      [shift.id, shift.employee, now, "open", shift.openingBalance, storeId, now, now],
     )
       .then(() => enqueueSync("shift", shift.id, "insert", storeId))
       .catch(() => {});

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useCustomersStore, type Customer } from "@/store/customers";
 import { useActiveStore } from "@/store/context";
+import { customerSchema } from "@/lib/validations";
 
 // ──────────────────────────────────────────────
 // Component
@@ -51,9 +52,19 @@ export default function CustomerForm({
     e.preventDefault();
     setError(null);
 
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("El nombre del cliente no puede estar vacío");
+    const result = customerSchema.safeParse({
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      address: address.trim(),
+      cuit: cuit.trim(),
+      store_id: storeId,
+      editId: editCustomer?.id,
+    });
+
+    if (!result.success) {
+      const firstIssue = result.error.issues[0];
+      setError(firstIssue.message);
       return;
     }
 
@@ -61,19 +72,19 @@ export default function CustomerForm({
     try {
       if (editCustomer) {
         updateCustomer(editCustomer.id, {
-          name: trimmedName,
-          phone: phone.trim(),
-          email: email.trim(),
-          address: address.trim(),
-          cuit: cuit.trim(),
+          name: result.data.name,
+          phone: result.data.phone,
+          email: result.data.email,
+          address: result.data.address,
+          cuit: result.data.cuit,
         });
       } else {
         addCustomer({
-          name: trimmedName,
-          phone: phone.trim(),
-          email: email.trim(),
-          address: address.trim(),
-          cuit: cuit.trim(),
+          name: result.data.name,
+          phone: result.data.phone,
+          email: result.data.email,
+          address: result.data.address,
+          cuit: result.data.cuit,
           store_id: storeId,
         });
       }

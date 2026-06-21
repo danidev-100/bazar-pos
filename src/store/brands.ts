@@ -16,6 +16,7 @@ export type Brand = {
 // ──────────────────────────────────────────────
 
 let nextBrandId = 1;
+export function setNextBrandId(id: number) { nextBrandId = id; }
 
 // ──────────────────────────────────────────────
 // Store shape

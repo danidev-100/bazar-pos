@@ -33,6 +33,8 @@ export type Invoice = {
 
 let nextInvoiceId = 1;
 let nextInvoiceItemId = 1;
+export function setNextInvoiceId(id: number) { nextInvoiceId = id; }
+export function setNextInvoiceItemId(id: number) { nextInvoiceItemId = id; }
 
 /**
  * Build the formatted invoice number for a store and sequential counter.

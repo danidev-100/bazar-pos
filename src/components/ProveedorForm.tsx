@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useProveedoresStore, type Proveedor } from "@/store/proveedores";
 import { useActiveStore } from "@/store/context";
+import { proveedorSchema } from "@/lib/validations";
 
 interface ProveedorFormProps {
   editProveedor: Proveedor | null;
@@ -47,9 +48,18 @@ export default function ProveedorForm({
     e.preventDefault();
     setError(null);
 
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("El nombre del proveedor no puede estar vacío");
+    const result = proveedorSchema.safeParse({
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      address: address.trim(),
+      cuit: cuit.trim(),
+      store_id: storeId,
+      editId: editProveedor?.id,
+    });
+
+    if (!result.success) {
+      setError(result.error.issues[0].message);
       return;
     }
 
@@ -57,19 +67,19 @@ export default function ProveedorForm({
     try {
       if (editProveedor) {
         updateProveedor(editProveedor.id, {
-          name: trimmedName,
-          phone: phone.trim(),
-          email: email.trim(),
-          address: address.trim(),
-          cuit: cuit.trim(),
+          name: result.data.name,
+          phone: result.data.phone,
+          email: result.data.email,
+          address: result.data.address,
+          cuit: result.data.cuit,
         });
       } else {
         addProveedor({
-          name: trimmedName,
-          phone: phone.trim(),
-          email: email.trim(),
-          address: address.trim(),
-          cuit: cuit.trim(),
+          name: result.data.name,
+          phone: result.data.phone,
+          email: result.data.email,
+          address: result.data.address,
+          cuit: result.data.cuit,
           store_id: storeId,
         });
       }

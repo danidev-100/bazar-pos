@@ -7,6 +7,7 @@ import {
 import { useBrandsStore } from "@/store/brands";
 import { useAuthStore } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
+import { productSchema } from "@/lib/validations";
 
 // ──────────────────────────────────────────────
 // Form state
@@ -106,24 +107,26 @@ export default function ProductForm({
     e.preventDefault();
     setError(null);
 
-    const trimmed = form.name.trim();
-    if (!trimmed) {
-      setError("El nombre del producto es obligatorio");
-      return;
-    }
-
     const price = parseFloat(form.price);
-    if (isNaN(price) || price < 0) {
-      setError("El precio debe ser un número no negativo");
-      return;
-    }
-
-    const categoryId = form.category_id ? Number(form.category_id) : null;
     const costPrice = parseFloat(form.costPrice);
+    const categoryId = form.category_id ? Number(form.category_id) : null;
     const brandId = form.brandId ? Number(form.brandId) : null;
 
-    if (isNaN(costPrice) || costPrice < 0) {
-      setError("El costo debe ser un número no negativo");
+    const result = productSchema.safeParse({
+      name: form.name.trim(),
+      barcode: form.barcode.trim(),
+      price: isNaN(price) ? -1 : price,
+      costPrice: isNaN(costPrice) ? -1 : costPrice,
+      stock: 0,
+      minStock: 0,
+      category_id: categoryId,
+      brandId,
+      store_id: storeId,
+      editId: editProduct?.id,
+    });
+
+    if (!result.success) {
+      setError(result.error.issues[0].message);
       return;
     }
 
@@ -131,24 +134,24 @@ export default function ProductForm({
     try {
       if (editProduct) {
         updateProduct(editProduct.id, {
-          name: trimmed,
-          barcode: form.barcode.trim() || null,
-          price,
-          costPrice,
-          brandId,
-          category_id: categoryId,
+          name: result.data.name,
+          barcode: result.data.barcode || null,
+          price: result.data.price,
+          costPrice: result.data.costPrice,
+          brandId: result.data.brandId,
+          category_id: result.data.category_id,
           store_id: storeId,
         });
       } else {
         addProduct({
-          name: trimmed,
-          barcode: form.barcode.trim() || null,
-          price,
-          costPrice,
-          brandId,
+          name: result.data.name,
+          barcode: result.data.barcode || null,
+          price: result.data.price,
+          costPrice: result.data.costPrice,
+          brandId: result.data.brandId,
           stock: 0,
           minStock: 0,
-          category_id: categoryId,
+          category_id: result.data.category_id,
           store_id: storeId,
         });
       }

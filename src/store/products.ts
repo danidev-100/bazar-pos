@@ -46,6 +46,9 @@ export type StockMovement = {
 let nextProductId = 1;
 let nextCategoryId = 1;
 let nextMovementId = 1;
+export function setNextProductId(id: number) { nextProductId = id; }
+export function setNextCategoryId(id: number) { nextCategoryId = id; }
+export function setNextMovementId(id: number) { nextMovementId = id; }
 
 function now(): string {
   return new Date().toISOString();
