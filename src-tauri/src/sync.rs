@@ -572,7 +572,7 @@ pub async fn run_sync(database_url: Option<String>) -> Result<SyncResult, SyncEr
     let db_url = database_url
         .or_else(|| std::env::var("SYNC_DATABASE_URL").ok())
         .filter(|s| !s.is_empty())
-        .unwrap_or(config.database_url);
+        .unwrap_or_else(|| config.database_url.clone());
 
     if db_url.is_empty() {
         return Err(SyncError::Database(

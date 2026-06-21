@@ -257,8 +257,8 @@ export async function execute(
   bind?: unknown[],
 ): Promise<{ rowsAffected: number }> {
   const db = await getDb();
-  const rowsAffected = await db.execute(sql, bind);
-  return { rowsAffected };
+  const result = await db.execute(sql, bind) as { rowsAffected: number };
+  return { rowsAffected: result.rowsAffected };
 }
 
 /** Select rows from the database. */
