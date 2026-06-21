@@ -52,6 +52,8 @@ export default function ExpensesPage() {
   const updateExpense = useExpensesStore((s) => s.updateExpense);
   const deleteExpense = useExpensesStore((s) => s.deleteExpense);
   const getExpensesByMonth = useExpensesStore((s) => s.getExpensesByMonth);
+  const getExpensesByDateRange = useExpensesStore((s) => s.getExpensesByDateRange);
+  const getExpensesByCategory = useExpensesStore((s) => s.getExpensesByCategory);
   const getMonthlySummary = useExpensesStore((s) => s.getMonthlySummary);
 
   // ── Tab state ──
@@ -61,19 +63,60 @@ export default function ExpensesPage() {
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // ── Register tab filters ──
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterCategory, setFilterCategory] = useState<ExpenseCategory | "">("");
 
   // ── Summary date picker ──
   const now = new Date();
   const [summaryYear, setSummaryYear] = useState(now.getFullYear());
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1);
 
-  // ── Current month expenses for the register tab ──
+  // ── Filtered expenses for the register tab ──
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
-  const monthExpenses = useMemo(
-    () => getExpensesByMonth(currentYear, currentMonth, storeId),
-    [expenses, currentYear, currentMonth, storeId, getExpensesByMonth],
-  );
+
+  const filteredExpenses = useMemo(() => {
+    let result = getExpensesByMonth(currentYear, currentMonth, storeId);
+
+    if (filterDateFrom && filterDateTo) {
+      result = getExpensesByDateRange(filterDateFrom, filterDateTo, storeId);
+    }
+
+    if (filterCategory) {
+      result = getExpensesByCategory(filterCategory, storeId);
+    }
+
+    if (filterDateFrom && filterDateTo && filterCategory) {
+      return result.filter((e) => {
+        const inRange = !filterDateFrom || !filterDateTo || (e.date >= filterDateFrom && e.date <= filterDateTo);
+        const matchesCat = !filterCategory || e.category === filterCategory;
+        return inRange && matchesCat;
+      });
+    }
+
+    return result;
+  }, [
+    expenses,
+    currentYear,
+    currentMonth,
+    storeId,
+    getExpensesByMonth,
+    getExpensesByDateRange,
+    getExpensesByCategory,
+    filterDateFrom,
+    filterDateTo,
+    filterCategory,
+  ]);
+
+  function clearFilters() {
+    setFilterDateFrom("");
+    setFilterDateTo("");
+    setFilterCategory("");
+  }
 
   // ── Monthly summary data ──
   const summary = useMemo(
@@ -102,7 +145,7 @@ export default function ExpensesPage() {
   ];
 
   const exportRegisterPdf = useCallback(() => {
-    const data = monthExpenses.map((exp) => {
+    const data = filteredExpenses.map((exp) => {
       const [y, m, d] = exp.date.split("-");
       return {
         fecha: `${d}/${m}`,
@@ -113,10 +156,10 @@ export default function ExpensesPage() {
       };
     });
     exportTableToPdf(data, expenseRegisterColumns, `Gastos del Mes`);
-  }, [monthExpenses]);
+  }, [filteredExpenses]);
 
   const exportRegisterExcel = useCallback(() => {
-    const data = monthExpenses.map((exp) => ({
+    const data = filteredExpenses.map((exp) => ({
       fecha: exp.date,
       categoria: CATEGORY_LABELS[exp.category],
       descripcion: exp.description,
@@ -124,7 +167,7 @@ export default function ExpensesPage() {
       pago: paymentLabel(exp.paymentMethod),
     }));
     exportToExcel(data, expenseRegisterColumns, "Gastos");
-  }, [monthExpenses]);
+  }, [filteredExpenses]);
 
   const summaryColumns: ExportColumn[] = [
     { header: "Categoría", key: "categoria" },
@@ -188,8 +231,14 @@ export default function ExpensesPage() {
 
   function handleSave() {
     const amount = parseFloat(form.amount);
-    if (isNaN(amount) || amount <= 0) return;
-    if (!form.description.trim()) return;
+    if (isNaN(amount) || amount <= 0) {
+      setFormError("El importe debe ser mayor a 0");
+      return;
+    }
+    if (!form.description.trim()) {
+      setFormError("La descripción es requerida");
+      return;
+    }
 
     const data = {
       description: form.description.trim(),
@@ -200,12 +249,18 @@ export default function ExpensesPage() {
       storeId,
     };
 
-    if (editingId !== null) {
-      updateExpense(editingId, data);
-    } else {
-      addExpense(data);
+    try {
+      if (editingId !== null) {
+        updateExpense(editingId, data);
+      } else {
+        addExpense(data);
+      }
+    } catch (e) {
+      setFormError((e as Error).message);
+      return;
     }
 
+    setFormError(null);
     setShowModal(false);
     setForm({ ...EMPTY_FORM });
     setEditingId(null);
@@ -240,7 +295,14 @@ export default function ExpensesPage() {
 
       {activeTab === "register" ? (
         <RegisterTab
-          monthExpenses={monthExpenses}
+          expenses={filteredExpenses}
+          filterDateFrom={filterDateFrom}
+          filterDateTo={filterDateTo}
+          filterCategory={filterCategory}
+          onFilterDateFromChange={setFilterDateFrom}
+          onFilterDateToChange={setFilterDateTo}
+          onFilterCategoryChange={setFilterCategory}
+          onClearFilters={clearFilters}
           onAdd={openAddForm}
           onEdit={openEditModal}
           onDelete={handleDelete}
@@ -267,11 +329,13 @@ export default function ExpensesPage() {
         <ExpenseModal
           form={form}
           editingId={editingId}
+          formError={formError}
           onChange={handleChange}
           onSave={handleSave}
           onClose={() => {
             setShowModal(false);
             setEditingId(null);
+            setFormError(null);
             setForm({ ...EMPTY_FORM });
           }}
         />
@@ -308,7 +372,14 @@ function TabButton({
 }
 
 function RegisterTab({
-  monthExpenses,
+  expenses,
+  filterDateFrom,
+  filterDateTo,
+  filterCategory,
+  onFilterDateFromChange,
+  onFilterDateToChange,
+  onFilterCategoryChange,
+  onClearFilters,
   onAdd,
   onEdit,
   onDelete,
@@ -316,7 +387,14 @@ function RegisterTab({
   onExportPdf,
   onExportExcel,
 }: {
-  monthExpenses: Expense[];
+  expenses: Expense[];
+  filterDateFrom: string;
+  filterDateTo: string;
+  filterCategory: ExpenseCategory | "";
+  onFilterDateFromChange: (v: string) => void;
+  onFilterDateToChange: (v: string) => void;
+  onFilterCategoryChange: (v: ExpenseCategory | "") => void;
+  onClearFilters: () => void;
   onAdd: () => void;
   onEdit: (e: Expense) => void;
   onDelete: (id: number) => void;
@@ -327,14 +405,14 @@ function RegisterTab({
   return (
     <div className="flex flex-col gap-4">
       {/* Quick-add + export buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={onAdd}
           className="px-4 py-2 bg-pos-secondary text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
         >
           + Nuevo Gasto
         </button>
-        {monthExpenses.length > 0 && (
+        {expenses.length > 0 && (
           <>
             <button
               onClick={onExportExcel}
@@ -352,13 +430,56 @@ function RegisterTab({
         )}
       </div>
 
+      {/* Filters */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <input
+          type="date"
+          value={filterDateFrom}
+          onChange={(e) => onFilterDateFromChange(e.target.value)}
+          className="text-sm border border-pos-muted/20 rounded-lg px-3 py-1.5 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
+          title="Desde"
+        />
+        <span className="text-xs text-pos-muted">a</span>
+        <input
+          type="date"
+          value={filterDateTo}
+          onChange={(e) => onFilterDateToChange(e.target.value)}
+          className="text-sm border border-pos-muted/20 rounded-lg px-3 py-1.5 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
+          title="Hasta"
+        />
+        <select
+          value={filterCategory}
+          onChange={(e) =>
+            onFilterCategoryChange(e.target.value as ExpenseCategory | "")
+          }
+          className="text-sm border border-pos-muted/20 rounded-lg px-3 py-1.5 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
+        >
+          <option value="">Todas las categorías</option>
+          {EXPENSE_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {CATEGORY_LABELS[cat]}
+            </option>
+          ))}
+        </select>
+        {(filterDateFrom || filterDateTo || filterCategory) && (
+          <button
+            onClick={onClearFilters}
+            className="px-3 py-1.5 text-xs border border-pos-muted/20 text-pos-muted rounded-lg hover:text-pos-text transition-colors"
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
       {/* Expenses table */}
       <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4">
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
-          Gastos de {months[new Date().getMonth()]} {new Date().getFullYear()}
+          {filterDateFrom || filterDateTo || filterCategory
+            ? "Resultados filtrados"
+            : `Gastos de ${months[new Date().getMonth()]} ${new Date().getFullYear()}`}
         </h3>
 
-        {monthExpenses.length === 0 ? (
+        {expenses.length === 0 ? (
           <div className="flex items-center justify-center h-32">
             <p className="text-sm text-pos-muted italic">
               No hay gastos registrados este mes
@@ -378,7 +499,7 @@ function RegisterTab({
                 </tr>
               </thead>
               <tbody>
-                {monthExpenses.map((exp) => {
+                {expenses.map((exp) => {
                   const [y, m, d] = exp.date.split("-");
                   return (
                     <tr
@@ -626,12 +747,14 @@ function SummaryTab({
 function ExpenseModal({
   form,
   editingId,
+  formError,
   onChange,
   onSave,
   onClose,
 }: {
   form: FormData;
   editingId: number | null;
+  formError: string | null;
   onChange: (field: keyof FormData, value: string) => void;
   onSave: () => void;
   onClose: () => void;
@@ -743,6 +866,13 @@ function ExpenseModal({
             </div>
           </div>
         </div>
+
+        {/* Error feedback */}
+        {formError && (
+          <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-sm text-red-500">{formError}</p>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex justify-end gap-2 mt-6">

@@ -40,8 +40,9 @@ function buildInvoiceHtml(invoice: Invoice): string {
         .total-row { font-weight: bold; font-size: 14px; }
         .footer { text-align: center; margin-top: 16px; font-size: 11px; border-top: 1px dashed #888; padding-top: 8px; }
         .payment-info { margin-top: 4px; }
+        @page { size: portrait; margin: 8mm; }
         @media print {
-          body { width: 100%; }
+          body { width: auto; }
           button { display: none; }
         }
       </style>

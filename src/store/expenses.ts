@@ -101,19 +101,19 @@ function validateExpense(
   data: Omit<Expense, "id" | "createdAt" | "updatedAt">,
 ): void {
   if (!data.description || data.description.trim().length === 0) {
-    throw new Error("Description is required");
+    throw new Error("La descripción es requerida");
   }
   if (typeof data.amount !== "number" || data.amount <= 0) {
-    throw new Error("Amount must be greater than zero");
+    throw new Error("El importe debe ser mayor a 0");
   }
   if (!VALID_CATEGORIES.has(data.category)) {
-    throw new Error("Invalid category");
+    throw new Error("Categoría inválida");
   }
   if (!VALID_PAYMENT_METHODS.has(data.paymentMethod)) {
-    throw new Error("Invalid payment method");
+    throw new Error("Medio de pago inválido");
   }
-  if (!data.date) {
-    throw new Error("Date is required");
+  if (!data.date || !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+    throw new Error("Fecha inválida (use YYYY-MM-DD)");
   }
 }
 
@@ -161,17 +161,30 @@ export type ExpensesStore = {
     data: Omit<Expense, "id" | "createdAt" | "updatedAt">,
   ) => Expense;
 
-  /** Update an existing expense. Silently ignores non-existent ids. */
+  /** Update an existing expense. Throws if the id does not exist. */
   updateExpense: (
     id: number,
     data: Partial<Omit<Expense, "id" | "createdAt" | "updatedAt">>,
   ) => void;
 
-  /** Delete an expense by id. Silently ignores non-existent ids. */
+  /** Delete an expense by id. Throws if the id does not exist. */
   deleteExpense: (id: number) => void;
 
   /** Get expenses for a given year and month, most recent first. */
   getExpensesByMonth: (year: number, month: number, storeId: string) => Expense[];
+
+  /** Get expenses within a date range (inclusive), most recent first. */
+  getExpensesByDateRange: (
+    from: string,
+    to: string,
+    storeId: string,
+  ) => Expense[];
+
+  /** Get expenses filtered by category, most recent first. */
+  getExpensesByCategory: (
+    category: ExpenseCategory,
+    storeId: string,
+  ) => Expense[];
 
   /** Get monthly summary with totals by category and payment method. */
   getMonthlySummary: (year: number, month: number, storeId: string) => MonthlySummary;
@@ -229,16 +242,16 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
   updateExpense: (id, data) => {
     const expenses = get().expenses;
     const existing = expenses.find((e) => e.id === id);
-    if (!existing) return;
+    if (!existing) throw new Error("Gasto no encontrado");
 
     if (data.category && !VALID_CATEGORIES.has(data.category)) {
-      throw new Error("Invalid category");
+      throw new Error("Categoría inválida");
     }
     if (data.paymentMethod && !VALID_PAYMENT_METHODS.has(data.paymentMethod)) {
-      throw new Error("Invalid payment method");
+      throw new Error("Medio de pago inválido");
     }
     if (data.amount !== undefined && data.amount <= 0) {
-      throw new Error("Amount must be greater than zero");
+      throw new Error("El importe debe ser mayor a 0");
     }
 
     const updated = expenses.map((e) =>
@@ -269,6 +282,7 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
 
   deleteExpense: (id) => {
     const existing = get().expenses.find((e) => e.id === id);
+    if (!existing) throw new Error("Gasto no encontrado");
     const updated = get().expenses.filter((e) => e.id !== id);
     set({ expenses: updated });
     saveExpenses(updated);
@@ -288,6 +302,22 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
       .expenses.filter((e) => {
         const [y, m] = e.date.split("-").map(Number);
         return y === year && m === month && e.storeId === storeId;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  },
+
+  getExpensesByDateRange: (from, to, storeId) => {
+    return get()
+      .expenses.filter((e) => {
+        return e.storeId === storeId && e.date >= from && e.date <= to;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  },
+
+  getExpensesByCategory: (category, storeId) => {
+    return get()
+      .expenses.filter((e) => {
+        return e.storeId === storeId && e.category === category;
       })
       .sort((a, b) => b.date.localeCompare(a.date));
   },

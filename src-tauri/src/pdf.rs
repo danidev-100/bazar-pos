@@ -38,10 +38,14 @@ pub fn generate_pdf(invoice_json: &str) -> Result<Vec<u8>, String> {
         serde_json::from_str(invoice_json).map_err(|e| format!("Failed to parse invoice JSON: {}", e))?;
 
     // Create a new PDF document — 80 mm wide (standard thermal receipt width)
+    // Page height is dynamic: base + items * row height so content never overflows
+    let base_height = 65.0; // mm for header, separators, totals, footer
+    let row_height = 5.5;   // mm per item row
+    let page_height = (base_height + invoice.items.len() as f64 * row_height).max(120.0) as f32;
     let (doc, page1, layer1) = PdfDocument::new(
         &format!("Invoice {}", &invoice.invoice_number),
         Mm(80.0),
-        Mm(200.0),
+        Mm(page_height),
         "Layer 1",
     );
 

@@ -10,6 +10,8 @@ import ProductGrid from "@/components/ProductGrid";
 import CartPanel from "@/components/CartPanel";
 import CheckoutModal from "@/components/CheckoutModal";
 import CustomerSelectModal from "@/components/CustomerSelectModal";
+import OpenShiftModal from "@/components/OpenShiftModal";
+import NoStockModal from "@/components/NoStockModal";
 import ReceiptPreview from "@/components/ReceiptPreview";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useBarcodeScan } from "@/hooks/useBarcodeScan";
@@ -183,6 +185,8 @@ export default function POSPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
+  const [showOpenShift, setShowOpenShift] = useState(false);
+  const [noStockProduct, setNoStockProduct] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const hintShown = useRef(false);
 
@@ -272,8 +276,7 @@ export default function POSPage() {
           (p) => p.id === id,
         );
         if (prod && prod.stock <= 0) {
-          showNotification(`"${name}" no tiene stock disponible`);
-          setTimeout(() => dismissNotification(), 4000);
+          setNoStockProduct(name);
           return;
         }
         addItem(id, name, price);
@@ -297,17 +300,14 @@ export default function POSPage() {
     }
   }, [lastCompletedSale]);
 
-  // Auto-open shift with current user if none exists
   function handleOpenShift() {
-    try {
-      const employee = currentUser?.name ?? "Cajero";
-      openShiftAction(employee, storeId, 0);
-      showNotification(`Turno abierto — ${employee}`);
-      setTimeout(() => dismissNotification(), 3000);
-    } catch {
-      showNotification("Ya hay un turno abierto");
-      setTimeout(() => dismissNotification(), 3000);
-    }
+    setShowOpenShift(true);
+  }
+
+  function handleShiftOpened() {
+    const employee = currentUser?.name ?? "Cajero";
+    showNotification(`Turno abierto — ${employee}`);
+    setTimeout(() => dismissNotification(), 3000);
   }
 
   const handleAddToCart = useCallback(
@@ -329,8 +329,7 @@ export default function POSPage() {
         (p) => p.id === product.id,
       );
       if (prod && prod.stock <= 0) {
-        showNotification(`"${product.name}" no tiene stock disponible`);
-        setTimeout(() => dismissNotification(), 4000);
+        setNoStockProduct(product.name);
         return;
       }
       addItem(product.id, product.name, product.price);
@@ -451,6 +450,23 @@ export default function POSPage() {
           sale={lastCompletedSale}
           onPrint={handlePrint}
           onClose={handleNewSale}
+        />
+      )}
+
+      {/* ── Open Shift Modal ── */}
+      {showOpenShift && (
+        <OpenShiftModal
+          employeeName={currentUser?.name ?? "Cajero"}
+          onClose={() => setShowOpenShift(false)}
+          onOpened={handleShiftOpened}
+        />
+      )}
+
+      {/* ── No Stock Modal ── */}
+      {noStockProduct !== null && (
+        <NoStockModal
+          productName={noStockProduct}
+          onClose={() => setNoStockProduct(null)}
         />
       )}
     </div>

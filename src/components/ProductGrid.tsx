@@ -1,4 +1,5 @@
 import { useState, useMemo, type RefObject } from "react";
+import { useAppStore } from "@/store";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore } from "@/store/products";
 
@@ -23,6 +24,7 @@ type ProductGridProps = {
 export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGridProps) {
   const { storeId } = useActiveStore();
   const products = useProductsStore((s) => s.products);
+  const cartItems = useAppStore((s) => s.items);
   const [search, setSearch] = useState("");
 
   const storeProducts = useMemo(
@@ -42,8 +44,11 @@ export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGrid
   }, [storeProducts, search]);
 
   function handleTap(product: (typeof storeProducts)[number]) {
-    if (!product.price || product.price <= 0) {
-      return; // caller may show a toast; we just silently guard
+    const inCart = cartItems
+      .filter((i) => i.productId === product.id)
+      .reduce((sum, i) => sum + i.quantity, 0);
+    if (!product.price || product.price <= 0 || product.stock - inCart <= 0) {
+      return;
     }
     onAddToCart({ id: product.id, name: product.name, price: product.price });
   }
@@ -80,47 +85,64 @@ export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGrid
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto overflow-x-auto auto-rows-max pr-1">
-          {filtered.map((product) => (
-            <button
-              key={product.id}
-              onClick={() => handleTap(product)}
-              className={`flex flex-col items-center justify-center bg-pos-surface border rounded-xl p-4 touch-target transition-all active:scale-95 ${
-                product.stock < 25
-                  ? "border-pos-danger/50 hover:border-pos-danger bg-pos-danger/5"
-                  : "border-pos-muted/10 hover:border-pos-secondary/50 hover:shadow-sm"
-              }`}
-              aria-label={`Agregar ${product.name} al carrito`}
-            >
-              {/* Product emoji placeholder — replace with actual image later */}
-              <span className="text-3xl mb-2" role="img" aria-hidden="true">
-                📦
-              </span>
+          {filtered.map((product) => {
+            const cartQty = cartItems
+              .filter((i) => i.productId === product.id)
+              .reduce((sum, i) => sum + i.quantity, 0);
+            const availableStock = product.stock - cartQty;
+            const outOfStock = availableStock <= 0;
+            return (
+              <button
+                key={product.id}
+                onClick={() => handleTap(product)}
+                disabled={outOfStock}
+                className={`relative flex flex-col items-center justify-center bg-pos-surface border rounded-xl p-4 touch-target transition-all active:scale-95 ${
+                  outOfStock
+                    ? "border-pos-muted/20 opacity-40 cursor-not-allowed"
+                    : availableStock < 25
+                      ? "border-pos-danger/50 hover:border-pos-danger bg-pos-danger/5"
+                      : "border-pos-muted/10 hover:border-pos-secondary/50 hover:shadow-sm"
+                }`}
+                aria-label={outOfStock ? `${product.name} — sin stock` : `Agregar ${product.name} al carrito`}
+              >
+                {outOfStock && (
+                  <span className="absolute top-1 right-1 text-[10px] font-semibold uppercase tracking-wide text-pos-danger bg-pos-danger/10 px-1.5 py-0.5 rounded">
+                    Sin stock
+                  </span>
+                )}
 
-              <span className="text-sm font-semibold text-pos-text text-center leading-tight line-clamp-2">
-                {product.name}
-              </span>
-
-              <span className="text-lg font-bold text-pos-secondary mt-1 font-mono">
-                ${product.price.toFixed(2)}
-              </span>
-
-              <span className={`text-xs mt-1 font-medium ${
-                product.stock < 25
-                  ? "text-pos-danger"
-                  : product.stock < 50
-                    ? "text-pos-accent"
-                    : "text-pos-muted"
-              }`}>
-                Stock: {product.stock}
-              </span>
-
-              {product.barcode && (
-                <span className="text-[10px] text-pos-muted mt-1 font-mono truncate max-w-full">
-                  {product.barcode}
+                <span className="text-3xl mb-2" role="img" aria-hidden="true">
+                  📦
                 </span>
-              )}
-            </button>
-          ))}
+
+                <span className="text-sm font-semibold text-pos-text text-center leading-tight line-clamp-2">
+                  {product.name}
+                </span>
+
+                <span className="text-lg font-bold text-pos-secondary mt-1 font-mono">
+                  ${product.price.toFixed(2)}
+                </span>
+
+                <span className={`text-xs mt-1 font-medium ${
+                  outOfStock
+                    ? "text-pos-muted"
+                    : availableStock < 25
+                      ? "text-pos-danger"
+                      : availableStock < 50
+                        ? "text-pos-accent"
+                        : "text-pos-muted"
+                }`}>
+                  {outOfStock ? "Sin stock" : `Stock: ${availableStock}`}
+                </span>
+
+                {product.barcode && (
+                  <span className="text-[10px] text-pos-muted mt-1 font-mono truncate max-w-full">
+                    {product.barcode}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

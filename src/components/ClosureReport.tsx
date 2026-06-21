@@ -110,17 +110,28 @@ export default function ClosureReport({
               Arqueo
             </h4>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-pos-muted">Efectivo Esperado</span>
+              <span className="text-sm text-pos-muted">Apertura de Caja</span>
               <span className="text-sm font-mono">
-                ${(totalSales - cardTotal).toFixed(2)}
+                ${shift.openingBalance.toFixed(2)}
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-pos-muted">Efectivo Declarado</span>
-              <span className="text-sm font-mono">
-                ${shift.declaredCash!.toFixed(2)}
-              </span>
+
+            <div className="bg-pos-background/30 rounded-lg p-3 space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-pos-muted">Caja declarada</span>
+                <span className="font-mono">${shift.declaredCash!.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-pos-muted">− Apertura</span>
+                <span className="font-mono text-pos-danger">−${shift.openingBalance.toFixed(2)}</span>
+              </div>
+              <hr className="border-pos-muted/20" />
+              <div className="flex items-center justify-between text-sm font-semibold">
+                <span className="text-pos-text">= Ventas Efectivo</span>
+                <span className="font-mono">${cashTotal.toFixed(2)}</span>
+              </div>
             </div>
+
             <hr className="border-pos-muted/20" />
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Diferencia</span>

@@ -96,6 +96,7 @@ export const products = sqliteTable(
     price: real("price").notNull().default(0),
     cost_price: real("cost_price").notNull().default(0),
     stock: integer("stock").notNull().default(0),
+    min_stock: integer("min_stock").notNull().default(0),
     category_id: integer("category_id").references((): any => categories.id),
     brand_id: integer("brand_id").references((): any => brands.id),
     ...syncColumns,
@@ -256,6 +257,7 @@ export const invoices = sqliteTable(
       .notNull()
       .default("Consumidor Final"),
     total: real("total").notNull(),
+    payment_method: text("payment_method", { enum: ["cash", "card"] }).notNull(),
     ...syncColumns,
   },
   (table) => ({
@@ -286,6 +288,97 @@ export const invoiceItems = sqliteTable(
     ...syncColumns,
   },
   (table) => ({ invoiceIdx: index("idx_invoice_items_invoice").on(table.invoice_id) }),
+);
+
+// ──────────────────────────────────────────────
+// Customers (syncable)
+// ──────────────────────────────────────────────
+
+export const customers = sqliteTable(
+  "customers",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    email: text("email"),
+    address: text("address"),
+    cuit: text("cuit"),
+    ...syncColumns,
+  },
+  (table) => ({
+    storeNameIdx: uniqueIndex("idx_customers_store_name").on(table.store_id, table.name),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Proveedores (Suppliers — syncable)
+// ──────────────────────────────────────────────
+
+export const proveedores = sqliteTable(
+  "proveedores",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    email: text("email"),
+    address: text("address"),
+    cuit: text("cuit"),
+    ...syncColumns,
+  },
+  (table) => ({
+    storeNameIdx: uniqueIndex("idx_proveedores_store_name").on(table.store_id, table.name),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Pedidos (Purchase Orders — syncable)
+// ──────────────────────────────────────────────
+
+export const pedidos = sqliteTable(
+  "pedidos",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    proveedor_id: integer("proveedor_id")
+      .notNull()
+      .references((): any => proveedores.id),
+    date: text("date")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    status: text("status", { enum: ["pending", "received", "cancelled"] })
+      .notNull()
+      .default("pending"),
+    total: real("total").notNull().default(0),
+    notes: text("notes"),
+    ...syncColumns,
+  },
+  (table) => ({
+    storeProveedorIdx: index("idx_pedidos_store_proveedor").on(table.store_id, table.proveedor_id),
+    storeStatusIdx: index("idx_pedidos_store_status").on(table.store_id, table.status),
+    createdIdx: index("idx_pedidos_created").on(table.created_at),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Pedido Items (syncable)
+// ──────────────────────────────────────────────
+
+export const pedidoItems = sqliteTable(
+  "pedido_items",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    pedido_id: integer("pedido_id")
+      .notNull()
+      .references((): any => pedidos.id),
+    product_id: integer("product_id"),
+    product_name: text("product_name").notNull(),
+    quantity: real("quantity").notNull().default(1),
+    unit_price: real("unit_price").notNull(),
+    subtotal: real("subtotal").notNull(),
+    ...syncColumns,
+  },
+  (table) => ({
+    pedidoIdx: index("idx_pedido_items_pedido").on(table.pedido_id),
+  }),
 );
 
 // ──────────────────────────────────────────────

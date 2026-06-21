@@ -88,10 +88,12 @@ describe("Expense CRUD", () => {
     expect(updated.category).toBe("Varios");
   });
 
-  it("does nothing when updating non-existent expense", () => {
-    const before = useExpensesStore.getState().expenses.length;
-    useExpensesStore.getState().updateExpense(999, { description: "Nope" });
-    expect(useExpensesStore.getState().expenses.length).toBe(before);
+  it("throws when updating non-existent expense", () => {
+    expect(() => {
+      useExpensesStore.getState().updateExpense(999, {
+        description: "Nope",
+      });
+    }).toThrow(/no encontrado/i);
   });
 
   it("deletes an expense", () => {
@@ -110,7 +112,7 @@ describe("Expense CRUD", () => {
     ).toBeUndefined();
   });
 
-  it("does nothing when deleting non-existent expense", () => {
+  it("throws when deleting non-existent expense", () => {
     useExpensesStore.getState().addExpense({
       description: "Keep me",
       amount: 100,
@@ -120,7 +122,10 @@ describe("Expense CRUD", () => {
       storeId: "store_1",
     });
 
-    useExpensesStore.getState().deleteExpense(999);
+    expect(() => {
+      useExpensesStore.getState().deleteExpense(999);
+    }).toThrow(/no encontrado/i);
+    // Verify the existing expense is untouched
     expect(useExpensesStore.getState().expenses).toHaveLength(1);
   });
 });
@@ -183,7 +188,136 @@ describe("getExpensesByMonth", () => {
 });
 
 // ──────────────────────────────────────────────
-// 3. getMonthlySummary
+// 3. getExpensesByDateRange
+// ──────────────────────────────────────────────
+
+describe("getExpensesByDateRange", () => {
+  beforeEach(() => {
+    useExpensesStore.getState().addExpense({
+      description: "Gasto viejo",
+      amount: 100,
+      category: "Varios",
+      date: "2026-01-15",
+      paymentMethod: "cash",
+      storeId: "store_1",
+    });
+    useExpensesStore.getState().addExpense({
+      description: "Gasto junio temprano",
+      amount: 200,
+      category: "Insumos",
+      date: "2026-06-01",
+      paymentMethod: "cash",
+      storeId: "store_1",
+    });
+    useExpensesStore.getState().addExpense({
+      description: "Gasto junio tarde",
+      amount: 300,
+      category: "Servicios",
+      date: "2026-06-20",
+      paymentMethod: "card",
+      storeId: "store_1",
+    });
+    useExpensesStore.getState().addExpense({
+      description: "Otra tienda",
+      amount: 400,
+      category: "Varios",
+      date: "2026-06-15",
+      paymentMethod: "cash",
+      storeId: "store_2",
+    });
+  });
+
+  it("filters by date range inclusive", () => {
+    const result = useExpensesStore
+      .getState()
+      .getExpensesByDateRange("2026-06-01", "2026-06-15", "store_1");
+    expect(result).toHaveLength(1);
+    expect(result[0].description).toBe("Gasto junio temprano");
+  });
+
+  it("returns empty for range with no matches", () => {
+    const result = useExpensesStore
+      .getState()
+      .getExpensesByDateRange("2025-01-01", "2025-12-31", "store_1");
+    expect(result).toHaveLength(0);
+  });
+
+  it("ignores other stores", () => {
+    const result = useExpensesStore
+      .getState()
+      .getExpensesByDateRange("2026-06-01", "2026-06-30", "store_2");
+    expect(result).toHaveLength(1);
+    expect(result[0].description).toBe("Otra tienda");
+  });
+});
+
+// ──────────────────────────────────────────────
+// 4. getExpensesByCategory
+// ──────────────────────────────────────────────
+
+describe("getExpensesByCategory", () => {
+  beforeEach(() => {
+    useExpensesStore.getState().addExpense({
+      description: "Alquiler local",
+      amount: 50000,
+      category: "Alquiler",
+      date: "2026-06-01",
+      paymentMethod: "cash",
+      storeId: "store_1",
+    });
+    useExpensesStore.getState().addExpense({
+      description: "Compra de resmas",
+      amount: 500,
+      category: "Insumos",
+      date: "2026-06-10",
+      paymentMethod: "cash",
+      storeId: "store_1",
+    });
+    useExpensesStore.getState().addExpense({
+      description: "Tóner impresora",
+      amount: 3000,
+      category: "Insumos",
+      date: "2026-06-15",
+      paymentMethod: "card",
+      storeId: "store_1",
+    });
+    useExpensesStore.getState().addExpense({
+      description: "Insumos otra tienda",
+      amount: 999,
+      category: "Insumos",
+      date: "2026-06-15",
+      paymentMethod: "cash",
+      storeId: "store_2",
+    });
+  });
+
+  it("returns expenses filtered by category and store, newest first", () => {
+    const result = useExpensesStore
+      .getState()
+      .getExpensesByCategory("Insumos", "store_1");
+    expect(result).toHaveLength(2);
+    expect(result[0].description).toBe("Tóner impresora");
+    expect(result[1].description).toBe("Compra de resmas");
+  });
+
+  it("returns empty for category with no expenses", () => {
+    const result = useExpensesStore
+      .getState()
+      .getExpensesByCategory("Marketing", "store_1");
+    expect(result).toHaveLength(0);
+  });
+
+  it("ignores other stores", () => {
+    const result = useExpensesStore
+      .getState()
+      .getExpensesByCategory("Insumos", "store_2");
+    expect(result).toHaveLength(1);
+    expect(result[0].description).toBe("Insumos otra tienda");
+  });
+});
+
+// ──────────────────────────────────────────────
+// 5. getMonthlySummary
 // ──────────────────────────────────────────────
 
 describe("getMonthlySummary", () => {
@@ -301,7 +435,7 @@ describe("Expense validation", () => {
         paymentMethod: "cash",
         storeId: "store_1",
       });
-    }).toThrow(/description/i);
+    }).toThrow(/descripción/i);
   });
 
   it("rejects zero amount", () => {
@@ -314,7 +448,7 @@ describe("Expense validation", () => {
         paymentMethod: "cash",
         storeId: "store_1",
       });
-    }).toThrow(/amount/i);
+    }).toThrow(/importe/i);
   });
 
   it("rejects negative amount", () => {
@@ -327,7 +461,7 @@ describe("Expense validation", () => {
         paymentMethod: "cash",
         storeId: "store_1",
       });
-    }).toThrow(/amount/i);
+    }).toThrow(/importe/i);
   });
 
   it("rejects invalid category", () => {
@@ -340,7 +474,7 @@ describe("Expense validation", () => {
         paymentMethod: "cash",
         storeId: "store_1",
       });
-    }).toThrow(/category/i);
+    }).toThrow(/categoría/i);
   });
 
   it("rejects invalid payment method", () => {
@@ -353,12 +487,38 @@ describe("Expense validation", () => {
         paymentMethod: "invalid" as PaymentMethod,
         storeId: "store_1",
       });
-    }).toThrow(/payment/i);
+    }).toThrow(/pago/i);
+  });
+
+  it("rejects invalid date format", () => {
+    expect(() => {
+      useExpensesStore.getState().addExpense({
+        description: "Test",
+        amount: 100,
+        category: "Varios",
+        date: "18-06-2026",
+        paymentMethod: "cash",
+        storeId: "store_1",
+      });
+    }).toThrow(/fecha/i);
+  });
+
+  it("rejects missing date", () => {
+    expect(() => {
+      useExpensesStore.getState().addExpense({
+        description: "Test",
+        amount: 100,
+        category: "Varios",
+        date: "",
+        paymentMethod: "cash",
+        storeId: "store_1",
+      });
+    }).toThrow(/fecha/i);
   });
 });
 
 // ──────────────────────────────────────────────
-// 5. localStorage persistence
+// 6. localStorage persistence
 // ──────────────────────────────────────────────
 
 describe("localStorage persistence", () => {

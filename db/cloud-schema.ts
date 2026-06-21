@@ -289,6 +289,7 @@ export const invoices = pgTable(
     customer_name: text("customer_name"),
     customer_doc: text("customer_doc"),
     total: doublePrecision("total").notNull(),
+    payment_method: text("payment_method", { enum: ["cash", "card"] }).notNull(),
     store_id: text("store_id").notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
@@ -325,6 +326,111 @@ export const invoiceItems = pgTable(
   },
   (table) => ({
     invoiceIdx: index("idx_invoice_items_invoice").on(table.invoice_id),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Customers (syncable)
+// ──────────────────────────────────────────────
+
+export const customers = pgTable(
+  "customers",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    email: text("email"),
+    address: text("address"),
+    cuit: text("cuit"),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    storeNameIdx: uniqueIndex("idx_customers_store_name").on(table.store_id, table.name),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Proveedores (Suppliers — syncable)
+// ──────────────────────────────────────────────
+
+export const proveedores = pgTable(
+  "proveedores",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    name: text("name").notNull(),
+    phone: text("phone"),
+    email: text("email"),
+    address: text("address"),
+    cuit: text("cuit"),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    storeNameIdx: uniqueIndex("idx_proveedores_store_name").on(table.store_id, table.name),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Pedidos (Purchase Orders — syncable)
+// ──────────────────────────────────────────────
+
+export const pedidos = pgTable(
+  "pedidos",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    proveedor_id: integer("proveedor_id").notNull(),
+    date: timestamp("date").notNull().defaultNow(),
+    status: text("status", { enum: ["pending", "received", "cancelled"] })
+      .notNull()
+      .default("pending"),
+    total: doublePrecision("total").notNull().default(0),
+    notes: text("notes"),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    storeProveedorIdx: index("idx_pedidos_store_proveedor").on(table.store_id, table.proveedor_id),
+    storeStatusIdx: index("idx_pedidos_store_status").on(table.store_id, table.status),
+    createdIdx: index("idx_pedidos_created").on(table.created_at),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Pedido Items (syncable)
+// ──────────────────────────────────────────────
+
+export const pedidoItems = pgTable(
+  "pedido_items",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    pedido_id: integer("pedido_id").notNull(),
+    product_id: integer("product_id"),
+    product_name: text("product_name").notNull(),
+    quantity: doublePrecision("quantity").notNull().default(1),
+    unit_price: doublePrecision("unit_price").notNull(),
+    subtotal: doublePrecision("subtotal").notNull(),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    pedidoIdx: index("idx_pedido_items_pedido").on(table.pedido_id),
   }),
 );
 

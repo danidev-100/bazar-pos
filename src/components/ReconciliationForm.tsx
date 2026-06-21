@@ -52,24 +52,30 @@ export default function ReconciliationForm({
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-pos-muted">Ventas Efectivo</span>
-            <span className="text-sm font-mono font-bold">
-              ${expectedCash.toFixed(2)}
-            </span>
-          </div>
-          <hr className="border-pos-muted/20" />
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Total Esperado</span>
-            <span className="text-sm font-mono font-bold text-pos-text">
-              ${(expectedCash + shift.openingBalance).toFixed(2)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
             <span className="text-sm text-pos-muted">Efectivo Declarado</span>
             <span className="text-sm font-mono font-bold">
               ${shift.declaredCash!.toFixed(2)}
             </span>
           </div>
+
+          <div className="bg-pos-background/50 rounded-lg p-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-pos-muted">Dinero en Caja</span>
+              <span className="font-mono">${shift.declaredCash!.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-pos-muted">− Apertura</span>
+              <span className="font-mono text-pos-danger">
+                −${shift.openingBalance.toFixed(2)}
+              </span>
+            </div>
+            <hr className="border-pos-muted/20" />
+            <div className="flex items-center justify-between text-sm font-semibold">
+              <span className="text-pos-text">= Ventas Efectivo</span>
+              <span className="font-mono">${expectedCash.toFixed(2)}</span>
+            </div>
+          </div>
+
           <hr className="border-pos-muted/20" />
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Diferencia</span>
@@ -119,26 +125,49 @@ export default function ReconciliationForm({
             ${shift.openingBalance.toFixed(2)}
           </span>
         </div>
+
         <div className="flex items-center justify-between">
-          <span className="text-sm text-pos-muted">Ventas Efectivo</span>
+          <span className="text-sm text-pos-muted">Dinero en Caja (declarado)</span>
           <span className="text-sm font-mono font-bold text-pos-text">
+            ${declaredNum.toFixed(2)}
+          </span>
+        </div>
+
+        <hr className="border-pos-muted/20" />
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Ventas Efectivo</span>
+          <span className="text-sm font-mono font-bold text-pos-success text-base">
             ${expectedCash.toFixed(2)}
           </span>
         </div>
-        <hr className="border-pos-muted/20" />
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Total Esperado</span>
-          <span className="text-sm font-mono font-bold text-pos-secondary">
-            ${(expectedCash + shift.openingBalance).toFixed(2)}
-          </span>
+
+        <div className="bg-pos-background/50 rounded-lg p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-pos-muted">Dinero en Caja</span>
+            <span className="font-mono">${declaredNum.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-pos-muted">− Apertura</span>
+            <span className="font-mono text-pos-danger">
+              −${shift.openingBalance.toFixed(2)}
+            </span>
+          </div>
+          <hr className="border-pos-muted/20" />
+          <div className="flex items-center justify-between text-sm font-semibold">
+            <span className="text-pos-text">= Ventas Efectivo</span>
+            <span className="font-mono">${expectedCash.toFixed(2)}</span>
+          </div>
         </div>
+
+        <hr className="border-pos-muted/20" />
 
         <div>
           <label
             htmlFor="declared-cash"
             className="block text-sm font-medium text-pos-text mb-1"
           >
-            Dinero en Caja
+            Dinero en Caja (contado real)
           </label>
           <input
             id="declared-cash"
@@ -146,7 +175,6 @@ export default function ReconciliationForm({
             inputMode="decimal"
             value={declaredCash}
             onChange={(e) => {
-              // Only allow digits, one dot, and two decimal places
               const val = e.target.value;
               if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
                 setDeclaredCash(val);

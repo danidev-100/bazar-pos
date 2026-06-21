@@ -1,9 +1,8 @@
 import { useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { useAppStore, useAuthStore, type Page } from "@/store";
 import { type Permission } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
-import { getSyncState } from "@/hooks/useSync";
+import { getSyncState, triggerSync } from "@/hooks/useSync";
 import ThemeToggle from "@/components/ThemeToggle";
 
 // ──────────────────────────────────────────────
@@ -26,6 +25,8 @@ const ALL_PAGES: PageDef[] = [
   { id: "expenses", label: "Gastos", icon: "💸", permission: "configuracion" },
   { id: "customers", label: "Clientes", icon: "👥", permission: "clientes" },
   { id: "stats", label: "Estadísticas", icon: "📊", permission: "estadisticas" },
+  { id: "proveedores", label: "Proveedores", icon: "🏭", permission: "configuracion" },
+  { id: "pedidos", label: "Pedidos", icon: "📋", permission: "configuracion" },
   { id: "admin", label: "Admin", icon: "🔒", permission: "configuracion" },
 ];
 
@@ -58,14 +59,9 @@ export default function NavigationBar() {
     return hasPermission(p.permission);
   });
 
-  // Manual sync trigger
-  const triggerSync = useCallback(async () => {
-    try {
-      const databaseUrl = import.meta.env.VITE_SYNC_DATABASE_URL as string | undefined;
-      await invoke("sync_now", { databaseUrl: databaseUrl || null });
-    } catch {
-      // Error is handled by the useSync hook's state
-    }
+  // Manual sync trigger — uses the shared triggerSync from useSync
+  const handleSync = useCallback(() => {
+    triggerSync();
   }, []);
 
   // Sync status from the shared sync state
@@ -125,7 +121,7 @@ export default function NavigationBar() {
       <div className="flex items-center gap-3">
         {/* Sync status indicator */}
         <button
-          onClick={triggerSync}
+          onClick={handleSync}
           className="text-xs text-white/60 hover:text-white transition-colors touch-target flex items-center gap-1 px-2 py-1"
           title={
             syncStatus === "syncing"

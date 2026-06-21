@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
@@ -30,6 +30,7 @@ export default function ProductsPage() {
   const brands = useBrandsStore((s) => s.brands);
   const isUnlocked = useAuthStore((s) => s.hasPermission("configuracion"));
 
+  const [search, setSearch] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
@@ -42,10 +43,20 @@ export default function ProductsPage() {
   const storeProducts = products.filter((p) => p.store_id === storeId);
   const storeCategories = categories.filter((c) => c.store_id === storeId);
 
+  // Filter products by search
+  const bySearch = useMemo(() => {
+    if (!search.trim()) return storeProducts;
+    const q = search.toLowerCase();
+    return storeProducts.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.toLowerCase().includes(q)),
+    );
+  }, [storeProducts, search]);
+
   // Filter products by selected category (include subcategory products)
   const byCategory = selectedCategoryId
-    ? storeProducts.filter((p) => {
-        // Check if product's category is the selected one or a descendant
+    ? bySearch.filter((p) => {
         const descendantIds = new Set<number>();
         const collectDescendants = (parentId: number) => {
           storeCategories
@@ -60,7 +71,7 @@ export default function ProductsPage() {
 
         return p.category_id !== null && descendantIds.has(p.category_id);
       })
-    : storeProducts;
+    : bySearch;
 
   // Filter products by selected brand
   const filteredProducts = selectedBrandId
@@ -203,6 +214,15 @@ export default function ProductsPage() {
               </div>
             </div>
 
+            {/* Search */}
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nombre o código de barras…"
+              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target mb-3"
+            />
+
             {/* Product table */}
             {filteredProducts.length === 0 ? (
               <div className="flex items-center justify-center h-48">
@@ -277,10 +297,15 @@ export default function ProductsPage() {
                             className={`py-2 px-2 text-right font-mono font-bold ${
                               p.stock < 0
                                 ? "text-pos-danger"
-                                : "text-pos-success"
+                                : p.minStock > 0 && p.stock <= p.minStock
+                                  ? "text-yellow-500"
+                                  : "text-pos-success"
                             }`}
                           >
                             {p.stock}
+                            {p.minStock > 0 && p.stock <= p.minStock && (
+                              <span className="text-[10px] text-pos-muted ml-1">↓</span>
+                            )}
                           </td>
                             <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
                               {brand?.name ?? "—"}

@@ -18,6 +18,8 @@ import DashboardPage from "@/pages/DashboardPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import ExpensesPage from "@/pages/ExpensesPage";
 import LoginPage from "@/pages/LoginPage";
+import ProveedoresPage from "@/pages/ProveedoresPage";
+import PedidosPage from "@/pages/PedidosPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component
@@ -35,6 +37,8 @@ const PAGE_COMPONENTS: Record<Page, () => JSX.Element> = {
   admin: AdminPage,
   login: LoginPage,
   "user-management": UserManagementPage,
+  proveedores: ProveedoresPage,
+  pedidos: PedidosPage,
 };
 
 // ──────────────────────────────────────────────

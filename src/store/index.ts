@@ -18,7 +18,9 @@ export type Page =
   | "dashboard"
   | "expenses"
   | "login"
-  | "user-management";
+  | "user-management"
+  | "proveedores"
+  | "pedidos";
 
 // ──────────────────────────────────────────────
 // Cart item

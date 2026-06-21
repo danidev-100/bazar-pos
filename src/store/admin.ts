@@ -14,8 +14,6 @@ function round2(n: number): number {
 // ──────────────────────────────────────────────
 
 export type BulkPriceOpts = {
-  filter: "all" | "category" | "brand";
-  filterId?: number;
   percent: number;
   target: "cost" | "selling" | "both";
   storeId: string;
@@ -120,21 +118,14 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   bulkPricePreview: (opts: BulkPriceOpts): BulkPreviewItem[] => {
     const { products } = useProductsStore.getState();
 
-    // 1. Scope to the active store
     let filtered = products.filter((p) => p.store_id === opts.storeId);
 
-    // 2. Apply category filter
     if (opts.categoryId != null) {
       filtered = filtered.filter((p) => p.category_id === opts.categoryId);
-    } else if (opts.filter === "category" && opts.filterId != null) {
-      filtered = filtered.filter((p) => p.category_id === opts.filterId);
     }
 
-    // 3. Apply brand filter
     if (opts.brandId != null) {
       filtered = filtered.filter((p) => p.brandId === opts.brandId);
-    } else if (opts.filter === "brand" && opts.filterId != null) {
-      filtered = filtered.filter((p) => p.brandId === opts.filterId);
     }
 
     // 4. Calculate preview

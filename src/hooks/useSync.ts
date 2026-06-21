@@ -68,21 +68,59 @@ export function getSyncState(): SyncState {
 // ──────────────────────────────────────────────
 
 /**
- * Attempts to detect network connectivity by calling the sync endpoint.
- * Falls back to `navigator.onLine` if the invoke fails.
+ * Attempts to detect a live Tauri backend (lightweight).
  */
 async function checkConnectivity(): Promise<boolean> {
   if (!navigator.onLine) return false;
-
-  // Try a lightweight connectivity check
   try {
-    // If we can invoke sync, the Tauri backend is reachable
-    // (this doesn't run the full sync, just verifies the process is alive)
-    await invoke("sync_now");
+    const { isTauri } = await import("@tauri-apps/api/core");
     return true;
   } catch {
-    // sync might fail for DB reasons but the process is alive
-    return true;
+    return false;
+  }
+}
+
+// ── Module-level sync trigger (shared by hook + navbar) ──
+
+let _isSyncing = false;
+
+/**
+ * Run a full push+pull sync cycle and update the shared sync state.
+ * Can be called from anywhere (hook, navbar, etc.).
+ */
+export async function triggerSync(): Promise<SyncResult | null> {
+  if (_isSyncing) return null;
+  _isSyncing = true;
+
+  try {
+    setState({ status: "syncing", error: null });
+
+    const databaseUrl = import.meta.env.VITE_SYNC_DATABASE_URL as string | undefined;
+    const rawResult: string = await invoke("sync_now", {
+      databaseUrl: databaseUrl || null,
+    });
+    const result: SyncResult = JSON.parse(rawResult);
+
+    setState({
+      status: "success",
+      lastSyncedAt: result.completed_at,
+      lastResult: result,
+      error: null,
+    });
+
+    return result;
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Error de conexión con el servidor";
+
+    setState({
+      status: "error",
+      error: message,
+    });
+
+    return null;
+  } finally {
+    _isSyncing = false;
   }
 }
 
@@ -150,49 +188,12 @@ export function useSync(options: UseSyncOptions = {}): SyncState & {
 
   // ── Core sync function ──
 
-  const triggerSync = useCallback(async (): Promise<SyncResult | null> => {
-    // Prevent concurrent syncs
-    if (isSyncingRef.current) return null;
-    isSyncingRef.current = true;
-
-    try {
-      setState({ status: "syncing", error: null });
-
-      // Check connectivity
-      const online = await checkConnectivity();
-      if (!online) {
-        setState({ status: "offline", error: "Device is offline" });
-        return null;
-      }
-
-      // Invoke the Tauri backend sync command with the Neon URL
-      const databaseUrl = import.meta.env.VITE_SYNC_DATABASE_URL as string | undefined;
-      const rawResult: string = await invoke("sync_now", {
-        databaseUrl: databaseUrl || null,
-      });
-      const result: SyncResult = JSON.parse(rawResult);
-
-      setState({
-        status: "success",
-        lastSyncedAt: result.completed_at,
-        lastResult: result,
-        error: null,
-      });
-
-      return result;
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Unknown sync error";
-
-      setState({
-        status: "error",
-        error: message,
-      });
-
+  const triggerSyncHook = useCallback(async (): Promise<SyncResult | null> => {
+    if (!(await checkConnectivity())) {
+      setState({ status: "offline", error: "Dispositivo sin conexión" });
       return null;
-    } finally {
-      isSyncingRef.current = false;
     }
+    return triggerSync();
   }, []);
 
   // ── Interval timer ──
@@ -216,10 +217,10 @@ export function useSync(options: UseSyncOptions = {}): SyncState & {
       }
       clearTimeout(initialTimer);
     };
-  }, [autoStart, intervalMinutes, triggerSync]);
+  }, [autoStart, intervalMinutes, triggerSyncHook]);
 
   return {
     ...syncState,
-    triggerSync,
+    triggerSync: triggerSyncHook,
   };
 }

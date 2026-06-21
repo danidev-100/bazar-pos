@@ -90,7 +90,11 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
 
   generateInvoice: (sale, customerName) => {
     const storeId = sale.storeId;
-    const currentMax = get().counters[storeId] ?? 0;
+    const existingMax = get().invoices
+      .filter((inv) => inv.storeId === storeId)
+      .reduce((max, inv) => Math.max(max, inv.sequentialNumber), 0);
+    const storeCounter = get().counters[storeId] ?? 0;
+    const currentMax = Math.max(existingMax, storeCounter);
     const nextNum = currentMax + 1;
 
     const invoice: Invoice = {
@@ -120,8 +124,8 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
     // Persist to SQLite
     const now = new Date().toISOString();
     execute(
-      `INSERT INTO invoices (id, invoice_number, sale_id, customer_name, total, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
-      [invoice.id, invoice.sequentialNumber, invoice.saleId, invoice.customer, invoice.total, storeId, now, now],
+      `INSERT INTO invoices (id, invoice_number, sale_id, customer_name, total, payment_method, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+      [invoice.id, invoice.sequentialNumber, invoice.saleId, invoice.customer, invoice.total, invoice.paymentMethod, storeId, now, now],
     )
       .then(async () => {
         await enqueueSync("invoice", invoice.id, "insert", storeId);

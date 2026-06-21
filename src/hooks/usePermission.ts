@@ -15,6 +15,8 @@ const PAGE_PERMISSIONS: Partial<Record<Page, Permission>> = {
   admin: "configuracion",
   expenses: "configuracion",
   "user-management": "configuracion",
+  proveedores: "configuracion",
+  pedidos: "configuracion",
 };
 
 // Pages that require no permission (just needs auth)

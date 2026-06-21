@@ -50,6 +50,7 @@ export default function CustomersPage() {
     { header: "Teléfono", key: "telefono" },
     { header: "Email", key: "email" },
     { header: "CUIT", key: "cuit" },
+    { header: "Dirección", key: "direccion" },
   ];
 
   const exportCustomersPdf = useCallback(() => {
@@ -58,6 +59,7 @@ export default function CustomersPage() {
       telefono: c.phone || "—",
       email: c.email || "—",
       cuit: c.cuit || "—",
+      direccion: c.address || "—",
     }));
     exportTableToPdf(data, customerColumns, "Clientes");
   }, [filteredCustomers]);
@@ -68,6 +70,7 @@ export default function CustomersPage() {
       telefono: c.phone || "",
       email: c.email || "",
       cuit: c.cuit || "",
+      direccion: c.address || "",
     }));
     exportToExcel(data, customerColumns, "Clientes");
   }, [filteredCustomers]);

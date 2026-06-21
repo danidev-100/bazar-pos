@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAdminStore, type BulkPreviewItem, type BulkPriceOpts } from "@/store/admin";
-import { useProductsStore } from "@/store/products";
+import { useProductsStore, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
 import { useActiveStore } from "@/store/context";
 import { useAppStore } from "@/store";
@@ -54,10 +54,31 @@ function groupPreviewByProduct(
 // Component
 // ──────────────────────────────────────────────
 
+function flattenCategories(
+  cats: Category[],
+  parentId: number | null,
+  depth: number,
+  result: { id: number; label: string }[],
+): { id: number; label: string }[] {
+  cats
+    .filter((c) => c.parent_id === parentId)
+    .forEach((c) => {
+      result.push({ id: c.id, label: `${"  ".repeat(depth)}${c.name}` });
+      flattenCategories(cats, c.id, depth + 1, result);
+    });
+  return result;
+}
+
 export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
   const { storeId } = useActiveStore();
-  const categories = useProductsStore((s) =>
-    s.categories.filter((c) => c.store_id === storeId && c.parent_id === null),
+  const allCategories = useProductsStore((s) => s.categories);
+  const storeCategories = useMemo(
+    () => allCategories.filter((c) => c.store_id === storeId),
+    [allCategories, storeId],
+  );
+  const flatCategories = useMemo(
+    () => flattenCategories(storeCategories, null, 0, []),
+    [storeCategories],
   );
   const brands = useBrandsStore((s) => s.brands);
   const storeBrands = brands.filter((b) => b.store_id === storeId);
@@ -96,10 +117,6 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
     }
 
     const opts: BulkPriceOpts = {
-      filter:
-        categoryId !== "" || brandId !== "" ? "category" : "all",
-      filterId:
-        categoryId !== "" ? (categoryId as number) : undefined,
       percent: parsedPercent,
       target,
       storeId,
@@ -190,9 +207,9 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
                   className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target"
                 >
                   <option value="">Todas las Categorías</option>
-                  {categories.map((cat) => (
+                  {flatCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name}
+                      {cat.label}
                     </option>
                   ))}
                 </select>

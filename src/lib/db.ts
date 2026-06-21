@@ -20,8 +20,151 @@ async function getDb(): Promise<Database> {
 }
 
 async function ensureTables(db: Database): Promise<void> {
-  // Tables needed by the app but not in the Drizzle schema yet
   const tables = [
+    // ── Sales ──
+    `CREATE TABLE IF NOT EXISTS sales (
+      id INTEGER PRIMARY KEY,
+      total REAL NOT NULL DEFAULT 0,
+      payment_method TEXT NOT NULL,
+      cash_amount REAL,
+      card_amount REAL,
+      change REAL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'completed',
+      customer_name TEXT,
+      shift_id INTEGER,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    `CREATE TABLE IF NOT EXISTS sale_items (
+      id INTEGER PRIMARY KEY,
+      sale_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      product_name TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      unit_price REAL NOT NULL,
+      subtotal REAL NOT NULL,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Invoices ──
+    `CREATE TABLE IF NOT EXISTS invoices (
+      id INTEGER PRIMARY KEY,
+      invoice_number INTEGER NOT NULL,
+      sale_id INTEGER,
+      customer_name TEXT NOT NULL DEFAULT 'Consumidor Final',
+      total REAL NOT NULL,
+      payment_method TEXT NOT NULL,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    `CREATE TABLE IF NOT EXISTS invoice_items (
+      id INTEGER PRIMARY KEY,
+      invoice_id INTEGER NOT NULL,
+      product_name TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      unit_price REAL NOT NULL,
+      subtotal REAL NOT NULL,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Brands ──
+    `CREATE TABLE IF NOT EXISTS brands (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Categories ──
+    `CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      parent_id INTEGER,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Products ──
+    `CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY,
+      barcode TEXT,
+      name TEXT NOT NULL,
+      price REAL NOT NULL DEFAULT 0,
+      cost_price REAL NOT NULL DEFAULT 0,
+      stock INTEGER NOT NULL DEFAULT 0,
+      min_stock INTEGER NOT NULL DEFAULT 0,
+      category_id INTEGER,
+      brand_id INTEGER,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Stock movements ──
+    `CREATE TABLE IF NOT EXISTS stock_movements (
+      id INTEGER PRIMARY KEY,
+      product_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      delta INTEGER NOT NULL,
+      reference_id TEXT,
+      user_id TEXT,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Shifts ──
+    `CREATE TABLE IF NOT EXISTS shifts (
+      id INTEGER PRIMARY KEY,
+      employee_name TEXT NOT NULL,
+      open_time TEXT NOT NULL DEFAULT (datetime('now')),
+      close_time TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Cash closings ──
+    `CREATE TABLE IF NOT EXISTS cash_closings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      shift_id INTEGER NOT NULL,
+      expected_cash REAL NOT NULL,
+      declared_cash REAL NOT NULL,
+      card_total REAL NOT NULL DEFAULT 0,
+      variance REAL NOT NULL,
+      status TEXT NOT NULL,
+      notes TEXT,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Customers ──
+    `CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      cuit TEXT,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    // ── Expenses ──
     `CREATE TABLE IF NOT EXISTS expenses (
       id INTEGER PRIMARY KEY,
       description TEXT NOT NULL,
@@ -58,6 +201,43 @@ async function ensureTables(db: Database): Promise<void> {
       verdict TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS proveedores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      cuit TEXT,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    `CREATE TABLE IF NOT EXISTS pedidos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      proveedor_id INTEGER NOT NULL,
+      date TEXT NOT NULL DEFAULT (datetime('now')),
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','received','cancelled')),
+      total REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    `CREATE TABLE IF NOT EXISTS pedido_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pedido_id INTEGER NOT NULL,
+      product_id INTEGER,
+      product_name TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      unit_price REAL NOT NULL,
+      subtotal REAL NOT NULL,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
     )`,
   ];
 

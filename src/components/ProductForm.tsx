@@ -147,6 +147,7 @@ export default function ProductForm({
           costPrice,
           brandId,
           stock: 0,
+          minStock: 0,
           category_id: categoryId,
           store_id: storeId,
         });

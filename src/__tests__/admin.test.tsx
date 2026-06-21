@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+﻿import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useAdminStore, type BulkPriceOpts } from "@/store/admin";
@@ -10,9 +10,9 @@ import AdminPage from "@/pages/AdminPage";
 import { StoreProvider } from "@/store/context";
 import { useAppStore } from "@/store";
 
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helpers
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** Clear localStorage and reset admin store between tests. */
 function resetStore() {
@@ -26,9 +26,9 @@ beforeEach(() => {
   resetStore();
 });
 
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // AdminRoute component
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("AdminRoute", () => {
   beforeEach(() => {
@@ -115,9 +115,9 @@ describe("AdminRoute", () => {
   });
 });
 
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Bulk price preview & confirm
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Bulk price preview", () => {
   const STORE_A = "store_1";
@@ -229,7 +229,7 @@ describe("Bulk price preview", () => {
   it("previews all products when no filter is applied", () => {
     seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "all",
+
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -246,8 +246,7 @@ describe("Bulk price preview", () => {
   it("previews filter by category", () => {
     const { bebidas } = seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "category",
-      filterId: bebidas.id,
+      categoryId: bebidas.id,
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -266,8 +265,7 @@ describe("Bulk price preview", () => {
   it("previews filter by brand", () => {
     const { coca } = seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "brand",
-      filterId: coca.id,
+      brandId: coca.id,
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -285,8 +283,7 @@ describe("Bulk price preview", () => {
   it("previews filter by brand + category combined", () => {
     const { bebidas, coca } = seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "category",
-      filterId: bebidas.id,
+      categoryId: bebidas.id,
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -305,7 +302,7 @@ describe("Bulk price preview", () => {
   it("preview calculates correct new prices for selling target", () => {
     seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "all",
+
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -326,7 +323,7 @@ describe("Bulk price preview", () => {
   it("preview calculates correct new prices for cost target", () => {
     seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "all",
+
       percent: 20,
       target: "cost",
       storeId: STORE_A,
@@ -344,14 +341,14 @@ describe("Bulk price preview", () => {
   it("preview shows both cost and selling when target is both", () => {
     seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "all",
+
       percent: 10,
       target: "both",
       storeId: STORE_A,
     };
     const result = useAdminStore.getState().bulkPricePreview(opts);
 
-    // 5 products × 2 fields = 10 items
+    // 5 products Ã— 2 fields = 10 items
     expect(result).toHaveLength(10);
 
     const costItems = result.filter((i) => i.field === "cost");
@@ -363,8 +360,7 @@ describe("Bulk price preview", () => {
   it("preview is empty when no products match filter", () => {
     seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "category",
-      filterId: 9999, // non-existent category
+      categoryId: 9999,
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -377,7 +373,7 @@ describe("Bulk price preview", () => {
   it("preview shows 0 products for 0% increase edge case", () => {
     seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "all",
+
       percent: 0,
       target: "selling",
       storeId: STORE_A,
@@ -392,7 +388,7 @@ describe("Bulk price preview", () => {
   it("preview handles negative percentage (decrease)", () => {
     seedProducts();
     const opts: BulkPriceOpts = {
-      filter: "all",
+
       percent: -10,
       target: "selling",
       storeId: STORE_A,
@@ -411,7 +407,7 @@ describe("Bulk price preview", () => {
       .products.map((p) => ({ id: p.id, price: p.price, costPrice: p.costPrice }));
 
     const opts: BulkPriceOpts = {
-      filter: "all",
+
       percent: 50,
       target: "both",
       storeId: STORE_A,
@@ -426,9 +422,9 @@ describe("Bulk price preview", () => {
   });
 });
 
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Bulk price confirm
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Bulk price confirm", () => {
   const STORE_A = "store_1";
@@ -474,7 +470,7 @@ describe("Bulk price confirm", () => {
     // Preview
     const adminStore = useAdminStore.getState();
     const preview = adminStore.bulkPricePreview({
-      filter: "all",
+
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -515,7 +511,7 @@ describe("Bulk price confirm", () => {
     });
 
     useAdminStore.getState().bulkPricePreview({
-      filter: "all",
+
       percent: 25,
       target: "cost",
       storeId: STORE_A,
@@ -541,7 +537,7 @@ describe("Bulk price confirm", () => {
     });
 
     useAdminStore.getState().bulkPricePreview({
-      filter: "all",
+
       percent: 10,
       target: "both",
       storeId: STORE_A,
@@ -570,7 +566,7 @@ describe("Bulk price confirm", () => {
 
     // Preview then cancel
     useAdminStore.getState().bulkPricePreview({
-      filter: "all",
+
       percent: 50,
       target: "selling",
       storeId: STORE_A,
@@ -604,7 +600,7 @@ describe("Bulk price confirm", () => {
     });
 
     const preview = useAdminStore.getState().bulkPricePreview({
-      filter: "all",
+
       percent: 1000,
       target: "selling",
       storeId: STORE_A,
@@ -642,8 +638,7 @@ describe("Bulk price confirm", () => {
 
     // Preview only Cat A
     useAdminStore.getState().bulkPricePreview({
-      filter: "category",
-      filterId: cat1.id,
+      categoryId: cat1.id,
       percent: 10,
       target: "selling",
       storeId: STORE_A,
@@ -658,9 +653,9 @@ describe("Bulk price confirm", () => {
   });
 });
 
-// ──────────────────────────────────────────────
-// Dark theme toggle — store & persistence
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Dark theme toggle â€” store & persistence
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Dark theme toggle", () => {
   beforeEach(() => {
@@ -731,7 +726,7 @@ describe("Dark theme toggle", () => {
   it("flicker prevention: inline script should apply dark class before React", () => {
     // This test verifies the EFFECT of the flicker prevention approach.
     // The inline script in index.html runs before React hydrates.
-    // Here we simulate: set localStorage dark → check that the class
+    // Here we simulate: set localStorage dark â†’ check that the class
     // would be applied before render.
     localStorage.setItem("admin_theme", "dark");
     document.documentElement.classList.remove("dark");
@@ -745,9 +740,9 @@ describe("Dark theme toggle", () => {
   });
 });
 
-// ──────────────────────────────────────────────
-// Settings Tab — AdminPage (Task 3.2)
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Settings Tab â€” AdminPage (Task 3.2)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function renderAdminPage() {
   return render(
@@ -757,7 +752,7 @@ function renderAdminPage() {
   );
 }
 
-describe("AdminPage — Settings Tab", () => {
+describe("AdminPage â€” Settings Tab", () => {
   beforeEach(async () => {
     // Reset auth store and login as admin
     useAuthStore.setState({
@@ -776,8 +771,8 @@ describe("AdminPage — Settings Tab", () => {
     const user = userEvent.setup();
     renderAdminPage();
 
-    // Click Configuración tab
-    await user.click(screen.getByText("Configuración"));
+    // Click ConfiguraciÃ³n tab
+    await user.click(screen.getByText("ConfiguraciÃ³n"));
 
     expect(screen.getByText("Gestionar Usuarios")).toBeInTheDocument();
   });
@@ -786,7 +781,7 @@ describe("AdminPage — Settings Tab", () => {
     const user = userEvent.setup();
     renderAdminPage();
 
-    await user.click(screen.getByText("Configuración"));
+    await user.click(screen.getByText("ConfiguraciÃ³n"));
 
     // PIN fields should NOT exist
     expect(screen.queryByLabelText("PIN Actual")).toBeNull();
@@ -801,7 +796,7 @@ describe("AdminPage — Settings Tab", () => {
     const user = userEvent.setup();
     renderAdminPage();
 
-    await user.click(screen.getByText("Configuración"));
+    await user.click(screen.getByText("ConfiguraciÃ³n"));
 
     expect(screen.getByText("Tema")).toBeInTheDocument();
     expect(screen.getByText("Modo Claro")).toBeInTheDocument();
@@ -811,7 +806,7 @@ describe("AdminPage — Settings Tab", () => {
     const user = userEvent.setup();
     renderAdminPage();
 
-    await user.click(screen.getByText("Configuración"));
+    await user.click(screen.getByText("ConfiguraciÃ³n"));
     await user.click(screen.getByText("Gestionar Usuarios"));
 
     expect(useAppStore.getState().page).toBe("user-management");
@@ -821,7 +816,7 @@ describe("AdminPage — Settings Tab", () => {
     const user = userEvent.setup();
     renderAdminPage();
 
-    await user.click(screen.getByText("Configuración"));
+    await user.click(screen.getByText("ConfiguraciÃ³n"));
 
     expect(screen.getByText("admin")).toBeInTheDocument();
   });

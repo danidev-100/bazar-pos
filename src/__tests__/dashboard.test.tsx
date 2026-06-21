@@ -119,57 +119,28 @@ describe("DashboardPage", () => {
     expect(useAppStore.getState().page).toBe("admin");
   });
 
-  it("2.1 — disabled Proveedores card does NOT navigate", async () => {
+  it("2.1 — clicking Proveedores navigates to proveedores page", async () => {
     const user = userEvent.setup();
-    resetStores();
-    loginAsAdmin();
     render(<DashboardPage />);
 
-    // Verify the page stays at "dashboard" after clicking Proveedores
     await user.click(screen.getByText("Proveedores"));
-    expect(useAppStore.getState().page).toBe("dashboard");
+    expect(useAppStore.getState().page).toBe("proveedores");
   });
 
-  it("2.1 — disabled Pedidos card does NOT navigate", async () => {
+  it("2.1 — clicking Pedidos navigates to pedidos page", async () => {
     const user = userEvent.setup();
-    resetStores();
-    loginAsAdmin();
     render(<DashboardPage />);
 
     await user.click(screen.getByText("Pedidos"));
-    expect(useAppStore.getState().page).toBe("dashboard");
+    expect(useAppStore.getState().page).toBe("pedidos");
   });
 
-  it("2.1 — disabled cards show Próximamente badge", () => {
-    render(<DashboardPage />);
-    const badges = screen.getAllByText("Próximamente");
-    expect(badges).toHaveLength(2);
-  });
-
-  it("2.1 — disabled cards are disabled (not clickable)", () => {
+  it("2.1 — all 9 cards are enabled (none disabled)", () => {
     render(<DashboardPage />);
     const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(9);
 
-    // Proveedores and Pedidos should be disabled
-    const proveedores = buttons.find(
-      (b) => b.textContent && b.textContent.includes("Proveedores"),
-    );
-    const pedidos = buttons.find(
-      (b) => b.textContent && b.textContent.includes("Pedidos"),
-    );
-
-    expect(proveedores).toBeDisabled();
-    expect(pedidos).toBeDisabled();
-  });
-
-  it("2.1 — active cards are NOT disabled (all 6 are enabled)", () => {
-    render(<DashboardPage />);
-    const buttons = screen.getAllByRole("button");
-    const activeLabels = ["Ventas", "Inventario", "Clientes", "Estadísticas", "Configuración", "Usuarios"];
-
-    for (const label of activeLabels) {
-      const btn = buttons.find((b) => b.textContent?.includes(label));
-      expect(btn).not.toBeNull();
+    for (const btn of buttons) {
       expect(btn).toBeEnabled();
     }
   });
@@ -177,19 +148,5 @@ describe("DashboardPage", () => {
   it("2.2 — page renders header title Panel Principal", () => {
     render(<DashboardPage />);
     expect(screen.getByText("Panel Principal")).toBeInTheDocument();
-  });
-
-  it("2.1 — setPage is NOT called when clicking disabled cards (vi spy)", async () => {
-    const user = userEvent.setup();
-    const setPageSpy = vi.spyOn(useAppStore.getState(), "setPage");
-    render(<DashboardPage />);
-
-    await user.click(screen.getByText("Proveedores"));
-    expect(setPageSpy).not.toHaveBeenCalled();
-
-    await user.click(screen.getByText("Pedidos"));
-    expect(setPageSpy).not.toHaveBeenCalled();
-
-    setPageSpy.mockRestore();
   });
 });

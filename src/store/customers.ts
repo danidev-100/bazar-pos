@@ -1,8 +1,5 @@
 import { create } from "zustand";
-
-// ──────────────────────────────────────────────
-// Types
-// ──────────────────────────────────────────────
+import { execute, enqueueSync } from "@/lib/db";
 
 export type Customer = {
   id: number;
@@ -12,108 +9,101 @@ export type Customer = {
   address: string;
   cuit: string;
   store_id: string;
-  created_at: string;
 };
-
-// ──────────────────────────────────────────────
-// localStorage helpers
-// ──────────────────────────────────────────────
-
-const CUSTOMERS_KEY = "bazar_customers";
-
-function loadCustomers(): Customer[] {
-  try {
-    const stored = localStorage.getItem(CUSTOMERS_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored) as Customer[];
-      return parsed;
-    }
-  } catch {
-    // localStorage unavailable — start empty
-  }
-  return [];
-}
-
-function saveCustomers(customers: Customer[]): void {
-  try {
-    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
-  } catch {
-    // localStorage unavailable — skip
-  }
-}
-
-// ──────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────
 
 let nextCustomerId = 1;
 
-function computeNextId(customers: Customer[]): number {
-  if (customers.length === 0) return 1;
-  return Math.max(...customers.map((c) => c.id)) + 1;
-}
-
-// ──────────────────────────────────────────────
-// Store shape
-// ──────────────────────────────────────────────
-
 export type CustomersStore = {
   customers: Customer[];
-
-  /** Add a customer. Returns the new customer with generated id and created_at. */
-  addCustomer: (data: Omit<Customer, "id" | "created_at">) => Customer;
-
-  /** Update customer fields by id. */
-  updateCustomer: (id: number, data: Partial<Customer>) => void;
-
-  /** Remove a customer by id. */
+  addCustomer: (data: Omit<Customer, "id">) => Customer;
+  updateCustomer: (id: number, updates: Partial<Omit<Customer, "id">>) => void;
   deleteCustomer: (id: number) => void;
-
-  /** Get all customers for a store, sorted alphabetically by name. */
   getCustomersByStore: (storeId: string) => Customer[];
-
-  /** Search customers by name, phone, email, or CUIT. */
   searchCustomers: (storeId: string, query: string) => Customer[];
-
-  /** Get a single customer by id, or null if not found. */
   getCustomerById: (id: number) => Customer | null;
 };
 
-// ──────────────────────────────────────────────
-// Store implementation
-// ──────────────────────────────────────────────
-
 export const useCustomersStore = create<CustomersStore>((set, get) => ({
-  customers: loadCustomers(),
+  customers: [],
 
   addCustomer: (data) => {
-    const customers = get().customers;
-    nextCustomerId = computeNextId(customers);
+    const dup = get().customers.find(
+      (c) => c.name === data.name && c.store_id === data.store_id,
+    );
+    if (dup) {
+      throw new Error(`Ya existe un cliente "${data.name}" en esta tienda`);
+    }
 
-    const customer: Customer = {
-      id: nextCustomerId++,
-      ...data,
-      created_at: new Date().toISOString(),
-    };
+    const customer: Customer = { id: nextCustomerId++, ...data };
+    set({ customers: [...get().customers, customer] });
 
-    const updated = [...customers, customer];
-    set({ customers: updated });
-    saveCustomers(updated);
+    const now = new Date().toISOString();
+    execute(
+      `INSERT INTO customers (id, name, phone, email, address, cuit, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+      [customer.id, customer.name, customer.phone, customer.email, customer.address, customer.cuit, customer.store_id, now, now],
+    )
+      .then(() => enqueueSync("customer", customer.id, "insert", customer.store_id))
+      .catch(() => {});
+
     return customer;
   },
 
-  updateCustomer: (id, data) => {
-    const updated = get().customers.map((c) =>
-      c.id === id ? { ...c, ...data } : c,
-    );
-    set({ customers: updated });
-    saveCustomers(updated);
+  updateCustomer: (id, updates) => {
+    if (updates.name) {
+      const current = get().customers.find((c) => c.id === id);
+      if (current) {
+        const dup = get().customers.find(
+          (c) =>
+            c.name === updates.name &&
+            c.store_id === (updates.store_id ?? current.store_id) &&
+            c.id !== id,
+        );
+        if (dup) {
+          throw new Error(`Ya existe un cliente "${updates.name}" en esta tienda`);
+        }
+      }
+    }
+
+    set({
+      customers: get().customers.map((c) =>
+        c.id === id ? { ...c, ...updates } : c,
+      ),
+    });
+
+    const current = get().customers.find((c) => c.id === id);
+    if (current) {
+      const now = new Date().toISOString();
+      execute(
+        `UPDATE customers SET name=$1, phone=$2, email=$3, address=$4, cuit=$5, store_id=$6, updated_at=$7, sync_status='pending' WHERE id=$8`,
+        [
+          updates.name ?? current.name,
+          updates.phone ?? current.phone,
+          updates.email ?? current.email,
+          updates.address ?? current.address,
+          updates.cuit ?? current.cuit,
+          updates.store_id ?? current.store_id,
+          now,
+          id,
+        ],
+      )
+        .then(() => enqueueSync("customer", id, "update", current.store_id))
+        .catch(() => {});
+    }
   },
 
   deleteCustomer: (id) => {
-    const updated = get().customers.filter((c) => c.id !== id);
-    set({ customers: updated });
-    saveCustomers(updated);
+    const existing = get().customers.find((c) => c.id === id);
+    set({
+      customers: get().customers.filter((c) => c.id !== id),
+    });
+
+    execute(`DELETE FROM customers WHERE id=$1`, [id])
+      .then(() => {
+        if (existing) {
+          enqueueSync("customer", id, "delete", existing.store_id);
+        }
+      })
+      .catch(() => {});
   },
 
   getCustomersByStore: (storeId) =>
