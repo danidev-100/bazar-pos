@@ -22,7 +22,7 @@ export type Invoice = {
   customer: string;
   items: InvoiceItem[];
   total: number;
-  paymentMethod: "cash" | "card" | "mixed";
+  paymentMethod: "cash" | "card" | "mixed" | "credit";
   date: string;
   storeId: string;
 };

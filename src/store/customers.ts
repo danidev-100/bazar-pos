@@ -9,6 +9,17 @@ export type Customer = {
   address: string;
   cuit: string;
   store_id: string;
+  creditBalance: number;
+};
+
+export type CreditPayment = {
+  id: number;
+  customer_id: number;
+  amount: number;
+  date: string;
+  notes: string;
+  sale_id: number | null;
+  store_id: string;
 };
 
 let nextCustomerId = 1;
@@ -16,16 +27,24 @@ export function setNextCustomerId(id: number) { nextCustomerId = id; }
 
 export type CustomersStore = {
   customers: Customer[];
+  creditPayments: CreditPayment[];
   addCustomer: (data: Omit<Customer, "id">) => Customer;
   updateCustomer: (id: number, updates: Partial<Omit<Customer, "id">>) => void;
   deleteCustomer: (id: number) => void;
   getCustomersByStore: (storeId: string) => Customer[];
   searchCustomers: (storeId: string, query: string) => Customer[];
   getCustomerById: (id: number) => Customer | null;
+  /** Update a customer's credit balance (positive = debe, negative = haber). */
+  updateCreditBalance: (customerId: number, delta: number, storeId: string, notes?: string, saleId?: number) => void;
+  /** Get all credit payments for a customer, newest first. */
+  getCreditPaymentsByCustomer: (customerId: number) => CreditPayment[];
+  /** Get customers with non-zero balance. */
+  getCustomersWithDebt: (storeId: string) => Customer[];
 };
 
 export const useCustomersStore = create<CustomersStore>((set, get) => ({
   customers: [],
+  creditPayments: [],
 
   addCustomer: (data) => {
     const dup = get().customers.find(
@@ -35,13 +54,13 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
       throw new Error(`Ya existe un cliente "${data.name}" en esta tienda`);
     }
 
-    const customer: Customer = { id: nextCustomerId++, ...data };
+    const customer: Customer = { id: nextCustomerId++, ...data, creditBalance: 0 };
     set({ customers: [...get().customers, customer] });
 
     const now = new Date().toISOString();
     execute(
-      `INSERT INTO customers (id, name, phone, email, address, cuit, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
-      [customer.id, customer.name, customer.phone, customer.email, customer.address, customer.cuit, customer.store_id, now, now],
+      `INSERT INTO customers (id, name, phone, email, address, cuit, credit_balance, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+      [customer.id, customer.name, customer.phone, customer.email, customer.address, customer.cuit, 0, customer.store_id, now, now],
     )
       .then(() => enqueueSync("customer", customer.id, "insert", customer.store_id))
       .catch(() => {});
@@ -75,13 +94,14 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
     if (current) {
       const now = new Date().toISOString();
       execute(
-        `UPDATE customers SET name=$1, phone=$2, email=$3, address=$4, cuit=$5, store_id=$6, updated_at=$7, sync_status='pending' WHERE id=$8`,
+        `UPDATE customers SET name=$1, phone=$2, email=$3, address=$4, cuit=$5, credit_balance=$6, store_id=$7, updated_at=$8, sync_status='pending' WHERE id=$9`,
         [
           updates.name ?? current.name,
           updates.phone ?? current.phone,
           updates.email ?? current.email,
           updates.address ?? current.address,
           updates.cuit ?? current.cuit,
+          updates.creditBalance ?? current.creditBalance ?? 0,
           updates.store_id ?? current.store_id,
           now,
           id,
@@ -128,4 +148,58 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
 
   getCustomerById: (id) =>
     get().customers.find((c) => c.id === id) ?? null,
+
+  updateCreditBalance: (customerId, delta, storeId, notes, saleId) => {
+    const customer = get().customers.find((c) => c.id === customerId);
+    if (!customer) return;
+
+    const newBalance = Math.round((customer.creditBalance + delta) * 100) / 100;
+
+    set({
+      customers: get().customers.map((c) =>
+        c.id === customerId ? { ...c, creditBalance: newBalance } : c,
+      ),
+    });
+
+    // Record the payment
+    const paymentId = nextCustomerId++;
+    const now = new Date().toISOString();
+    const payment: CreditPayment = {
+      id: paymentId,
+      customer_id: customerId,
+      amount: delta,
+      date: now,
+      notes: notes ?? "",
+      sale_id: saleId ?? null,
+      store_id: storeId,
+    };
+
+    set({ creditPayments: [...get().creditPayments, payment] });
+
+    // Persist payment
+    execute(
+      `INSERT INTO credit_payments (id, customer_id, amount, date, notes, sale_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+      [payment.id, payment.customer_id, payment.amount, payment.date, payment.notes, payment.sale_id, payment.store_id, now, now],
+    )
+      .then(() => enqueueSync("credit_payment", payment.id, "insert", storeId))
+      .catch(() => {});
+
+    // Persist balance update
+    execute(
+      `UPDATE customers SET credit_balance=$1, updated_at=$2, sync_status='pending' WHERE id=$3`,
+      [newBalance, now, customerId],
+    )
+      .then(() => enqueueSync("customer", customerId, "update", storeId))
+      .catch(() => {});
+  },
+
+  getCreditPaymentsByCustomer: (customerId) =>
+    get()
+      .creditPayments.filter((p) => p.customer_id === customerId)
+      .sort((a, b) => b.date.localeCompare(a.date)),
+
+  getCustomersWithDebt: (storeId) =>
+    get()
+      .customers.filter((c) => c.store_id === storeId && c.creditBalance > 0)
+      .sort((a, b) => b.creditBalance - a.creditBalance),
 }));

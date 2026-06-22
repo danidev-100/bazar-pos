@@ -342,6 +342,7 @@ export const customers = pgTable(
     email: text("email"),
     address: text("address"),
     cuit: text("cuit"),
+    credit_balance: doublePrecision("credit_balance").notNull().default(0),
     store_id: text("store_id").notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
@@ -351,6 +352,28 @@ export const customers = pgTable(
   },
   (table) => ({
     storeNameIdx: uniqueIndex("idx_customers_store_name").on(table.store_id, table.name),
+  }),
+);
+
+export const creditPayments = pgTable(
+  "credit_payments",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    customer_id: integer("customer_id").notNull(),
+    amount: doublePrecision("amount").notNull(),
+    date: timestamp("date").notNull().defaultNow(),
+    notes: text("notes"),
+    sale_id: integer("sale_id"),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    customerIdx: index("idx_credit_payments_customer").on(table.customer_id),
+    storeIdx: index("idx_credit_payments_store").on(table.store_id),
   }),
 );
 

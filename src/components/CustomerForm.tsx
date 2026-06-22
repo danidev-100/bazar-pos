@@ -86,6 +86,7 @@ export default function CustomerForm({
           address: result.data.address,
           cuit: result.data.cuit,
           store_id: storeId,
+          creditBalance: 0,
         });
       }
       onSaved();

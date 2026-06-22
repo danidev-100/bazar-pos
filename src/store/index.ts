@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { useProductsStore } from "./products";
-import { type Customer } from "./customers";
+import { useCustomersStore, type Customer } from "./customers";
 import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
@@ -46,7 +46,7 @@ export type CompletedSale = {
   subtotal: number;
   discountPercent: number;
   discountAmount: number;
-  paymentMethod: "cash" | "card" | "mixed";
+  paymentMethod: "cash" | "card" | "mixed" | "credit";
   amountPaid: number | null;
   cashAmount: number | null;
   cardAmount: number | null;
@@ -121,7 +121,7 @@ export type AppStore = {
   lastCompletedSale: CompletedSale | null;
   completedSales: CompletedSale[];
   checkout: (
-    paymentMethod: "cash" | "card" | "mixed",
+    paymentMethod: "cash" | "card" | "mixed" | "credit",
     amountPaid?: number,
     storeId?: string,
     customerName?: string,
@@ -284,10 +284,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
       change = Math.round((cash - (total - card)) * 100) / 100;
     }
+    if (paymentMethod === "credit") {
+      // Sale goes through — customer balance will be increased
+    }
 
     const resolvedStoreId = storeId ?? "store_1";
 
-    const resolvedPayment = paymentMethod === "mixed" ? "mixed" as const : paymentMethod;
+    const resolvedPayment = paymentMethod;
     const paidAmount = paymentMethod === "mixed" ? (cashAmount ?? 0) + (cardAmount ?? 0) : (amountPaid ?? null);
 
     const sale: CompletedSale = {
@@ -326,6 +329,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
         user_id: null,
         store_id: sale.storeId,
       });
+    }
+
+    // ── Update customer credit balance ──
+    if (paymentMethod === "credit" && customerName) {
+      const { updateCreditBalance } = useCustomersStore.getState();
+      const customer = useCustomersStore.getState().customers.find(
+        (c) => c.name === customerName && c.store_id === resolvedStoreId,
+      );
+      if (customer) {
+        updateCreditBalance(customer.id, total, resolvedStoreId, `Venta #${sale.id}`, sale.id);
+      }
     }
 
     // ── Persist sale to SQLite ──

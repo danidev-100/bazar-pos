@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useActiveStore } from "@/store/context";
 import { useCustomersStore, type Customer } from "@/store/customers";
 import CustomerForm from "@/components/CustomerForm";
+import CollectPaymentModal from "@/components/CollectPaymentModal";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
@@ -24,6 +25,7 @@ export default function CustomersPage() {
 
   const [view, setView] = useState<View>({ kind: "list" });
   const [search, setSearch] = useState("");
+  const [collectCustomer, setCollectCustomer] = useState<Customer | null>(null);
 
   const storeCustomers = useMemo(
     () =>
@@ -51,6 +53,7 @@ export default function CustomersPage() {
     { header: "Email", key: "email" },
     { header: "CUIT", key: "cuit" },
     { header: "Dirección", key: "direccion" },
+    { header: "Saldo", key: "saldo" },
   ];
 
   const exportCustomersPdf = useCallback(() => {
@@ -60,6 +63,7 @@ export default function CustomersPage() {
       email: c.email || "—",
       cuit: c.cuit || "—",
       direccion: c.address || "—",
+      saldo: c.creditBalance > 0 ? `$${c.creditBalance.toFixed(2)}` : "—",
     }));
     exportTableToPdf(data, customerColumns, "Clientes");
   }, [filteredCustomers]);
@@ -71,6 +75,7 @@ export default function CustomersPage() {
       email: c.email || "",
       cuit: c.cuit || "",
       direccion: c.address || "",
+      saldo: c.creditBalance,
     }));
     exportToExcel(data, customerColumns, "Clientes");
   }, [filteredCustomers]);
@@ -160,6 +165,9 @@ export default function CustomersPage() {
                       <th className="text-left py-2 px-2 font-medium">
                         CUIT
                       </th>
+                      <th className="text-right py-2 px-2 font-medium">
+                        Saldo
+                      </th>
                       <th className="text-right py-2 pl-2 font-medium">
                         Acciones
                       </th>
@@ -183,7 +191,20 @@ export default function CustomersPage() {
                         <td className="py-2 px-2 text-pos-muted font-mono text-xs">
                           {c.cuit || "—"}
                         </td>
+                        <td className={`py-2 px-2 text-right font-mono text-sm font-bold ${
+                          c.creditBalance > 0 ? "text-pos-danger" : "text-pos-muted"
+                        }`}>
+                          {c.creditBalance > 0 ? `$${c.creditBalance.toFixed(2)}` : "—"}
+                        </td>
                         <td className="py-2 pl-2 text-right whitespace-nowrap">
+                          {c.creditBalance > 0 && (
+                            <button
+                              onClick={() => setCollectCustomer(c)}
+                              className="text-xs px-2 py-1 text-pos-success hover:bg-pos-success/10 rounded touch-target mr-1"
+                            >
+                              Cobrar
+                            </button>
+                          )}
                           <button
                             onClick={() => setView({ kind: "edit", customer: c })}
                             className="text-xs px-2 py-1 text-pos-secondary hover:bg-pos-secondary/10 rounded touch-target"
@@ -227,6 +248,14 @@ export default function CustomersPage() {
             onCancel={handleCancel}
           />
         </div>
+      )}
+
+      {collectCustomer && (
+        <CollectPaymentModal
+          customer={collectCustomer}
+          onClose={() => setCollectCustomer(null)}
+          onCollected={() => {}}
+        />
       )}
     </div>
   );

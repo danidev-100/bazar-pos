@@ -303,10 +303,30 @@ export const customers = sqliteTable(
     email: text("email"),
     address: text("address"),
     cuit: text("cuit"),
+    credit_balance: real("credit_balance").notNull().default(0),
     ...syncColumns,
   },
   (table) => ({
     storeNameIdx: uniqueIndex("idx_customers_store_name").on(table.store_id, table.name),
+  }),
+);
+
+export const creditPayments = sqliteTable(
+  "credit_payments",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    customer_id: integer("customer_id").notNull(),
+    amount: real("amount").notNull(),
+    date: text("date")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    notes: text("notes"),
+    sale_id: integer("sale_id"),
+    ...syncColumns,
+  },
+  (table) => ({
+    customerIdx: index("idx_credit_payments_customer").on(table.customer_id),
+    storeIdx: index("idx_credit_payments_store").on(table.store_id),
   }),
 );
 

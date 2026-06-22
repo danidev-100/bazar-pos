@@ -93,8 +93,11 @@ async function initProducts(): Promise<void> {
 
 async function initCustomers(): Promise<void> {
   try {
-    const rows = await select<any>("SELECT id, name, phone, email, address, cuit, store_id FROM customers");
-    const customers = rows.map((r: any) => ({
+    const [customerRows, paymentRows] = await Promise.all([
+      select<any>("SELECT id, name, phone, email, address, cuit, credit_balance, store_id FROM customers"),
+      select<any>("SELECT id, customer_id, amount, date, notes, sale_id, store_id FROM credit_payments"),
+    ]);
+    const customers = customerRows.map((r: any) => ({
       id: r.id,
       name: r.name,
       phone: r.phone ?? "",
@@ -102,9 +105,19 @@ async function initCustomers(): Promise<void> {
       address: r.address ?? "",
       cuit: r.cuit ?? "",
       store_id: r.store_id,
+      creditBalance: r.credit_balance ?? 0,
+    }));
+    const creditPayments = paymentRows.map((r: any) => ({
+      id: r.id,
+      customer_id: r.customer_id,
+      amount: r.amount,
+      date: r.date,
+      notes: r.notes ?? "",
+      sale_id: r.sale_id,
+      store_id: r.store_id,
     }));
     const maxId = customers.reduce((m: number, c: any) => Math.max(m, c.id), 0);
-    useCustomersStore.setState({ customers });
+    useCustomersStore.setState({ customers, creditPayments });
     setNextCustomerId(maxId + 1);
   } catch { /* table may not exist yet */ }
 }
