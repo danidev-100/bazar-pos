@@ -38,15 +38,20 @@ function makeSale(
         quantity: 1,
         unitPrice: total,
         subtotal: total,
+        discountPercent: 0,
       },
     ],
     total,
+    subtotal: total,
+    discountPercent: 0,
+    discountAmount: 0,
     paymentMethod: method,
     amountPaid: method === "cash" ? total : null,
     change: method === "cash" ? 0 : null,
     date: new Date().toISOString(),
     storeId,
     customerName,
+    status: "completed" as const,
   };
 }
 
@@ -210,6 +215,7 @@ describe("Invoice items match sale items", () => {
           quantity: 2,
           unitPrice: 150,
           subtotal: 300,
+          discountPercent: 0,
         },
         {
           productId: 2,
@@ -217,6 +223,7 @@ describe("Invoice items match sale items", () => {
           quantity: 1,
           unitPrice: 200,
           subtotal: 200,
+          discountPercent: 0,
         },
         {
           productId: 3,
@@ -224,15 +231,20 @@ describe("Invoice items match sale items", () => {
           quantity: 3,
           unitPrice: 80,
           subtotal: 240,
+          discountPercent: 0,
         },
       ],
       total: 740,
+      subtotal: 740,
+      discountPercent: 0,
+      discountAmount: 0,
       paymentMethod: "cash",
       amountPaid: 740,
       change: 0,
       date: new Date().toISOString(),
       storeId: "store_1",
       customerName: "Maria",
+      status: "completed",
     };
 
     const invoice = useInvoicesStore.getState().generateInvoice(sale);
@@ -248,16 +260,20 @@ describe("Invoice items match sale items", () => {
     const sale: CompletedSale = {
       id: 1,
       items: [
-        { productId: 1, productName: "A", quantity: 2, unitPrice: 150, subtotal: 300 },
-        { productId: 2, productName: "B", quantity: 1, unitPrice: 450, subtotal: 450 },
+        { productId: 1, productName: "A", quantity: 2, unitPrice: 150, subtotal: 300, discountPercent: 0 },
+        { productId: 2, productName: "B", quantity: 1, unitPrice: 450, subtotal: 450, discountPercent: 0 },
       ],
       total: 750,
+      subtotal: 750,
+      discountPercent: 0,
+      discountAmount: 0,
       paymentMethod: "cash",
       amountPaid: 750,
       change: 0,
       date: new Date().toISOString(),
       storeId: "store_1",
       customerName: null,
+      status: "completed",
     };
 
     const invoice = useInvoicesStore.getState().generateInvoice(sale);

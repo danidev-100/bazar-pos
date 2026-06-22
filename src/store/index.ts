@@ -32,6 +32,7 @@ export type CartItem = {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  discountPercent: number; // 0–100, per-item discount
 };
 
 // ──────────────────────────────────────────────
@@ -42,12 +43,16 @@ export type CompletedSale = {
   id: number;
   items: CartItem[];
   total: number;
+  subtotal: number;
+  discountPercent: number;
+  discountAmount: number;
   paymentMethod: "cash" | "card";
   amountPaid: number | null;
   change: number | null;
   date: string;
   storeId: string;
   customerName: string | null;
+  status: "completed" | "refunded";
 };
 
 // ──────────────────────────────────────────────
@@ -90,6 +95,7 @@ export type AppStore = {
   // ── Cart ──
   items: CartItem[];
   addItem: (productId: number, name: string, price: number) => void;
+  setItemDiscount: (productId: number, discountPercent: number) => void;
   updateQuantity: (productId: number, qty: number) => void;
   removeItem: (productId: number) => void;
   clearCart: () => void;
@@ -105,6 +111,10 @@ export type AppStore = {
   selectedCustomer: Customer | null;
   selectCustomer: (customer: Customer | null) => void;
 
+  // ── Discount ──
+  globalDiscountPercent: number;
+  setGlobalDiscount: (percent: number) => void;
+
   // ── Sales ──
   lastCompletedSale: CompletedSale | null;
   completedSales: CompletedSale[];
@@ -114,6 +124,7 @@ export type AppStore = {
     storeId?: string,
     customerName?: string,
   ) => CompletedSale;
+  refundSale: (saleId: number) => void;
   dismissReceipt: () => void;
 };
 
@@ -142,9 +153,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
   completedSales: [],
   selectedCustomer: null,
   selectedCartItemId: null,
+  globalDiscountPercent: 0,
 
   // ── Navigation ──
   setPage: (page) => set({ page }),
+
+  // ── Discount ──
+  setGlobalDiscount: (percent) => set({ globalDiscountPercent: Math.max(0, Math.min(100, percent)) }),
+  setItemDiscount: (productId, discountPercent) => {
+    const clamped = Math.max(0, Math.min(100, discountPercent));
+    set({
+      items: get().items.map((i) =>
+        i.productId === productId ? { ...i, discountPercent: clamped } : i,
+      ),
+    });
+  },
 
   // ── UI ──
   setBusy: (busy) => set({ busy }),
@@ -180,6 +203,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             quantity: 1,
             unitPrice: price,
             subtotal: price,
+            discountPercent: 0,
           },
         ],
       });
@@ -211,26 +235,34 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   clearCart: () => set({ items: [], selectedCartItemId: null }),
 
-  // ── Cart Selection ──
-  selectCartItem: (productId) => set({ selectedCartItemId: productId }),
-  clearSelectedCartItem: () => set({ selectedCartItemId: null }),
-
   cartTotal: () => {
-    const total = get().items.reduce((sum, i) => sum + i.subtotal, 0);
-    return Math.round(total * 100) / 100;
+    const { items, globalDiscountPercent } = get();
+    const subtotal = items.reduce((sum, i) => {
+      const itemDiscount = i.discountPercent > 0 ? i.subtotal * i.discountPercent / 100 : 0;
+      return sum + i.subtotal - itemDiscount;
+    }, 0);
+    const globalDiscount = globalDiscountPercent > 0 ? subtotal * globalDiscountPercent / 100 : 0;
+    const total = Math.round((subtotal - globalDiscount) * 100) / 100;
+    return total;
   },
 
   itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
+  // ── Cart Selection ──
+  selectCartItem: (productId) => set({ selectedCartItemId: productId }),
+  clearSelectedCartItem: () => set({ selectedCartItemId: null }),
+
   // ── Sales / Checkout ──
 
   checkout: (paymentMethod, amountPaid, storeId, customerName) => {
-    const { items, cartTotal } = get();
+    const { items, cartTotal, globalDiscountPercent } = get();
     if (items.length === 0) {
       throw new Error("Cannot checkout with an empty cart");
     }
 
     const total = cartTotal();
+    const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
+    const discountAmount = Math.round((subtotal - total) * 100) / 100;
     const change =
       paymentMethod === "cash" && amountPaid != null
         ? Math.round((amountPaid - total) * 100) / 100
@@ -248,12 +280,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
       id: nextSaleId++,
       items: items.map((i) => ({ ...i })),
       total,
+      subtotal,
+      discountPercent: globalDiscountPercent,
+      discountAmount,
       paymentMethod,
       amountPaid: amountPaid ?? null,
       change,
       date: new Date().toISOString(),
       storeId: resolvedStoreId,
       customerName: customerName ?? null,
+      status: "completed",
     };
 
     set({
@@ -300,6 +336,41 @@ export const useAppStore = create<AppStore>((set, get) => ({
       .catch(() => {});
 
     return sale;
+  },
+
+  refundSale: (saleId) => {
+    const sale = get().completedSales.find((s) => s.id === saleId);
+    if (!sale || sale.status === "refunded") return;
+
+    // Reverse stock movements
+    const { recordMovement } = useProductsStore.getState();
+    for (const item of sale.items) {
+      recordMovement({
+        product_id: item.productId,
+        type: "adjustment",
+        quantity: item.quantity,
+        delta: item.quantity,
+        reference_id: `refund-${sale.id}`,
+        user_id: null,
+        store_id: sale.storeId,
+      });
+    }
+
+    // Mark sale as refunded in memory
+    set({
+      completedSales: get().completedSales.map((s) =>
+        s.id === saleId ? { ...s, status: "refunded" as const } : s,
+      ),
+    });
+
+    // Update SQLite
+    const now = new Date().toISOString();
+    execute(
+      `UPDATE sales SET status='refunded', updated_at=$1, sync_status='pending' WHERE id=$2`,
+      [now, saleId],
+    )
+      .then(() => enqueueSync("sale", saleId, "update", sale.storeId))
+      .catch(() => {});
   },
 
   dismissReceipt: () => set({ lastCompletedSale: null }),

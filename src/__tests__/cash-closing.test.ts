@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
+﻿import { describe, it, expect, beforeEach } from "vitest";
 import { useCashClosingStore, computeExpectedCash, computeVariance } from "@/store/cash-closing";
 import { useAppStore, type CompletedSale } from "@/store";
 
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helpers
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function resetCashStore() {
   useCashClosingStore.setState({ shifts: [] });
@@ -43,26 +43,31 @@ function makeSale(
       quantity: i.qty,
       unitPrice: i.subtotal / i.qty,
       subtotal: i.subtotal,
+      discountPercent: 0,
     })),
     total,
+    subtotal: total,
+    discountPercent: 0,
+    discountAmount: 0,
     paymentMethod: method,
     amountPaid: method === "cash" ? total : null,
     change: method === "cash" ? 0 : null,
     date: date.toISOString(),
     storeId: "store_1",
     customerName: null,
+    status: "completed" as const,
   };
 }
 
-// ──────────────────────────────────────────────
-// 4.5 — Shift lifecycle: open → close
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 4.5 â€” Shift lifecycle: open â†’ close
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-describe("Shift lifecycle: open → close", () => {
+describe("Shift lifecycle: open â†’ close", () => {
   it("opens a new shift with employee and store", () => {
-    const shift = useCashClosingStore.getState().openShift("Juan Pérez", "store_1");
+    const shift = useCashClosingStore.getState().openShift("Juan PÃ©rez", "store_1");
 
-    expect(shift.employee).toBe("Juan Pérez");
+    expect(shift.employee).toBe("Juan PÃ©rez");
     expect(shift.storeId).toBe("store_1");
     expect(shift.status).toBe("open");
     expect(shift.openTime).toBeTruthy();
@@ -118,9 +123,9 @@ describe("Shift lifecycle: open → close", () => {
   });
 });
 
-// ──────────────────────────────────────────────
-// 4.5 — Double-open rejection
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 4.5 â€” Double-open rejection
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Double-open rejection", () => {
   it("throws when trying to open a second shift for the same store", () => {
@@ -156,9 +161,9 @@ describe("Double-open rejection", () => {
   });
 });
 
-// ──────────────────────────────────────────────
-// 4.5 — Variance calculation
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 4.5 â€” Variance calculation
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Variance calculation", () => {
   it("computeVariance returns positive variance", () => {
@@ -210,7 +215,7 @@ describe("Variance calculation", () => {
     const now = new Date();
     const sales: CompletedSale[] = [
       makeSale(1, 400, "cash", now),
-      makeSale(2, 200, "cash", new Date(now.getTime() + 86400000)), // 1 day later — within open shift
+      makeSale(2, 200, "cash", new Date(now.getTime() + 86400000)), // 1 day later â€” within open shift
     ];
 
     const expected = computeExpectedCash(sales, now.toISOString(), null);
@@ -218,9 +223,9 @@ describe("Variance calculation", () => {
   });
 });
 
-// ──────────────────────────────────────────────
-// 4.5 — Shift reconciliation
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 4.5 â€” Shift reconciliation
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Shift reconciliation", () => {
   it("reconcile marks as matched when variance is zero", () => {
@@ -291,9 +296,9 @@ describe("Shift reconciliation", () => {
   });
 });
 
-// ──────────────────────────────────────────────
-// 4.5 — Shift Summary / Closure Report
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 4.5 â€” Shift Summary / Closure Report
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Shift closure summary", () => {
   it("generates summary with sales breakdown", () => {
@@ -365,9 +370,9 @@ describe("Shift closure summary", () => {
   });
 });
 
-// ──────────────────────────────────────────────
-// 4.5 — Edge: No open shift cannot reconcile
-// ──────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 4.5 â€” Edge: No open shift cannot reconcile
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Cannot reconcile without a closed shift", () => {
   it("throws if no shifts exist", () => {

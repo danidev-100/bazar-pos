@@ -8,6 +8,7 @@ type ReceiptPreviewProps = {
   sale: CompletedSale;
   onPrint: () => void;
   onClose: () => void;
+  onRefund?: () => void;
 };
 
 // ──────────────────────────────────────────────
@@ -35,6 +36,7 @@ export default function ReceiptPreview({
   sale,
   onPrint,
   onClose,
+  onRefund,
 }: ReceiptPreviewProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -93,12 +95,14 @@ export default function ReceiptPreview({
           <div className="border-t border-dashed border-pos-muted/20 pt-3 space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-pos-muted">Subtotal</span>
-              <span className="font-mono">${sale.total.toFixed(2)}</span>
+              <span className="font-mono">${sale.subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-pos-muted">Impuesto</span>
-              <span className="font-mono">$0.00</span>
-            </div>
+            {sale.discountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-pos-muted">Descuento {sale.discountPercent > 0 ? `(${sale.discountPercent}%)` : ""}</span>
+                <span className="font-mono text-pos-danger">−${sale.discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-base font-bold pt-1 border-t border-pos-muted/10">
               <span className="text-pos-text">Total</span>
               <span className="font-mono text-pos-secondary">
@@ -155,6 +159,25 @@ export default function ReceiptPreview({
               Nueva Venta
             </button>
           </div>
+
+          {sale.status !== "refunded" && onRefund && (
+            <button
+              onClick={() => {
+                if (window.confirm(`¿Devolver venta #${sale.id} por $${sale.total.toFixed(2)}? El stock se va a restablecer.`)) {
+                  onRefund();
+                }
+              }}
+              className="w-full px-4 py-2 border border-pos-danger/30 text-pos-danger rounded-xl font-medium text-sm touch-target hover:bg-pos-danger/5 transition-colors"
+            >
+              ↩️ Devolver Venta
+            </button>
+          )}
+
+          {sale.status === "refunded" && (
+            <div className="w-full px-4 py-2 bg-pos-danger/10 border border-pos-danger/20 rounded-xl text-center">
+              <span className="text-sm font-medium text-pos-danger">✗ Venta Devuelta</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

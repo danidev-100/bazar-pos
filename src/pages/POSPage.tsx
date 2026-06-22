@@ -357,6 +357,14 @@ export default function POSPage() {
     // Receipt will auto-show via the useEffect above
   }
 
+  function handleRefund() {
+    if (!lastCompletedSale) return;
+    const refundSale = useAppStore.getState().refundSale;
+    refundSale(lastCompletedSale.id);
+    showNotification(`Venta #${lastCompletedSale.id} devuelta — stock restablecido`);
+    setTimeout(() => dismissNotification(), 4000);
+  }
+
   function handlePrint() {
     if (!lastCompletedSale) return;
 
@@ -450,6 +458,7 @@ export default function POSPage() {
           sale={lastCompletedSale}
           onPrint={handlePrint}
           onClose={handleNewSale}
+          onRefund={handleRefund}
         />
       )}
 

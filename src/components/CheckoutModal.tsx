@@ -2,18 +2,10 @@ import { useState } from "react";
 import { useAppStore } from "@/store";
 import { useActiveStore } from "@/store/context";
 
-// ──────────────────────────────────────────────
-// Props
-// ──────────────────────────────────────────────
-
 type CheckoutModalProps = {
   onClose: () => void;
   onComplete: () => void;
 };
-
-// ──────────────────────────────────────────────
-// Component
-// ──────────────────────────────────────────────
 
 export default function CheckoutModal({
   onClose,
@@ -24,8 +16,12 @@ export default function CheckoutModal({
   const cartTotal = useAppStore((s) => s.cartTotal);
   const checkout = useAppStore((s) => s.checkout);
   const selectedCustomer = useAppStore((s) => s.selectedCustomer);
+  const globalDiscountPercent = useAppStore((s) => s.globalDiscountPercent);
+  const setGlobalDiscount = useAppStore((s) => s.setGlobalDiscount);
 
+  const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
   const total = cartTotal();
+  const discountAmount = Math.round((subtotal - total) * 100) / 100;
   const isEmpty = items.length === 0;
 
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | null>(
@@ -151,6 +147,32 @@ export default function CheckoutModal({
               </span>
             </div>
           )}
+
+          {/* Discount */}
+          <div className="bg-pos-background/30 rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-pos-muted">Subtotal</span>
+              <span className="text-sm font-mono">${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="global-discount" className="text-xs font-medium text-pos-muted whitespace-nowrap">
+                Descuento %
+              </label>
+              <input
+                id="global-discount"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={globalDiscountPercent}
+                onChange={(e) => setGlobalDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                className="w-16 border border-pos-muted/30 rounded-lg px-2 py-1 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface"
+              />
+              {discountAmount > 0 && (
+                <span className="text-xs text-pos-danger font-medium">−${discountAmount.toFixed(2)}</span>
+              )}
+            </div>
+          </div>
 
           {/* Total */}
           <div className="flex items-center justify-between pt-2 border-t border-pos-muted/20">

@@ -131,17 +131,22 @@ function makeSale(
   date: string,
   storeId = "store_1",
 ): CompletedSale {
-  const total = items.reduce((s, i) => s + i.subtotal, 0);
+  const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
+  const cartItems = items.map((i) => ({ ...i, discountPercent: 0 }));
   return {
     id,
-    items,
-    total,
+    items: cartItems,
+    total: subtotal,
+    subtotal,
+    discountPercent: 0,
+    discountAmount: 0,
     paymentMethod: "cash",
-    amountPaid: total,
+    amountPaid: subtotal,
     change: 0,
     date,
     storeId,
     customerName: null,
+    status: "completed" as const,
   };
 }
 
