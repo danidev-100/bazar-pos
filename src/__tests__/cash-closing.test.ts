@@ -52,6 +52,8 @@ function makeSale(
     paymentMethod: method,
     amountPaid: method === "cash" ? total : null,
     change: method === "cash" ? 0 : null,
+    cashAmount: method === "cash" ? total : null,
+    cardAmount: method === "card" ? total : null,
     date: date.toISOString(),
     storeId: "store_1",
     customerName: null,

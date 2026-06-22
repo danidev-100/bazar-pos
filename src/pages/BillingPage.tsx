@@ -100,7 +100,7 @@ export default function BillingPage() {
       fecha: new Date(inv.date).toLocaleDateString("es-AR"),
       cliente: inv.customer,
       total: inv.total,
-      pago: inv.paymentMethod === "cash" ? "Efectivo" : "Tarjeta",
+      pago: inv.paymentMethod === "cash" ? "Efectivo" : inv.paymentMethod === "mixed" ? "Mixto" : "Tarjeta",
     }));
     exportToExcel(data, invoiceColumns, "Facturas");
   }, [storeInvoices]);
@@ -111,7 +111,7 @@ export default function BillingPage() {
       fecha: new Date(inv.date).toLocaleDateString("es-AR"),
       cliente: inv.customer,
       total: `$${inv.total.toFixed(2)}`,
-      pago: inv.paymentMethod === "cash" ? "Efectivo" : "Tarjeta",
+      pago: inv.paymentMethod === "cash" ? "Efectivo" : inv.paymentMethod === "mixed" ? "Mixto" : "Tarjeta",
     }));
     exportTableToPdf(data, invoiceColumns, "Facturas");
   }, [storeInvoices]);

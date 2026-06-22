@@ -24,31 +24,43 @@ export default function CheckoutModal({
   const discountAmount = Math.round((subtotal - total) * 100) / 100;
   const isEmpty = items.length === 0;
 
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | null>(
-    null,
-  );
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "mixed" | null>(null);
   const [cashAmount, setCashAmount] = useState<string>("");
+  const [cardAmount, setCardAmount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const parsedAmount = parseFloat(cashAmount) || 0;
+  const parsedCash = parseFloat(cashAmount) || 0;
+  const parsedCard = parseFloat(cardAmount) || 0;
+  const enteredTotal = paymentMethod === "mixed" ? parsedCash + parsedCard : parsedCash;
   const change =
-    paymentMethod === "cash" && parsedAmount >= total
-      ? Math.round((parsedAmount - total) * 100) / 100
-      : 0;
+    paymentMethod === "cash" && parsedCash >= total
+      ? Math.round((parsedCash - total) * 100) / 100
+      : paymentMethod === "mixed" && enteredTotal >= total
+        ? Math.round((parsedCash - (total - parsedCard)) * 100) / 100
+        : 0;
 
   function resetState() {
     setPaymentMethod(null);
     setCashAmount("");
+    setCardAmount("");
     setError(null);
     setBusy(false);
   }
 
-  function handlePaymentSelect(method: "cash" | "card") {
+  function handlePaymentSelect(method: "cash" | "card" | "mixed") {
     setPaymentMethod(method);
     setError(null);
     if (method === "card") {
       setCashAmount("");
+      setCardAmount("");
+    }
+    if (method === "cash") {
+      setCardAmount("");
+    }
+    if (method === "mixed") {
+      setCashAmount("");
+      setCardAmount("");
     }
   }
 
@@ -61,23 +73,37 @@ export default function CheckoutModal({
       setError("Seleccioná un método de pago");
       return;
     }
-    if (paymentMethod === "cash" && parsedAmount < total) {
-      setError(
-        `Pago insuficiente: $${parsedAmount.toFixed(2)} es menor al total de $${total.toFixed(2)}`,
-      );
+
+    if (paymentMethod === "cash" && parsedCash < total) {
+      setError(`Pago insuficiente: $${parsedCash.toFixed(2)} es menor al total de $${total.toFixed(2)}`);
       return;
+    }
+
+    if (paymentMethod === "mixed") {
+      if (parsedCard <= 0 && parsedCash <= 0) {
+        setError("Ingresá al menos un monto en efectivo o tarjeta");
+        return;
+      }
+      if (enteredTotal < total) {
+        setError(`Total ingresado: $${enteredTotal.toFixed(2)} — faltan $${(total - enteredTotal).toFixed(2)}`);
+        return;
+      }
     }
 
     setBusy(true);
     setError(null);
 
     try {
-      checkout(
-        paymentMethod,
-        paymentMethod === "cash" ? parsedAmount : undefined,
-        storeId,
-        selectedCustomer?.name,
-      );
+      if (paymentMethod === "mixed") {
+        checkout("mixed", total, storeId, selectedCustomer?.name, parsedCash, parsedCard);
+      } else {
+        checkout(
+          paymentMethod,
+          paymentMethod === "cash" ? parsedCash : undefined,
+          storeId,
+          selectedCustomer?.name,
+        );
+      }
       resetState();
       onComplete();
     } catch (err) {
@@ -161,12 +187,13 @@ export default function CheckoutModal({
               <input
                 id="global-discount"
                 type="number"
+                inputMode="numeric"
                 min="0"
                 max="100"
                 step="1"
                 value={globalDiscountPercent}
                 onChange={(e) => setGlobalDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
-                className="w-16 border border-pos-muted/30 rounded-lg px-2 py-1 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface"
+                className="w-16 border border-pos-muted/30 rounded-lg px-2 py-1 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               {discountAmount > 0 && (
                 <span className="text-xs text-pos-danger font-medium">−${discountAmount.toFixed(2)}</span>
@@ -188,10 +215,10 @@ export default function CheckoutModal({
               <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
                 Método de pago
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => handlePaymentSelect("cash")}
-                  className="flex flex-col items-center justify-center py-4 px-3 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                  className="flex flex-col items-center justify-center py-4 px-2 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
                 >
                   <span className="text-3xl mb-1">💵</span>
                   <span className="text-sm font-semibold text-pos-text">
@@ -200,11 +227,20 @@ export default function CheckoutModal({
                 </button>
                 <button
                   onClick={() => handlePaymentSelect("card")}
-                  className="flex flex-col items-center justify-center py-4 px-3 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                  className="flex flex-col items-center justify-center py-4 px-2 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
                 >
                   <span className="text-3xl mb-1">💳</span>
                   <span className="text-sm font-semibold text-pos-text">
                     Tarjeta
+                  </span>
+                </button>
+                <button
+                  onClick={() => handlePaymentSelect("mixed")}
+                  className="flex flex-col items-center justify-center py-4 px-2 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                >
+                  <span className="text-3xl mb-1">🔀</span>
+                  <span className="text-sm font-semibold text-pos-text">
+                    Mixto
                   </span>
                 </button>
               </div>
@@ -218,19 +254,20 @@ export default function CheckoutModal({
                 Pago en efectivo
               </h3>
               <div className="space-y-3">
-                <input
-                  type="number"
-                  value={cashAmount}
-                  onChange={(e) => setCashAmount(e.target.value)}
-                  placeholder="Monto recibido"
-                  min={total}
-                  step="0.01"
-                  aria-label="Monto recibido en efectivo"
-                  className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-lg font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
-                  autoFocus
-                />
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    placeholder="Monto recibido"
+                    min={total}
+                    step="0.01"
+                    aria-label="Monto recibido en efectivo"
+                    className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-lg font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    autoFocus
+                  />
 
-                {parsedAmount >= total && parsedAmount > 0 && (
+                {parsedCash >= total && parsedCash > 0 && (
                   <div className="flex items-center justify-between bg-pos-success/10 border border-pos-success/20 rounded-xl px-4 py-3">
                     <span className="text-sm font-semibold text-pos-success">
                       Vuelto
@@ -241,6 +278,59 @@ export default function CheckoutModal({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Mixed payment inputs */}
+          {paymentMethod === "mixed" && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
+                Pago Mixto
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-pos-muted mb-1">Efectivo</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="w-full border border-pos-muted/30 rounded-xl px-3 py-2 text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-pos-muted mb-1">Tarjeta</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={cardAmount}
+                    onChange={(e) => setCardAmount(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="w-full border border-pos-muted/30 rounded-xl px-3 py-2 text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              </div>
+              {enteredTotal > 0 && (
+                <div className="flex items-center justify-between text-sm bg-pos-background/50 rounded-xl px-3 py-2">
+                  <span className="text-pos-muted">Total ingresado</span>
+                  <span className={`font-mono font-bold ${enteredTotal >= total ? "text-pos-success" : "text-pos-danger"}`}>
+                    ${enteredTotal.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {enteredTotal > total && parsedCard > 0 && (
+                <div className="flex items-center justify-between bg-pos-success/10 border border-pos-success/20 rounded-xl px-4 py-3">
+                  <span className="text-sm font-semibold text-pos-success">Vuelto (efectivo)</span>
+                  <span className="text-lg font-bold font-mono text-pos-success">
+                    ${change.toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

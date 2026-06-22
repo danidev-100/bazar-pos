@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAppStore, useAuthStore, useAdminStore } from "@/store";
 import BrandList from "@/components/BrandList";
 import BulkPriceModal from "@/components/BulkPriceModal";
+import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
 
 // ──────────────────────────────────────────────
 // Tab definitions
 // ──────────────────────────────────────────────
 
-type AdminTab = "brands" | "bulk-price" | "settings";
+type AdminTab = "brands" | "bulk-price" | "settings" | "backup";
 
 const TABS: { id: AdminTab; label: string }[] = [
   { id: "brands", label: "Marcas" },
   { id: "bulk-price", label: "Precio Masivo" },
+  { id: "backup", label: "Respaldos" },
   { id: "settings", label: "Configuración" },
 ];
 
@@ -45,6 +47,7 @@ export default function AdminPage() {
       <div className="flex-1 overflow-y-auto">
         {activeTab === "brands" && <BrandsTab />}
         {activeTab === "bulk-price" && <BulkPriceTab />}
+        {activeTab === "backup" && <BackupTab />}
         {activeTab === "settings" && <SettingsTab />}
       </div>
     </div>
@@ -102,6 +105,102 @@ function BulkPriceTab() {
       {showModal && (
         <BulkPriceModal onClose={() => setShowModal(false)} />
       )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Backup Tab
+// ──────────────────────────────────────────────
+
+function BackupTab() {
+  const showNotification = useAppStore((s) => s.showNotification);
+  const [restoring, setRestoring] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const data = await exportBackup();
+      downloadBackup(data);
+      showNotification("Respaldo descargado correctamente");
+    } catch {
+      showNotification("Error al generar el respaldo");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!window.confirm("¿Restaurar este respaldo? Se van a reemplazar TODOS los datos actuales. Esta acción no se puede deshacer.")) {
+      e.target.value = "";
+      return;
+    }
+
+    setRestoring(true);
+    try {
+      const result = await importBackup(file);
+      showNotification(`Respaldo restaurado — ${result.tables} tablas, ${result.rows} filas`);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : "Error al restaurar el respaldo");
+    } finally {
+      setRestoring(false);
+      e.target.value = "";
+    }
+  }
+
+  return (
+    <div className="max-w-lg space-y-6">
+      {/* Export */}
+      <section>
+        <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
+          Descargar Respaldo
+        </h3>
+        <p className="text-sm text-pos-muted mb-4">
+          Genera un archivo .json con todos los datos de la base: productos, ventas,
+          clientes, proveedores, pedidos, facturas, etc.
+        </p>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="px-6 py-2.5 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {exporting ? "Exportando…" : "⬇ Descargar Respaldo"}
+        </button>
+      </section>
+
+      <hr className="border-pos-muted/20" />
+
+      {/* Import */}
+      <section>
+        <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
+          Restaurar Respaldo
+        </h3>
+        <p className="text-sm text-pos-muted mb-4">
+          Seleccioná un archivo .json de respaldo para restaurar.
+          <span className="block text-pos-danger font-medium mt-1">
+            ⚠ Esto reemplaza TODOS los datos actuales.
+          </span>
+        </p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImport}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={restoring}
+          className="px-6 py-2.5 bg-pos-danger text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {restoring ? "Restaurando…" : "⬆ Restaurar Respaldo"}
+        </button>
+      </section>
     </div>
   );
 }

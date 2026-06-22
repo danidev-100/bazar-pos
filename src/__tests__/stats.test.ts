@@ -143,6 +143,8 @@ function makeSale(
     paymentMethod: "cash",
     amountPaid: subtotal,
     change: 0,
+    cashAmount: subtotal,
+    cardAmount: null,
     date,
     storeId,
     customerName: null,

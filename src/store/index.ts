@@ -46,8 +46,10 @@ export type CompletedSale = {
   subtotal: number;
   discountPercent: number;
   discountAmount: number;
-  paymentMethod: "cash" | "card";
+  paymentMethod: "cash" | "card" | "mixed";
   amountPaid: number | null;
+  cashAmount: number | null;
+  cardAmount: number | null;
   change: number | null;
   date: string;
   storeId: string;
@@ -119,10 +121,12 @@ export type AppStore = {
   lastCompletedSale: CompletedSale | null;
   completedSales: CompletedSale[];
   checkout: (
-    paymentMethod: "cash" | "card",
+    paymentMethod: "cash" | "card" | "mixed",
     amountPaid?: number,
     storeId?: string,
     customerName?: string,
+    cashAmount?: number,
+    cardAmount?: number,
   ) => CompletedSale;
   refundSale: (saleId: number) => void;
   dismissReceipt: () => void;
@@ -254,7 +258,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   // ── Sales / Checkout ──
 
-  checkout: (paymentMethod, amountPaid, storeId, customerName) => {
+  checkout: (paymentMethod, amountPaid, storeId, customerName, cashAmount, cardAmount) => {
     const { items, cartTotal, globalDiscountPercent } = get();
     if (items.length === 0) {
       throw new Error("Cannot checkout with an empty cart");
@@ -263,18 +267,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const total = cartTotal();
     const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
     const discountAmount = Math.round((subtotal - total) * 100) / 100;
-    const change =
-      paymentMethod === "cash" && amountPaid != null
-        ? Math.round((amountPaid - total) * 100) / 100
-        : null;
 
-    if (paymentMethod === "cash" && amountPaid != null && amountPaid < total) {
-      throw new Error(
-        `Insufficient payment: $${amountPaid.toFixed(2)} is less than the total of $${total.toFixed(2)}`,
-      );
+    let change: number | null = null;
+    if (paymentMethod === "cash" && amountPaid != null) {
+      change = Math.round((amountPaid - total) * 100) / 100;
+      if (amountPaid < total) {
+        throw new Error(`Pago insuficiente: $${amountPaid.toFixed(2)} es menor al total de $${total.toFixed(2)}`);
+      }
+    }
+    if (paymentMethod === "mixed") {
+      const cash = cashAmount ?? 0;
+      const card = cardAmount ?? 0;
+      const paid = cash + card;
+      if (paid < total) {
+        throw new Error(`Total ingresado: $${paid.toFixed(2)} — faltan $${(total - paid).toFixed(2)}`);
+      }
+      change = Math.round((cash - (total - card)) * 100) / 100;
     }
 
     const resolvedStoreId = storeId ?? "store_1";
+
+    const resolvedPayment = paymentMethod === "mixed" ? "mixed" as const : paymentMethod;
+    const paidAmount = paymentMethod === "mixed" ? (cashAmount ?? 0) + (cardAmount ?? 0) : (amountPaid ?? null);
 
     const sale: CompletedSale = {
       id: nextSaleId++,
@@ -283,8 +297,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       subtotal,
       discountPercent: globalDiscountPercent,
       discountAmount,
-      paymentMethod,
-      amountPaid: amountPaid ?? null,
+      paymentMethod: resolvedPayment,
+      amountPaid: paidAmount,
+      cashAmount: paymentMethod === "mixed" ? (cashAmount ?? 0) : (paymentMethod === "cash" ? amountPaid ?? null : null),
+      cardAmount: paymentMethod === "mixed" ? (cardAmount ?? 0) : (paymentMethod === "card" ? total : null),
       change,
       date: new Date().toISOString(),
       storeId: resolvedStoreId,
@@ -314,11 +330,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     // ── Persist sale to SQLite ──
     const now = new Date().toISOString();
-    const cashAmount = paymentMethod === "cash" ? (amountPaid ?? null) : null;
-    const cardAmount = paymentMethod === "card" ? total : null;
+    const dbCash = paymentMethod === "mixed" ? (cashAmount ?? 0) : paymentMethod === "cash" ? (amountPaid ?? null) : null;
+    const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) : paymentMethod === "card" ? total : null;
     execute(
       `INSERT INTO sales (id, total, payment_method, cash_amount, card_amount, change, status, customer_name, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')`,
-      [sale.id, total, paymentMethod, cashAmount, cardAmount, change, "completed", sale.customerName, resolvedStoreId, now, now],
+      [sale.id, total, paymentMethod, dbCash, dbCard, change, "completed", sale.customerName, resolvedStoreId, now, now],
     )
       .then(async () => {
         await enqueueSync("sale", sale.id, "insert", resolvedStoreId);
