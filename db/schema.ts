@@ -402,6 +402,59 @@ export const pedidoItems = sqliteTable(
 );
 
 // ──────────────────────────────────────────────
+// Comprobantes (syncable)
+// ──────────────────────────────────────────────
+
+export type ComprobanteTipo = "factura" | "boleta" | "nota_credito" | "nota_debito" | "ticket";
+
+export const comprobantes = sqliteTable(
+  "comprobantes",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    tipo: text("tipo", {
+      enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket"],
+    }).notNull(),
+    numero: text("numero").notNull(),
+    cliente_nombre: text("cliente_nombre").notNull().default("Consumidor Final"),
+    cliente_cuit: text("cliente_cuit"),
+    cliente_direccion: text("cliente_direccion"),
+    fecha: text("fecha")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    subtotal: real("subtotal").notNull().default(0),
+    iva: real("iva").notNull().default(0),
+    total: real("total").notNull().default(0),
+    sale_id: integer("sale_id"),
+    notes: text("notes"),
+    ...syncColumns,
+  },
+  (table) => ({
+    storeTipoIdx: index("idx_comprobantes_store_tipo").on(table.store_id, table.tipo),
+    numeroIdx: uniqueIndex("idx_comprobantes_numero").on(table.store_id, table.numero),
+    createdIdx: index("idx_comprobantes_created").on(table.created_at),
+  }),
+);
+
+export const comprobanteItems = sqliteTable(
+  "comprobante_items",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    comprobante_id: integer("comprobante_id")
+      .notNull()
+      .references((): any => comprobantes.id),
+    product_id: integer("product_id"),
+    product_name: text("product_name").notNull(),
+    quantity: real("quantity").notNull().default(1),
+    unit_price: real("unit_price").notNull(),
+    subtotal: real("subtotal").notNull(),
+    ...syncColumns,
+  },
+  (table) => ({
+    comprobanteIdx: index("idx_comprobante_items_comprobante").on(table.comprobante_id),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Sync Queue (infrastructure — tracks row-level ops)
 // ──────────────────────────────────────────────
 

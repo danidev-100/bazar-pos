@@ -83,8 +83,8 @@ export default function ProductsPage() {
     : null;
 
   const productExportColumns: ExportColumn[] = [
-    { header: "Nombre", key: "nombre" },
     { header: "Código", key: "codigo" },
+    { header: "Nombre", key: "nombre" },
     { header: "Precio", key: "precio" },
     ...(isUnlocked ? [{ header: "Costo", key: "costo" }] : []),
     { header: "Stock", key: "stock" },
@@ -97,8 +97,8 @@ export default function ProductsPage() {
       const cat = storeCategories.find((c) => c.id === p.category_id);
       const brand = brands.find((b) => b.id === p.brandId);
       return {
-        nombre: p.name,
         codigo: p.barcode ?? "—",
+        nombre: p.name,
         precio: `$${p.price.toFixed(2)}`,
         ...(isUnlocked ? { costo: `$${p.costPrice.toFixed(2)}` } : {}),
         stock: p.stock,
@@ -114,8 +114,8 @@ export default function ProductsPage() {
       const cat = storeCategories.find((c) => c.id === p.category_id);
       const brand = brands.find((b) => b.id === p.brandId);
       return {
-        nombre: p.name,
         codigo: p.barcode ?? "",
+        nombre: p.name,
         precio: p.price,
         ...(isUnlocked ? { costo: p.costPrice } : {}),
         stock: p.stock,
@@ -234,12 +234,14 @@ export default function ProductsPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xm">
                     <thead>
-                    <tr className="text-pos-muted border-b border-pos-muted/20">
-                      <th className="text-left py-2 pr-2 font-medium">Nombre</th>
-                      <th className="text-left py-2 px-2 font-medium">
+                    <tr className="text-pos-muted border-b border-pos-muted/20 ">
+                      <th className="text-left py-2 pr-2 font-medium font-mono text-xs">
                         Código
+                      </th>
+                      <th className="text-left py-2 px-2 font-medium">
+                        Nombre
                       </th>
                       <th className="text-right py-2 px-2 font-medium">
                         Precio
@@ -252,9 +254,9 @@ export default function ProductsPage() {
                       <th className="text-right py-2 px-2 font-medium">
                         Stock
                       </th>
-                        <th className="text-left py-2 px-2 font-medium">
-                          Marca
-                        </th>
+                      <th className="text-left py-2 px-2 font-medium">
+                        Marca
+                      </th>
                       <th className="text-left py-2 px-2 font-medium">
                         Categoría
                       </th>
@@ -279,11 +281,11 @@ export default function ProductsPage() {
                               : ""
                           }`}
                         >
-                          <td className="py-2 pr-2 font-medium text-pos-text">
-                            {p.name}
-                          </td>
-                          <td className="py-2 px-2 text-pos-muted font-mono text-xs">
+                          <td className="py-2 pr-2 text-pos-muted font-mono text-xs">
                             {p.barcode ?? "—"}
+                          </td>
+                          <td className="py-2 px-2 font-medium text-pos-text">
+                            {p.name}
                           </td>
                           <td className="py-2 px-2 text-right font-mono">
                             ${p.price.toFixed(2)}
@@ -307,9 +309,9 @@ export default function ProductsPage() {
                               <span className="text-[10px] text-pos-muted ml-1">↓</span>
                             )}
                           </td>
-                            <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
-                              {brand?.name ?? "—"}
-                            </td>
+                          <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
+                            {brand?.name ?? "—"}
+                          </td>
                           <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
                             {cat?.name ?? "—"}
                           </td>

@@ -26,7 +26,9 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
   const products = useProductsStore((s) => s.products);
   const addPedido = usePedidosStore((s) => s.addPedido);
 
-  const [proveedorId, setProveedorId] = useState<number | "">("");
+  const [proveedorId, setProveedorId] = useState<number | null>(null);
+  const [proveedorSearch, setProveedorSearch] = useState("");
+  const [showProvDropdown, setShowProvDropdown] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<ItemRow[]>([
@@ -43,6 +45,11 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
   const storeProducts = useMemo(
     () => products.filter((p) => p.store_id === storeId),
     [products, storeId],
+  );
+
+  const filteredProveedores = useMemo(
+    () => storeProveedores.filter((p) => p.name.toLowerCase().includes(proveedorSearch.toLowerCase())),
+    [storeProveedores, proveedorSearch],
   );
 
   const total = useMemo(
@@ -86,11 +93,28 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
     );
   }
 
+  function selectProduct(rowKey: number, productId: number) {
+    setItems(
+      items.map((r) => {
+        if (r.key !== rowKey) return r;
+        const prod = storeProducts.find((p) => p.id === productId);
+        if (!prod) return r;
+        return {
+          ...r,
+          product_id: productId,
+          product_name: prod.name,
+          unit_price: prod.costPrice,
+          subtotal: Math.round(r.quantity * prod.costPrice * 100) / 100,
+        };
+      }),
+    );
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!proveedorId) {
+    if (proveedorId == null) {
       setError("Seleccioná un proveedor");
       return;
     }
@@ -144,24 +168,54 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
+        <div className="relative">
           <label htmlFor="ped-proveedor" className="block text-sm font-medium text-pos-text mb-1">
             Proveedor <span className="text-pos-danger">*</span>
           </label>
-          <select
+          <input
             id="ped-proveedor"
-            value={proveedorId}
-            onChange={(e) => setProveedorId(e.target.value ? Number(e.target.value) : "")}
-            required
+            type="text"
+            value={proveedorId ? storeProveedores.find((p) => p.id === proveedorId)?.name ?? "" : proveedorSearch}
+            onChange={(e) => {
+              setProveedorId(null);
+              setProveedorSearch(e.target.value);
+              setShowProvDropdown(true);
+            }}
+            onFocus={() => setShowProvDropdown(true)}
+            onBlur={() => setTimeout(() => setShowProvDropdown(false), 200)}
+            placeholder="Buscá proveedor por nombre…"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
-          >
-            <option value="">Seleccionar proveedor…</option>
-            {storeProveedores.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          />
+          {showProvDropdown && !proveedorId && filteredProveedores.length > 0 && (
+            <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              {filteredProveedores.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onMouseDown={() => {
+                    setProveedorId(p.id);
+                    setProveedorSearch(p.name);
+                    setShowProvDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-pos-text hover:bg-pos-background/50 transition-colors"
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {proveedorId && (
+            <button
+              type="button"
+              onClick={() => {
+                setProveedorId(null);
+                setProveedorSearch("");
+              }}
+              className="absolute right-2 top-8 text-xs text-pos-muted hover:text-pos-danger touch-target"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <div>
@@ -218,61 +272,15 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
             </thead>
             <tbody>
               {items.map((row) => (
-                <tr key={row.key} className="border-b border-pos-muted/10">
-                  <td className="py-1 pr-1">
-                    <select
-                      value={row.product_id ?? ""}
-                      onChange={(e) =>
-                        updateRow(row.key, "product_id", e.target.value ? Number(e.target.value) : null)
-                      }
-                      className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-pos-secondary"
-                    >
-                      <option value="">Seleccionar…</option>
-                      {storeProducts.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} (${p.costPrice.toFixed(2)})
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-1 px-1">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={row.quantity}
-                      onChange={(e) =>
-                        updateRow(row.key, "quantity", Math.max(0, Number(e.target.value)))
-                      }
-                      className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-pos-secondary"
-                    />
-                  </td>
-                  <td className="py-1 px-1">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={row.unit_price}
-                      onChange={(e) =>
-                        updateRow(row.key, "unit_price", Math.max(0, Number(e.target.value)))
-                      }
-                      className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-pos-secondary"
-                    />
-                  </td>
-                  <td className="py-1 px-1 text-right font-mono text-xs text-pos-text">
-                    ${row.subtotal.toFixed(2)}
-                  </td>
-                  <td className="py-1 pl-1">
-                    <button
-                      type="button"
-                      onClick={() => removeRow(row.key)}
-                      disabled={items.length <= 1}
-                      className="text-xs px-1.5 py-1 text-pos-danger hover:bg-pos-danger/10 rounded touch-target disabled:opacity-30"
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
+                <ProductRow
+                  key={row.key}
+                  row={row}
+                  allProducts={storeProducts}
+                  onSelect={selectProduct}
+                  onChange={updateRow}
+                  onRemove={removeRow}
+                  canRemove={items.length > 1}
+                />
               ))}
             </tbody>
           </table>
@@ -283,6 +291,9 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
         </div>
       </div>
 
+      {/* Hidden input to make form work with Enter */}
+      <input type="submit" className="hidden" />
+
       <div className="flex items-center gap-2">
         <button
           type="submit"
@@ -291,14 +302,109 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
         >
           {saving ? "Guardando…" : "Crear Pedido"}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 border border-pos-muted/30 text-pos-text rounded-lg font-medium text-sm touch-target hover:bg-pos-background"
-        >
-          Cancelar
-        </button>
       </div>
     </form>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Product row with search input
+// ──────────────────────────────────────────────
+
+type ProductRowProps = {
+  row: ItemRow;
+  allProducts: { id: number; name: string; costPrice: number }[];
+  onSelect: (rowKey: number, productId: number) => void;
+  onChange: (key: number, field: keyof ItemRow, value: string | number | null) => void;
+  onRemove: (key: number) => void;
+  canRemove: boolean;
+};
+
+function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove }: ProductRowProps) {
+  const [search, setSearch] = useState(row.product_name);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const filtered = useMemo(
+    () => allProducts.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())),
+    [allProducts, search],
+  );
+
+  function handleSelect(productId: number) {
+    onSelect(row.key, productId);
+    const prod = allProducts.find((p) => p.id === productId);
+    if (prod) setSearch(prod.name);
+    setShowDropdown(false);
+  }
+
+  return (
+    <tr className="border-b border-pos-muted/10">
+      <td className="py-1 pr-1 relative">
+        <input
+          type="text"
+          value={row.product_id ? search : search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setShowDropdown(true);
+            if (row.product_id) {
+              onChange(row.key, "product_id", null);
+              onChange(row.key, "product_name", "");
+            }
+          }}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          placeholder="Buscá producto…"
+          className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-pos-secondary"
+        />
+        {showDropdown && !row.product_id && filtered.length > 0 && (
+          <div className="absolute z-10 top-full left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+            {filtered.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onMouseDown={() => handleSelect(p.id)}
+                className="w-full text-left px-3 py-1.5 text-sm text-pos-text hover:bg-pos-background/50 transition-colors"
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </td>
+      <td className="py-1 px-1">
+        <input
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="0.5"
+          value={row.quantity}
+          onChange={(e) => onChange(row.key, "quantity", Math.max(0, Number(e.target.value)))}
+          className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+      </td>
+      <td className="py-1 px-1">
+        <input
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="0.01"
+          value={row.unit_price}
+          onChange={(e) => onChange(row.key, "unit_price", Math.max(0, Number(e.target.value)))}
+          className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+      </td>
+      <td className="py-1 px-1 text-right font-mono text-xs text-pos-text">
+        ${row.subtotal.toFixed(2)}
+      </td>
+      <td className="py-1 pl-1">
+        <button
+          type="button"
+          onClick={() => onRemove(row.key)}
+          disabled={!canRemove}
+          className="text-xs px-1.5 py-1 text-pos-danger hover:bg-pos-danger/10 rounded touch-target disabled:opacity-30"
+        >
+          ✕
+        </button>
+      </td>
+    </tr>
   );
 }

@@ -20,7 +20,8 @@ export type Page =
   | "login"
   | "user-management"
   | "proveedores"
-  | "pedidos";
+  | "pedidos"
+  | "comprobantes";
 
 // ──────────────────────────────────────────────
 // Cart item

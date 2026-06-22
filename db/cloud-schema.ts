@@ -458,6 +458,61 @@ export const pedidoItems = pgTable(
 );
 
 // ──────────────────────────────────────────────
+// Comprobantes (syncable)
+// ──────────────────────────────────────────────
+
+export const comprobantes = pgTable(
+  "comprobantes",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    tipo: text("tipo", { enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket"] }).notNull(),
+    numero: text("numero").notNull(),
+    cliente_nombre: text("cliente_nombre").notNull().default("Consumidor Final"),
+    cliente_cuit: text("cliente_cuit"),
+    cliente_direccion: text("cliente_direccion"),
+    fecha: timestamp("fecha").notNull().defaultNow(),
+    subtotal: doublePrecision("subtotal").notNull().default(0),
+    iva: doublePrecision("iva").notNull().default(0),
+    total: doublePrecision("total").notNull().default(0),
+    sale_id: integer("sale_id"),
+    notes: text("notes"),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    storeTipoIdx: index("idx_comprobantes_store_tipo").on(table.store_id, table.tipo),
+    numeroIdx: uniqueIndex("idx_comprobantes_numero").on(table.store_id, table.numero),
+    createdIdx: index("idx_comprobantes_created").on(table.created_at),
+  }),
+);
+
+export const comprobanteItems = pgTable(
+  "comprobante_items",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    comprobante_id: integer("comprobante_id").notNull(),
+    product_id: integer("product_id"),
+    product_name: text("product_name").notNull(),
+    quantity: doublePrecision("quantity").notNull().default(1),
+    unit_price: doublePrecision("unit_price").notNull(),
+    subtotal: doublePrecision("subtotal").notNull(),
+    store_id: text("store_id").notNull(),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+    sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
+      .notNull()
+      .default("pending"),
+  },
+  (table) => ({
+    comprobanteIdx: index("idx_comprobante_items_comprobante").on(table.comprobante_id),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Sync support tables
 // ──────────────────────────────────────────────
 

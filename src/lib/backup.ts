@@ -19,6 +19,8 @@ const TABLES = [
   "pedidos",
   "pedido_items",
   "expenses",
+  "comprobantes",
+  "comprobante_items",
   "sync_queue",
   "sync_logs",
 ] as const;

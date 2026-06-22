@@ -25,6 +25,7 @@ const ALL_PAGES: PageDef[] = [
   { id: "expenses", label: "Gastos", icon: "💸", permission: "configuracion" },
   { id: "customers", label: "Clientes", icon: "👥", permission: "clientes" },
   { id: "stats", label: "Estadísticas", icon: "📊", permission: "estadisticas" },
+  { id: "comprobantes", label: "Comprobantes", icon: "📄", permission: "configuracion" },
   { id: "proveedores", label: "Proveedores", icon: "🏭", permission: "configuracion" },
   { id: "pedidos", label: "Pedidos", icon: "📋", permission: "configuracion" },
   { id: "admin", label: "Admin", icon: "🔒", permission: "configuracion" },

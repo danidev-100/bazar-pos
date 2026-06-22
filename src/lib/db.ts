@@ -244,6 +244,37 @@ async function ensureTables(db: Database): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       sync_status TEXT NOT NULL DEFAULT 'pending'
     )`,
+    `CREATE TABLE IF NOT EXISTS comprobantes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL,
+      numero TEXT NOT NULL,
+      cliente_nombre TEXT NOT NULL DEFAULT 'Consumidor Final',
+      cliente_cuit TEXT,
+      cliente_direccion TEXT,
+      fecha TEXT NOT NULL DEFAULT (datetime('now')),
+      subtotal REAL NOT NULL DEFAULT 0,
+      iva REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      sale_id INTEGER,
+      notes TEXT,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    `CREATE TABLE IF NOT EXISTS comprobante_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comprobante_id INTEGER NOT NULL,
+      product_id INTEGER,
+      product_name TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      unit_price REAL NOT NULL,
+      subtotal REAL NOT NULL,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
     `CREATE TABLE IF NOT EXISTS pedido_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       pedido_id INTEGER NOT NULL,
