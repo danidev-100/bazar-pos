@@ -7,17 +7,17 @@ import type { Page } from "@/store";
 
 const PAGE_PERMISSIONS: Partial<Record<Page, Permission>> = {
   pos: "ventas",
-  "cash-closing": "ventas",
+  "cash-closing": "caja",
   customers: "clientes",
   stats: "estadisticas",
-  products: "configuracion",
-  billing: "configuracion",
-  admin: "configuracion",
-  expenses: "configuracion",
-  "user-management": "configuracion",
-  proveedores: "configuracion",
-  pedidos: "configuracion",
-  comprobantes: "configuracion",
+  products: "productos",
+  billing: "facturacion",
+  admin: "admin",
+  expenses: "gastos",
+  "user-management": "usuarios",
+  proveedores: "proveedores",
+  pedidos: "pedidos",
+  comprobantes: "comprobantes",
 };
 
 // Pages that require no permission (just needs auth)

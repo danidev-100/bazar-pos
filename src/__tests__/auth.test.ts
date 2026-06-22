@@ -38,9 +38,17 @@ describe("Auth store — first-run bootstrap", () => {
     expect(users[0].role).toBe("admin");
     expect(users[0].permissions).toEqual([
       "ventas",
+      "caja",
+      "productos",
       "clientes",
+      "proveedores",
+      "pedidos",
+      "facturacion",
+      "comprobantes",
+      "gastos",
       "estadisticas",
-      "configuracion",
+      "admin",
+      "usuarios",
     ]);
     expect(users[0].active).toBe(true);
     expect(useAuthStore.getState()._hydrated).toBe(true);
@@ -163,7 +171,7 @@ describe("Auth store — hasPermission", () => {
 
     // Admin role has all permissions regardless of stored permissions
     expect(useAuthStore.getState().hasPermission("ventas")).toBe(true);
-    expect(useAuthStore.getState().hasPermission("configuracion")).toBe(true);
+    expect(useAuthStore.getState().hasPermission("admin")).toBe(true);
   });
 
   it("returns true when custom user has the specific permission", async () => {
@@ -193,7 +201,7 @@ describe("Auth store — hasPermission", () => {
     });
     await store.login("vendedor", "pass");
 
-    expect(useAuthStore.getState().hasPermission("configuracion")).toBe(false);
+    expect(useAuthStore.getState().hasPermission("admin")).toBe(false);
     expect(useAuthStore.getState().hasPermission("estadisticas")).toBe(false);
   });
 

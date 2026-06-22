@@ -4,7 +4,19 @@ import { create } from "zustand";
 // Types
 // ──────────────────────────────────────────────
 
-export type Permission = "ventas" | "clientes" | "estadisticas" | "configuracion";
+export type Permission =
+  | "ventas"
+  | "caja"
+  | "productos"
+  | "clientes"
+  | "proveedores"
+  | "pedidos"
+  | "facturacion"
+  | "comprobantes"
+  | "gastos"
+  | "estadisticas"
+  | "admin"
+  | "usuarios";
 
 export type Role = "admin" | "custom";
 
@@ -19,7 +31,20 @@ export type AuthUser = {
 };
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  admin: ["ventas", "clientes", "estadisticas", "configuracion"],
+  admin: [
+    "ventas",
+    "caja",
+    "productos",
+    "clientes",
+    "proveedores",
+    "pedidos",
+    "facturacion",
+    "comprobantes",
+    "gastos",
+    "estadisticas",
+    "admin",
+    "usuarios",
+  ],
   custom: [],
 };
 
@@ -78,20 +103,58 @@ export async function hashPassword(password: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+const OLD_TO_NEW: Record<string, Permission[]> = {
+  configuracion: [
+    "productos",
+    "proveedores",
+    "pedidos",
+    "facturacion",
+    "comprobantes",
+    "gastos",
+    "admin",
+    "usuarios",
+  ],
+  ventas: ["ventas", "caja"],
+  clientes: ["clientes"],
+  estadisticas: ["estadisticas"],
+};
+
+function migratePermissions(oldPerms: string[]): Permission[] {
+  // Detect old format: contains "configuracion"
+  if (oldPerms.includes("configuracion")) {
+    const expanded = new Set<Permission>();
+    for (const p of oldPerms) {
+      const mapped = OLD_TO_NEW[p];
+      if (mapped) mapped.forEach((np) => expanded.add(np));
+    }
+    return [...expanded];
+  }
+  return oldPerms.filter((p): p is Permission =>
+    ALL_PERMISSIONS.includes(p as Permission),
+  );
+}
+
 function loadUsers(): AuthUser[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
     if (raw) {
       const users = JSON.parse(raw) as AuthUser[];
-      // Migrate existing users without a role field
       return users.map((u) => {
-        if (!u.role) {
-          return {
-            ...u,
-            role: "custom" as Role,
-          };
+        let user = { ...u };
+        // Migrate existing users without a role field
+        if (!user.role) {
+          user.role = "custom" as Role;
         }
-        return u;
+        // Migrate old permission format (pre-module split)
+        if (
+          user.permissions &&
+          (user.permissions as string[]).includes("configuracion")
+        ) {
+          user.permissions = migratePermissions(
+            user.permissions as string[],
+          );
+        }
+        return user;
       });
     }
   } catch {
@@ -134,9 +197,17 @@ function saveCurrentUserId(id: string | null): void {
 
 const ALL_PERMISSIONS: Permission[] = [
   "ventas",
+  "caja",
+  "productos",
   "clientes",
+  "proveedores",
+  "pedidos",
+  "facturacion",
+  "comprobantes",
+  "gastos",
   "estadisticas",
-  "configuracion",
+  "admin",
+  "usuarios",
 ];
 
 // ──────────────────────────────────────────────

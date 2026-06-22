@@ -43,7 +43,7 @@ describe("AdminRoute", () => {
     useAppStore.getState().setPage("admin");
   });
 
-  it("renders children when user has configuracion permission", async () => {
+  it("renders children when user has admin permission", async () => {
     await useAuthStore.getState().init();
     await useAuthStore.getState().login("admin", "admin");
 
@@ -56,7 +56,7 @@ describe("AdminRoute", () => {
     expect(screen.getByTestId("admin-content")).toBeInTheDocument();
   });
 
-  it("renders null when user does not have configuracion permission", async () => {
+  it("renders null when user does not have admin permission", async () => {
     await useAuthStore.getState().init();
     await useAuthStore.getState().addUser({
       name: "limited",
@@ -76,7 +76,7 @@ describe("AdminRoute", () => {
     expect(screen.queryByTestId("admin-content")).toBeNull();
   });
 
-  it("redirects to dashboard when user lacks configuracion permission", async () => {
+  it("redirects to dashboard when user lacks admin permission", async () => {
     await useAuthStore.getState().init();
     await useAuthStore.getState().addUser({
       name: "limited",

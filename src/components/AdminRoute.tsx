@@ -1,6 +1,16 @@
 import { type ReactNode, useEffect } from "react";
-import { useAuthStore } from "@/store/auth";
-import { useAppStore } from "@/store";
+import { useAuthStore, type Permission } from "@/store/auth";
+import { useAppStore, type Page } from "@/store";
+
+// ──────────────────────────────────────────────
+// Page → permission mapping for admin pages
+// ──────────────────────────────────────────────
+
+const ADMIN_PAGE_PERMISSION: Partial<Record<Page, Permission>> = {
+  admin: "admin",
+  "user-management": "usuarios",
+  "cash-closing": "caja",
+};
 
 // ──────────────────────────────────────────────
 // Props
@@ -15,16 +25,19 @@ type AdminRouteProps = {
 // ──────────────────────────────────────────────
 
 export default function AdminRoute({ children }: AdminRouteProps) {
+  const page = useAppStore((s) => s.page);
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const setPage = useAppStore((s) => s.setPage);
 
+  const required = ADMIN_PAGE_PERMISSION[page] ?? "admin";
+
   useEffect(() => {
-    if (!hasPermission("configuracion")) {
+    if (!hasPermission(required)) {
       setPage("dashboard");
     }
-  }, [hasPermission, setPage]);
+  }, [required, hasPermission, setPage]);
 
-  if (!hasPermission("configuracion")) {
+  if (!hasPermission(required)) {
     return null;
   }
 

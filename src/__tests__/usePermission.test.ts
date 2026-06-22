@@ -24,9 +24,6 @@ describe("usePermission", () => {
 
     const { result } = renderHook(() => usePermission("pos"));
     expect(result.current).toBe(true);
-
-    const { result: billingResult } = renderHook(() => usePermission("billing"));
-    expect(billingResult.current).toBe(true);
   });
 
   it("returns false for pages that require 'ventas' when user lacks it", async () => {
@@ -61,7 +58,7 @@ describe("usePermission", () => {
     expect(result.current).toBe(true);
   });
 
-  it("returns true for pages that require 'configuracion' when user has it", async () => {
+  it("returns true for pages that require 'admin' when user has it", async () => {
     await useAuthStore.getState().init();
     await useAuthStore.getState().login("admin", "admin");
 

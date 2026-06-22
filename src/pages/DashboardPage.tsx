@@ -109,16 +109,27 @@ function ExpenseIcon() {
 // ──────────────────────────────────────────────
 
 const MODULES: ModuleConfig[] = [
-  { label: "Gastos",       icon: <ExpenseIcon />,    target: "expenses",  permission: "configuracion" },
+  // ── Principal ──
   { label: "Ventas",       icon: <SaleIcon />,       target: "pos",       permission: "ventas" },
-  { label: "Inventario",   icon: <PackageIcon />,    target: "products",  permission: "configuracion" },
+  { label: "Caja",         icon: <ExpenseIcon />,    target: "cash-closing", permission: "caja" },
+
+  // ── Gestión ──
+  { label: "Inventario",   icon: <PackageIcon />,    target: "products",  permission: "productos" },
   { label: "Clientes",     icon: <UsersIcon />,      target: "customers", permission: "clientes" },
-  { label: "Comprobantes", icon: <ClipboardIcon />,  target: "comprobantes", permission: "configuracion" },
-  { label: "Proveedores",  icon: <TruckIcon />,      target: "proveedores", permission: "configuracion" },
-  { label: "Pedidos",      icon: <PackageIcon />,    target: "pedidos",     permission: "configuracion" },
+  { label: "Proveedores",  icon: <TruckIcon />,      target: "proveedores", permission: "proveedores" },
+  { label: "Pedidos",      icon: <PackageIcon />,    target: "pedidos",     permission: "pedidos" },
+
+  // ── Documentos ──
+  { label: "Facturación",  icon: <ClipboardIcon />,  target: "billing",   permission: "facturacion" },
+  { label: "Comprobantes", icon: <ClipboardIcon />,  target: "comprobantes", permission: "comprobantes" },
+
+  // ── Finanzas ──
+  { label: "Gastos",       icon: <ExpenseIcon />,    target: "expenses",  permission: "gastos" },
   { label: "Estadísticas", icon: <ChartIcon />,      target: "stats",    permission: "estadisticas" },
-  { label: "Configuración",icon: <GearIcon />,       target: "admin",    permission: "configuracion" },
-  { label: "Usuarios",     icon: <ShieldIcon />,     target: "admin",    permission: "configuracion" },
+
+  // ── Sistema ──
+  { label: "Configuración",icon: <GearIcon />,       target: "admin",    permission: "admin" },
+  { label: "Usuarios",     icon: <ShieldIcon />,     target: "user-management", permission: "usuarios" },
 ];
 
 // ──────────────────────────────────────────────

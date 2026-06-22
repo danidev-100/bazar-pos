@@ -37,7 +37,7 @@ function loginAndOpenShift() {
       name: "Test Cajero",
       passwordHash: "hash",
       role: "admin",
-      permissions: ["ventas", "clientes", "estadisticas", "configuracion"],
+      permissions: ["ventas", "caja", "productos", "clientes", "proveedores", "pedidos", "facturacion", "comprobantes", "gastos", "estadisticas", "admin", "usuarios"],
       active: true,
       createdAt: new Date().toISOString(),
     },

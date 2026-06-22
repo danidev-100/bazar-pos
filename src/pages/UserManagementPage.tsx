@@ -13,17 +13,33 @@ import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export
 // ──────────────────────────────────────────────
 
 const PERMISSION_LABELS: Record<Permission, string> = {
-  ventas: "Ventas",
+  ventas: "POS / Ventas",
+  caja: "Caja / Cierres",
+  productos: "Productos",
   clientes: "Clientes",
+  proveedores: "Proveedores",
+  pedidos: "Pedidos",
+  facturacion: "Facturación",
+  comprobantes: "Comprobantes",
+  gastos: "Gastos",
   estadisticas: "Estadísticas",
-  configuracion: "Configuración",
+  admin: "Panel Admin",
+  usuarios: "Gestión Usuarios",
 };
 
 const ALL_PERMISSIONS: Permission[] = [
   "ventas",
+  "caja",
+  "productos",
   "clientes",
+  "proveedores",
+  "pedidos",
+  "facturacion",
+  "comprobantes",
+  "gastos",
   "estadisticas",
-  "configuracion",
+  "admin",
+  "usuarios",
 ];
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -228,28 +244,36 @@ export default function UserManagementPage() {
           </span>
         </h2>
         {modalMode === null && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {users.length > 0 && (
               <>
                 <button
                   onClick={exportUsersExcel}
-                  className="text-sm px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                  className="text-sm px-2 sm:px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                  title="Exportar a Excel"
                 >
-                  Excel
+                  <span className="hidden sm:inline">Excel</span>
+                  <span className="sm:hidden text-base" aria-hidden="true">📊</span>
+                  <span className="sr-only">Excel</span>
                 </button>
                 <button
                   onClick={exportUsersPdf}
-                  className="text-sm px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                  className="text-sm px-2 sm:px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                  title="Exportar a PDF"
                 >
-                  PDF
+                  <span className="hidden sm:inline">PDF</span>
+                  <span className="sm:hidden text-base" aria-hidden="true">📄</span>
+                  <span className="sr-only">PDF</span>
                 </button>
               </>
             )}
             <button
               onClick={openAddModal}
-              className="text-sm px-4 py-2 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
+              className="text-sm px-3 sm:px-4 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90 whitespace-nowrap"
             >
-              + Agregar Usuario
+              <span className="sm:hidden text-base leading-none" aria-hidden="true">+</span>
+              <span className="hidden sm:inline">+ Agregar Usuario</span>
+              <span className="sr-only sm:sr-only">Agregar Usuario</span>
             </button>
           </div>
         )}
@@ -343,7 +367,7 @@ export default function UserManagementPage() {
                   </span>
                 )}
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                 {ALL_PERMISSIONS.map((perm) => (
                   <label
                     key={perm}
@@ -388,14 +412,14 @@ export default function UserManagementPage() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 text-sm text-pos-text border border-pos-muted/30 rounded-lg touch-target hover:bg-pos-background/50"
+                className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-sm text-pos-text border border-pos-muted/30 rounded-lg touch-target hover:bg-pos-background/50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-sm bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90 disabled:opacity-50"
+                className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-sm bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? "Guardando..." : "Guardar"}
               </button>
@@ -404,104 +428,129 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* User table */}
+      {/* User table (desktop) + Cards (mobile) */}
       {sortedUsers.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-pos-muted border-b border-pos-muted/20">
-                <th className="text-left py-2 pr-2 font-medium">Nombre</th>
-                <th className="text-left py-2 px-2 font-medium">Rol</th>
-                <th className="text-left py-2 px-2 font-medium">Permisos</th>
-                <th className="text-center py-2 px-2 font-medium">Estado</th>
-                <th className="text-right py-2 pl-2 font-medium">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedUsers.map((user) => (
-                <tr
-                  key={user.id}
-                  className="border-b border-pos-muted/10 transition-colors hover:bg-pos-background/50"
-                >
-                  <td className="py-2 pr-2 font-medium text-pos-text">
-                    <div className="flex items-center gap-1.5">
-                      {user.name}
-                      {isAdmin(user) && (
-                        <span
-                          className="text-xs text-pos-muted"
-                          title="Admin — no se puede eliminar"
-                        >
-                          🔒
-                        </span>
+        <>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-pos-muted border-b border-pos-muted/20">
+                  <th className="text-left py-2 pr-2 font-medium">Nombre</th>
+                  <th className="text-left py-2 px-2 font-medium">Rol</th>
+                  <th className="text-left py-2 px-2 font-medium">Permisos</th>
+                  <th className="text-center py-2 px-2 font-medium">Estado</th>
+                  <th className="text-right py-2 pl-2 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedUsers.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="border-b border-pos-muted/10 transition-colors hover:bg-pos-background/50"
+                  >
+                    <td className="py-3 pr-2 font-medium text-pos-text">
+                      <div className="flex items-center gap-1.5">
+                        {user.name}
+                        {isAdmin(user) && (
+                          <span className="text-xs text-pos-muted" title="Admin — no se puede eliminar">🔒</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-2">
+                      <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${user.role === "admin" ? "bg-pos-secondary/15 text-pos-secondary" : "bg-pos-muted/10 text-pos-muted"}`}>
+                        {ROLE_LABELS[user.role]}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="flex flex-wrap gap-1">
+                        {user.permissions.length === 0 && (
+                          <span className="text-xs text-pos-muted italic">Sin permisos</span>
+                        )}
+                        {user.permissions.map((perm) => (
+                          <span key={perm} className="inline-block text-xs px-2 py-0.5 rounded-full bg-pos-secondary/10 text-pos-secondary font-medium">
+                            {PERMISSION_LABELS[perm]}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-3 px-2 text-center">
+                      <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${user.active ? "bg-pos-success/10 text-pos-success" : "bg-pos-danger/10 text-pos-danger"}`}>
+                        {user.active ? "Activo" : "Inactivo"}
+                      </span>
+                    </td>
+                    <td className="py-3 pl-2 text-right whitespace-nowrap">
+                      <button onClick={() => openEditModal(user)} className="text-xs px-2 py-1 text-pos-secondary hover:bg-pos-secondary/10 rounded touch-target mr-1" aria-label={`Editar ${user.name}`}>
+                        ✎ Editar
+                      </button>
+                      {!isAdmin(user) ? (
+                        <button onClick={() => handleDelete(user)} className="text-xs px-2 py-1 text-pos-danger hover:bg-pos-danger/10 rounded touch-target" aria-label={`Eliminar ${user.name}`}>
+                          ✕ Eliminar
+                        </button>
+                      ) : (
+                        <span className="text-xs px-2 py-1 text-pos-muted">—</span>
                       )}
-                    </div>
-                  </td>
-                  <td className="py-2 px-2">
-                    <span
-                      className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
-                        user.role === "admin"
-                          ? "bg-pos-secondary/15 text-pos-secondary"
-                          : "bg-pos-muted/10 text-pos-muted"
-                      }`}
-                    >
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-3">
+            {sortedUsers.map((user) => (
+              <div key={user.id} className="bg-pos-surface rounded-xl border border-pos-muted/10 p-3">
+                {/* Row 1: Name + Role + Status */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm font-medium text-pos-text truncate">{user.name}</span>
+                    {isAdmin(user) && <span className="text-xs text-pos-muted shrink-0" title="Admin — no se puede eliminar">🔒</span>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium ${user.role === "admin" ? "bg-pos-secondary/15 text-pos-secondary" : "bg-pos-muted/10 text-pos-muted"}`}>
                       {ROLE_LABELS[user.role]}
                     </span>
-                  </td>
-                  <td className="py-2 px-2">
-                    <div className="flex flex-wrap gap-1">
-                      {user.permissions.length === 0 && (
-                        <span className="text-xs text-pos-muted italic">
-                          Sin permisos
-                        </span>
-                      )}
-                      {user.permissions.map((perm) => (
-                        <span
-                          key={perm}
-                          className="inline-block text-xs px-2 py-0.5 rounded-full bg-pos-secondary/10 text-pos-secondary font-medium"
-                        >
-                          {PERMISSION_LABELS[perm]}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="py-2 px-2 text-center">
-                    <span
-                      className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
-                        user.active
-                          ? "bg-pos-success/10 text-pos-success"
-                          : "bg-pos-danger/10 text-pos-danger"
-                      }`}
-                    >
+                    <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium ${user.active ? "bg-pos-success/10 text-pos-success" : "bg-pos-danger/10 text-pos-danger"}`}>
                       {user.active ? "Activo" : "Inactivo"}
                     </span>
-                  </td>
-                  <td className="py-2 pl-2 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => openEditModal(user)}
-                      className="text-xs px-2 py-1 text-pos-secondary hover:bg-pos-secondary/10 rounded touch-target mr-1"
-                      aria-label={`Editar ${user.name}`}
-                    >
-                      ✎ Editar
+                  </div>
+                </div>
+
+                {/* Row 2: Permissions */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {user.permissions.length === 0 && (
+                    <span className="text-[11px] text-pos-muted italic">Sin permisos</span>
+                  )}
+                  {user.permissions.slice(0, 4).map((perm) => (
+                    <span key={perm} className="inline-block text-[11px] px-1.5 py-0.5 rounded-full bg-pos-secondary/10 text-pos-secondary font-medium">
+                      {PERMISSION_LABELS[perm]}
+                    </span>
+                  ))}
+                  {user.permissions.length > 4 && (
+                    <span className="text-[11px] text-pos-muted">
+                      +{user.permissions.length - 4}
+                    </span>
+                  )}
+                </div>
+
+                {/* Row 3: Actions */}
+                <div className="flex gap-2">
+                  <button onClick={() => openEditModal(user)} className="flex-1 text-xs py-2 text-pos-secondary border border-pos-secondary/30 rounded-lg touch-target hover:bg-pos-secondary/10 text-center" aria-label={`Editar ${user.name}`}>
+                    ✎ Editar
+                  </button>
+                  {!isAdmin(user) ? (
+                    <button onClick={() => handleDelete(user)} className="flex-1 text-xs py-2 text-pos-danger border border-pos-danger/30 rounded-lg touch-target hover:bg-pos-danger/10 text-center" aria-label={`Eliminar ${user.name}`}>
+                      ✕ Eliminar
                     </button>
-                    {!isAdmin(user) ? (
-                      <button
-                        onClick={() => handleDelete(user)}
-                        className="text-xs px-2 py-1 text-pos-danger hover:bg-pos-danger/10 rounded touch-target"
-                        aria-label={`Eliminar ${user.name}`}
-                      >
-                        ✕ Eliminar
-                      </button>
-                    ) : (
-                      <span className="text-xs px-2 py-1 text-pos-muted">
-                        —
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  ) : (
+                    <span className="flex-1 text-xs py-2 text-pos-muted text-center">—</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Empty state */}

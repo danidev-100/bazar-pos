@@ -27,7 +27,7 @@ function resetStores() {
   useProductsStore.setState({ products: [], categories: [], stockMovements: [] });
 }
 
-/** Simulate a logged-in admin user with configuracion permission. */
+/** Simulate a logged-in admin user with all permissions. */
 function loginAsAdmin() {
   useAuthStore.setState({
     currentUser: {
@@ -35,7 +35,7 @@ function loginAsAdmin() {
       name: "admin",
       passwordHash: "hash",
       role: "admin",
-      permissions: ["ventas", "clientes", "estadisticas", "configuracion"],
+      permissions: ["ventas", "caja", "productos", "clientes", "proveedores", "pedidos", "facturacion", "comprobantes", "gastos", "estadisticas", "admin", "usuarios"],
       active: true,
       createdAt: new Date().toISOString(),
     },

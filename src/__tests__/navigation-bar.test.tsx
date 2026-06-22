@@ -73,7 +73,7 @@ describe("NavigationBar — permission filtering", () => {
       name: "limited",
       password: "pass",
       role: "custom",
-      permissions: ["ventas", "clientes", "configuracion"],
+      permissions: ["ventas", "caja", "productos", "clientes", "proveedores", "pedidos", "facturacion", "comprobantes", "gastos", "admin", "usuarios"],
       active: true,
     });
     await useAuthStore.getState().login("limited", "pass");
@@ -93,7 +93,7 @@ describe("NavigationBar — permission filtering", () => {
       name: "limited",
       password: "pass",
       role: "custom",
-      permissions: ["ventas", "estadisticas", "configuracion"],
+      permissions: ["ventas", "caja", "productos", "proveedores", "pedidos", "facturacion", "comprobantes", "gastos", "estadisticas", "admin", "usuarios"],
       active: true,
     });
     await useAuthStore.getState().login("limited", "pass");
@@ -106,7 +106,7 @@ describe("NavigationBar — permission filtering", () => {
     expect(screen.getByText("Admin")).toBeInTheDocument();
   });
 
-  it("hides admin page when user lacks configuracion permission", async () => {
+  it("hides admin page when user lacks admin permission", async () => {
     await useAuthStore.getState().init();
     await useAuthStore.getState().addUser({
       name: "limited",

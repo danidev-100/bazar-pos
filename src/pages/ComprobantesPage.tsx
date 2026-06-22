@@ -210,14 +210,15 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Hooks must be BEFORE the early return (React rule)
   const filteredCustomers = useMemo(
     () => storeCustomers.filter((c) => c.name.toLowerCase().includes(clienteSearch.toLowerCase())),
     [storeCustomers, clienteSearch],
   );
 
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-  const iva = tipo === "factura" ? Math.round(subtotal * ivaPercent / 100 * 100) / 100 : 0;
-  const total = Math.round((subtotal + iva) * 100) / 100;
+  const calculatedIva = tipo === "factura" ? Math.round(subtotal * ivaPercent / 100 * 100) / 100 : 0;
+  const calculatedTotal = Math.round((subtotal + calculatedIva) * 100) / 100;
 
   function selectCustomer(cust: typeof storeCustomers[0]) {
     setClienteId(cust.id);
@@ -417,8 +418,8 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
 
         <div className="text-right mt-2 space-y-1">
           <div className="text-sm text-pos-muted">Subtotal: <span className="font-mono">${subtotal.toFixed(2)}</span></div>
-          {tipo === "factura" && <div className="text-sm text-pos-muted">IVA ({ivaPercent}%): <span className="font-mono">$${iva.toFixed(2)}</span></div>}
-          <div className="text-base font-bold text-pos-text">Total: <span className="font-mono">${total.toFixed(2)}</span></div>
+          {tipo === "factura" && <div className="text-sm text-pos-muted">IVA ({ivaPercent}%): <span className="font-mono">$${calculatedIva.toFixed(2)}</span></div>}
+          <div className="text-base font-bold text-pos-text">Total: <span className="font-mono">${calculatedTotal.toFixed(2)}</span></div>
         </div>
       </div>
 

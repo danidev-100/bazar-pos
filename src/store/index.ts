@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useProductsStore } from "./products";
 import { useCustomersStore, type Customer } from "./customers";
+import { useComprobantesStore, type ComprobanteTipo } from "./comprobantes";
 import { execute, enqueueSync } from "@/lib/db";
 
 // ──────────────────────────────────────────────
@@ -118,6 +119,10 @@ export type AppStore = {
   globalDiscountPercent: number;
   setGlobalDiscount: (percent: number) => void;
 
+  // ── Comprobante ──
+  selectedComprobanteTipo: ComprobanteTipo | null;
+  setSelectedComprobanteTipo: (tipo: ComprobanteTipo | null) => void;
+
   // ── Sales ──
   lastCompletedSale: CompletedSale | null;
   completedSales: CompletedSale[];
@@ -159,12 +164,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedCustomer: null,
   selectedCartItemId: null,
   globalDiscountPercent: 0,
+  selectedComprobanteTipo: null,
 
   // ── Navigation ──
   setPage: (page) => set({ page }),
 
   // ── Discount ──
   setGlobalDiscount: (percent) => set({ globalDiscountPercent: Math.max(0, Math.min(100, percent)) }),
+
+  // ── Comprobante ──
+  setSelectedComprobanteTipo: (tipo) => set({ selectedComprobanteTipo: tipo }),
   setItemDiscount: (productId, discountPercent) => {
     const clamped = Math.max(0, Math.min(100, discountPercent));
     set({
@@ -332,6 +341,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
       });
     }
 
+    // ── Generate comprobante if selected ──
+    const comprobanteTipo = get().selectedComprobanteTipo;
+    if (comprobanteTipo) {
+      const { createComprobante } = useComprobantesStore.getState();
+      createComprobante({
+        tipo: comprobanteTipo,
+        cliente_nombre: sale.customerName ?? "Consumidor Final",
+        store_id: resolvedStoreId,
+        sale_id: sale.id,
+        items: sale.items.map((i) => ({
+          product_name: i.productName,
+          quantity: i.quantity,
+          unit_price: i.unitPrice,
+          subtotal: i.subtotal,
+        })),
+      });
+      // Reset after generation
+      set({ selectedComprobanteTipo: null });
+    }
+
     // ── Update customer credit balance ──
     if (paymentMethod === "credit" && customerName) {
       const { updateCreditBalance } = useCustomersStore.getState();
@@ -413,4 +442,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 // Re-export stores for convenience
 export { useAdminStore } from "./admin";
 export { useAuthStore } from "./auth";
+export { useCustomersStore } from "./customers";
+export { useBrandsStore } from "./brands";
+export { useProductsStore } from "./products";
+export { useInvoicesStore } from "./invoices";
+export { useCashClosingStore } from "./cash-closing";
+export { useProveedoresStore } from "./proveedores";
+export { usePedidosStore } from "./pedidos";
+export { useComprobantesStore } from "./comprobantes";
 export { useExpensesStore } from "./expenses";

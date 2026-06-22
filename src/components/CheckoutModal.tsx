@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAppStore } from "@/store";
 import { useActiveStore } from "@/store/context";
+import { type ComprobanteTipo, getTipoLabel } from "@/store/comprobantes";
 
 type CheckoutModalProps = {
   onClose: () => void;
@@ -18,6 +19,8 @@ export default function CheckoutModal({
   const selectedCustomer = useAppStore((s) => s.selectedCustomer);
   const globalDiscountPercent = useAppStore((s) => s.globalDiscountPercent);
   const setGlobalDiscount = useAppStore((s) => s.setGlobalDiscount);
+  const selectedComprobanteTipo = useAppStore((s) => s.selectedComprobanteTipo);
+  const setSelectedComprobanteTipo = useAppStore((s) => s.setSelectedComprobanteTipo);
 
   const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
   const total = cartTotal();
@@ -175,6 +178,39 @@ export default function CheckoutModal({
               </span>
             </div>
           )}
+
+          {/* Comprobante selector */}
+          <div>
+            <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">Comprobante</h3>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(["ticket", "boleta", "factura"] as ComprobanteTipo[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setSelectedComprobanteTipo(selectedComprobanteTipo === t ? null : t)}
+                  className={`text-xs px-2.5 py-1.5 rounded-lg font-medium touch-target transition-all ${
+                    selectedComprobanteTipo === t
+                      ? "bg-pos-secondary text-white"
+                      : "border border-pos-muted/20 text-pos-muted hover:border-pos-secondary hover:text-pos-text"
+                  }`}
+                >
+                  {getTipoLabel(t)}
+                </button>
+              ))}
+              {selectedComprobanteTipo && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedComprobanteTipo(null)}
+                  className="text-xs text-pos-muted hover:text-pos-danger ml-1"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {!selectedComprobanteTipo && (
+              <p className="text-[10px] text-pos-muted mt-1">Ninguno — solo venta</p>
+            )}
+          </div>
 
           {/* Discount */}
           <div className="bg-pos-background/30 rounded-xl p-3 space-y-2">

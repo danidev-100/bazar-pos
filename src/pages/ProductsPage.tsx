@@ -28,7 +28,7 @@ export default function ProductsPage() {
   const products = useProductsStore((s) => s.products);
   const categories = useProductsStore((s) => s.categories);
   const brands = useBrandsStore((s) => s.brands);
-  const isUnlocked = useAuthStore((s) => s.hasPermission("configuracion"));
+  const isUnlocked = useAuthStore((s) => s.hasPermission("productos"));
 
   const [search, setSearch] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(

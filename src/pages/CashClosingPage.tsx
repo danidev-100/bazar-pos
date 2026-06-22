@@ -24,7 +24,7 @@ export default function CashClosingPage() {
 
   const currentUser = useAuthStore((s) => s.currentUser);
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const isAdmin = hasPermission("configuracion");
+  const isAdmin = hasPermission("admin");
 
   const currentShift = getOpenShift(storeId);
   const storeShifts = getShiftsByStore(storeId);

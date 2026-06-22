@@ -17,18 +17,27 @@ type PageDef = {
 };
 
 const ALL_PAGES: PageDef[] = [
+  // ── Principal ──
   { id: "dashboard", label: "Inicio", icon: "🏠" },
   { id: "pos", label: "POS", icon: "🛒", permission: "ventas" },
-  { id: "cash-closing", label: "Caja", icon: "💰", permission: "ventas" },
-  { id: "products", label: "Productos", icon: "📦", permission: "configuracion" },
-  { id: "billing", label: "Facturación", icon: "🧾", permission: "configuracion" },
-  { id: "expenses", label: "Gastos", icon: "💸", permission: "configuracion" },
+  { id: "cash-closing", label: "Caja", icon: "💰", permission: "caja" },
+
+  // ── Gestión ──
+  { id: "products", label: "Productos", icon: "📦", permission: "productos" },
   { id: "customers", label: "Clientes", icon: "👥", permission: "clientes" },
+  { id: "proveedores", label: "Proveedores", icon: "🏭", permission: "proveedores" },
+  { id: "pedidos", label: "Pedidos", icon: "📋", permission: "pedidos" },
+
+  // ── Documentos ──
+  { id: "billing", label: "Facturación", icon: "🧾", permission: "facturacion" },
+  { id: "comprobantes", label: "Comprobantes", icon: "📄", permission: "comprobantes" },
+
+  // ── Finanzas ──
+  { id: "expenses", label: "Gastos", icon: "💸", permission: "gastos" },
   { id: "stats", label: "Estadísticas", icon: "📊", permission: "estadisticas" },
-  { id: "comprobantes", label: "Comprobantes", icon: "📄", permission: "configuracion" },
-  { id: "proveedores", label: "Proveedores", icon: "🏭", permission: "configuracion" },
-  { id: "pedidos", label: "Pedidos", icon: "📋", permission: "configuracion" },
-  { id: "admin", label: "Admin", icon: "🔒", permission: "configuracion" },
+
+  // ── Sistema ──
+  { id: "admin", label: "Admin", icon: "🔒", permission: "admin" },
 ];
 
 // ──────────────────────────────────────────────

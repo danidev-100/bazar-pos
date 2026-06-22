@@ -8,20 +8,22 @@ import { StoreProvider } from "@/store/context";
 import { initAllStores } from "@/lib/init-stores";
 import AdminRoute from "@/components/AdminRoute";
 import NavigationBar from "@/components/NavigationBar";
-import ProductsPage from "@/pages/ProductsPage";
+
+// Pages
+import DashboardPage from "@/pages/DashboardPage";
 import POSPage from "@/pages/POSPage";
 import CashClosingPage from "@/pages/CashClosingPage";
-import BillingPage from "@/pages/BillingPage";
+import ProductsPage from "@/pages/ProductsPage";
 import CustomersPage from "@/pages/CustomersPage";
-import StatsPage from "@/pages/StatsPage";
-import AdminPage from "@/pages/AdminPage";
-import DashboardPage from "@/pages/DashboardPage";
-import UserManagementPage from "@/pages/UserManagementPage";
-import ExpensesPage from "@/pages/ExpensesPage";
-import LoginPage from "@/pages/LoginPage";
 import ProveedoresPage from "@/pages/ProveedoresPage";
 import PedidosPage from "@/pages/PedidosPage";
+import BillingPage from "@/pages/BillingPage";
 import ComprobantesPage from "@/pages/ComprobantesPage";
+import ExpensesPage from "@/pages/ExpensesPage";
+import StatsPage from "@/pages/StatsPage";
+import AdminPage from "@/pages/AdminPage";
+import UserManagementPage from "@/pages/UserManagementPage";
+import LoginPage from "@/pages/LoginPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component

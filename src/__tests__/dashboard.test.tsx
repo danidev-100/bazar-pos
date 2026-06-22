@@ -34,7 +34,7 @@ function loginAsAdmin() {
       name: "admin",
       passwordHash: "hash",
       role: "admin",
-      permissions: ["ventas", "clientes", "estadisticas", "configuracion"],
+      permissions: ["ventas", "caja", "productos", "clientes", "proveedores", "pedidos", "facturacion", "comprobantes", "gastos", "estadisticas", "admin", "usuarios"],
       active: true,
       createdAt: new Date().toISOString(),
     },
@@ -52,20 +52,23 @@ beforeEach(() => {
 // ──────────────────────────────────────────────
 
 describe("DashboardPage", () => {
-  it("2.1/2.2 — renders 9 module cards as buttons", () => {
+  it("2.1/2.2 — renders 12 module cards as buttons", () => {
     render(<DashboardPage />);
     const cards = screen.getAllByRole("button");
-    expect(cards).toHaveLength(9);
+    expect(cards).toHaveLength(12);
   });
 
   it("2.1 — each card displays its label text", () => {
     render(<DashboardPage />);
-    expect(screen.getByText("Gastos")).toBeInTheDocument();
     expect(screen.getByText("Ventas")).toBeInTheDocument();
+    expect(screen.getByText("Caja")).toBeInTheDocument();
     expect(screen.getByText("Inventario")).toBeInTheDocument();
     expect(screen.getByText("Clientes")).toBeInTheDocument();
     expect(screen.getByText("Proveedores")).toBeInTheDocument();
     expect(screen.getByText("Pedidos")).toBeInTheDocument();
+    expect(screen.getByText("Facturación")).toBeInTheDocument();
+    expect(screen.getByText("Comprobantes")).toBeInTheDocument();
+    expect(screen.getByText("Gastos")).toBeInTheDocument();
     expect(screen.getByText("Estadísticas")).toBeInTheDocument();
     expect(screen.getByText("Configuración")).toBeInTheDocument();
     expect(screen.getByText("Usuarios")).toBeInTheDocument();
@@ -111,12 +114,12 @@ describe("DashboardPage", () => {
     expect(useAppStore.getState().page).toBe("admin");
   });
 
-  it("2.1 — clicking Usuarios navigates to admin page", async () => {
+  it("2.1 — clicking Usuarios navigates to user-management page", async () => {
     const user = userEvent.setup();
     render(<DashboardPage />);
 
     await user.click(screen.getByText("Usuarios"));
-    expect(useAppStore.getState().page).toBe("admin");
+    expect(useAppStore.getState().page).toBe("user-management");
   });
 
   it("2.1 — clicking Proveedores navigates to proveedores page", async () => {
@@ -135,10 +138,10 @@ describe("DashboardPage", () => {
     expect(useAppStore.getState().page).toBe("pedidos");
   });
 
-  it("2.1 — all 9 cards are enabled (none disabled)", () => {
+  it("2.1 — all 12 cards are enabled (none disabled)", () => {
     render(<DashboardPage />);
     const buttons = screen.getAllByRole("button");
-    expect(buttons).toHaveLength(9);
+    expect(buttons).toHaveLength(12);
 
     for (const btn of buttons) {
       expect(btn).toBeEnabled();
