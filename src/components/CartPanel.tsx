@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/store";
 import { useProductsStore } from "@/store/products";
 import { useAuthStore } from "@/store/auth";
@@ -46,6 +46,13 @@ export default function CartPanel({
   const count = itemCount();
   const isEmpty = items.length === 0;
   const cashierName = currentUser?.name ?? "—";
+
+  // Live clock
+  const [clock, setClock] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
   const openShift = shifts.find(
     (s) => s.storeId === storeId && s.status === "open",
   ) ?? null;
@@ -94,16 +101,26 @@ export default function CartPanel({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header — cashier name + shift controls */}
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-          Cajero: <span className="font-mono normal-case">{cashierName}</span>
+      {/* Header — cashier name + clock */}
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
+            Cajero: <span className="font-mono normal-case">{cashierName}</span>
+          </h2>
           {count > 0 && (
-            <span className="text-pos-muted font-normal normal-case ml-1">
-              — {count} {count === 1 ? "producto" : "productos"}
-            </span>
+            <p className="text-xs text-pos-muted mt-0.5">
+              {count} {count === 1 ? "producto" : "productos"}
+            </p>
           )}
-        </h2>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-sm font-mono font-bold text-pos-text tabular-nums">
+            {clock.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+          </p>
+          <p className="text-[10px] text-pos-muted tabular-nums">
+            {clock.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+          </p>
+        </div>
       </div>
 
       {/* Shift status bar */}
