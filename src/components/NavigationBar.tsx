@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import { useAppStore, useAuthStore, type Page } from "@/store";
 import { type Permission } from "@/store/auth";
-import { useActiveStore } from "@/store/context";
 import { getSyncState, triggerSync } from "@/hooks/useSync";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -41,27 +40,15 @@ const ALL_PAGES: PageDef[] = [
 ];
 
 // ──────────────────────────────────────────────
-// Store options (static for now — will be populated from DB in PR 2)
-// ──────────────────────────────────────────────
-
-const STORE_OPTIONS = [
-  { id: "store_1", name: "Tienda Principal" },
-  { id: "store_2", name: "Sucursal 2" },
-  { id: "store_3", name: "Sucursal 3" },
-];
-
-// ──────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────
 
 export default function NavigationBar() {
   const page = useAppStore((s) => s.page);
   const setPage = useAppStore((s) => s.setPage);
-  const clearCart = useAppStore((s) => s.clearCart);
   const currentUser = useAuthStore((s) => s.currentUser);
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const logout = useAuthStore((s) => s.logout);
-  const { storeId, setStoreId } = useActiveStore();
 
   // Filter pages by user permissions
   const pages = ALL_PAGES.filter((p) => {
@@ -91,22 +78,13 @@ export default function NavigationBar() {
           ? "⚠️"
           : "☁️";
 
-  function handleStoreChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newStore = e.target.value;
-    if (newStore === storeId) return;
-
-    // Clearing cart on store switch per store-isolation spec (R3: Switch store)
-    clearCart();
-    setStoreId(newStore);
-  }
-
   function handleLogout() {
     logout();
     setPage("login");
   }
 
   return (
-    <nav className="flex items-center justify-between bg-pos-primary text-white px-2 sm:px-4 py-2 shadow-md gap-2">
+    <nav className="flex items-center justify-between bg-pos-primary/95 backdrop-blur-sm text-white px-2 sm:px-4 py-2 shadow-md gap-2">
       {/* Page switcher */}
       <div className="flex items-center gap-0.5 sm:gap-1">
         {pages.map((p) => (
@@ -163,23 +141,6 @@ export default function NavigationBar() {
           </div>
         )}
         <ThemeToggle compact />
-        <div className="flex items-center gap-2">
-          <label htmlFor="store-selector" className="text-sm text-white/70 hidden sm:inline">
-            Tienda:
-          </label>
-          <select
-            id="store-selector"
-            value={storeId}
-            onChange={handleStoreChange}
-            className="bg-pos-secondary text-white text-sm rounded-lg px-3 py-1.5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-pos-accent"
-          >
-            {STORE_OPTIONS.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
     </nav>
   );

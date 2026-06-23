@@ -64,9 +64,15 @@ export default function App() {
   const init = useAuthStore((s) => s.init);
   const hasAccess = usePermission(page);
 
-  // Hydrate auth store + load all data from SQLite on mount
+  // Hydrate auth store, auto-login admin, load all data from SQLite
   useEffect(() => {
-    init();
+    init().then(() => {
+      const { currentUser, login, _hydrated } = useAuthStore.getState();
+      // Auto-login as admin if no session restored after hydration
+      if (!currentUser && _hydrated) {
+        login("admin", "admin");
+      }
+    });
     initAllStores();
   }, [init]);
 

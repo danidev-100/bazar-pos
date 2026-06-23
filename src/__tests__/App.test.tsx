@@ -10,7 +10,7 @@ function resetAll() {
     currentUser: null,
     _hydrated: false,
   });
-  useAppStore.setState({ page: "dashboard" });
+  useAppStore.setState({ page: "pos" });
   localStorage.removeItem("auth_users");
   localStorage.removeItem("auth_current_user_id");
 }
@@ -20,27 +20,20 @@ beforeEach(() => {
 });
 
 describe("App — auth gate", () => {
-  it("renders LoginPage when not authenticated", async () => {
-    // Init store but don't login
+  it("auto-logs in as admin and renders POS page", async () => {
     await useAuthStore.getState().init();
 
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText("Iniciar Sesión")).toBeInTheDocument();
+      // Navigation bar should be visible (admin is auto-logged-in)
+      expect(screen.getByText("Inicio")).toBeInTheDocument();
     });
   });
 
-  it("renders dashboard when authenticated", async () => {
-    await useAuthStore.getState().init();
-    await useAuthStore.getState().login("admin", "admin");
-
-    render(<App />);
-
-    await waitFor(() => {
-      // Navigation bar should be visible
-      expect(screen.getByText("Inicio")).toBeInTheDocument();
-    });
+  it("default page is pos", () => {
+    // Store defaults to pos without any explicit set
+    expect(useAppStore.getState().page).toBe("pos");
   });
 
   it("redirects to dashboard when page lacks permission", async () => {
@@ -64,21 +57,6 @@ describe("App — auth gate", () => {
     await waitFor(() => {
       expect(useAppStore.getState().page).toBe("dashboard");
     });
-  });
-
-  it("does not render NavigationBar on LoginPage", async () => {
-    // Not authenticated, on login page
-    useAppStore.getState().setPage("login");
-    await useAuthStore.getState().init();
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Iniciar Sesión")).toBeInTheDocument();
-    });
-
-    // NavBar should not be present
-    expect(screen.queryByText("Inicio")).toBeNull();
   });
 });
 

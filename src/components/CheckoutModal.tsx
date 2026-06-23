@@ -28,6 +28,7 @@ export default function CheckoutModal({
   const isEmpty = items.length === 0;
 
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "mixed" | "credit" | null>(null);
+  const [discountDraft, setDiscountDraft] = useState(String(globalDiscountPercent));
   const [cashAmount, setCashAmount] = useState<string>("");
   const [cardAmount, setCardAmount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -224,13 +225,24 @@ export default function CheckoutModal({
               </label>
               <input
                 id="global-discount"
-                type="number"
+                type="text"
                 inputMode="numeric"
-                min="0"
-                max="100"
-                step="1"
-                value={globalDiscountPercent}
-                onChange={(e) => setGlobalDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                value={discountDraft}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  // Allow empty or digits only
+                  if (raw === "") {
+                    setDiscountDraft("");
+                    setGlobalDiscount(0);
+                    return;
+                  }
+                  if (/^\d+$/.test(raw)) {
+                    const clamped = Math.min(100, parseInt(raw, 10));
+                    setDiscountDraft(String(clamped));
+                    setGlobalDiscount(clamped);
+                  }
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-16 border border-pos-muted/30 rounded-lg px-2 py-1 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               {discountAmount > 0 && (

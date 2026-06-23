@@ -42,7 +42,7 @@ function loadTheme(): "light" | "dark" {
   } catch {
     // localStorage unavailable
   }
-  return "light";
+  return "dark";
 }
 
 function saveTheme(theme: "light" | "dark"): void {

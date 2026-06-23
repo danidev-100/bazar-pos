@@ -498,54 +498,104 @@ export default function UserManagementPage() {
           </div>
 
           {/* Mobile cards */}
-          <div className="sm:hidden space-y-3">
-            {sortedUsers.map((user) => (
-              <div key={user.id} className="bg-pos-surface rounded-xl border border-pos-muted/10 p-3">
-                {/* Row 1: Name + Role + Status */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-sm font-medium text-pos-text truncate">{user.name}</span>
-                    {isAdmin(user) && <span className="text-xs text-pos-muted shrink-0" title="Admin — no se puede eliminar">🔒</span>}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium ${user.role === "admin" ? "bg-pos-secondary/15 text-pos-secondary" : "bg-pos-muted/10 text-pos-muted"}`}>
+          <div className="sm:hidden space-y-2.5">
+            {sortedUsers.map((user, i) => (
+              <div
+                key={user.id}
+                className="card-enter relative bg-pos-surface rounded-xl shadow-sm border border-pos-muted/10 overflow-hidden active:scale-[0.99] transition-transform"
+                style={{ animationDelay: `${i * 0.05}s` }}
+              >
+                {/* Accent bar */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${user.active ? "bg-pos-success" : "bg-pos-muted/30"}`} />
+
+                <div className="pl-4 pr-3.5 py-3">
+                  {/* Top row: avatar + name + role + status */}
+                  <div className="flex items-center gap-2.5 mb-2.5">
+                    {/* Avatar circle */}
+                    <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${user.role === "admin" ? "bg-pos-secondary/15" : "bg-pos-muted/10"}`}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`w-4.5 h-4.5 ${user.role === "admin" ? "text-pos-secondary" : "text-pos-muted"}`}>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+
+                    {/* Name + admin badge */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-pos-text truncate">{user.name}</span>
+                        {isAdmin(user) && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-pos-muted shrink-0" title="Admin — no se puede eliminar">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Role badge */}
+                    <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-md ${user.role === "admin" ? "bg-pos-secondary/12 text-pos-secondary" : "bg-pos-muted/8 text-pos-muted"}`}>
                       {ROLE_LABELS[user.role]}
                     </span>
-                    <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium ${user.active ? "bg-pos-success/10 text-pos-success" : "bg-pos-danger/10 text-pos-danger"}`}>
-                      {user.active ? "Activo" : "Inactivo"}
-                    </span>
+
+                    {/* Status dot */}
+                    <span className={`shrink-0 w-2 h-2 rounded-full ${user.active ? "bg-pos-success" : "bg-pos-danger"}`} title={user.active ? "Activo" : "Inactivo"} />
                   </div>
-                </div>
 
-                {/* Row 2: Permissions */}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {user.permissions.length === 0 && (
-                    <span className="text-[11px] text-pos-muted italic">Sin permisos</span>
-                  )}
-                  {user.permissions.slice(0, 4).map((perm) => (
-                    <span key={perm} className="inline-block text-[11px] px-1.5 py-0.5 rounded-full bg-pos-secondary/10 text-pos-secondary font-medium">
-                      {PERMISSION_LABELS[perm]}
-                    </span>
-                  ))}
-                  {user.permissions.length > 4 && (
-                    <span className="text-[11px] text-pos-muted">
-                      +{user.permissions.length - 4}
-                    </span>
-                  )}
-                </div>
+                  {/* Permissions */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {user.permissions.length === 0 && (
+                      <span className="text-[11px] text-pos-muted italic">Sin permisos</span>
+                    )}
+                    {user.permissions.slice(0, 4).map((perm) => (
+                      <span key={perm} className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-pos-secondary/8 text-pos-secondary font-medium tracking-tight">
+                        {PERMISSION_LABELS[perm]}
+                      </span>
+                    ))}
+                    {user.permissions.length > 4 && (
+                      <span className="text-[10px] text-pos-muted font-medium px-1">
+                        +{user.permissions.length - 4}
+                      </span>
+                    )}
+                  </div>
 
-                {/* Row 3: Actions */}
-                <div className="flex gap-2">
-                  <button onClick={() => openEditModal(user)} className="flex-1 text-xs py-2 text-pos-secondary border border-pos-secondary/30 rounded-lg touch-target hover:bg-pos-secondary/10 text-center" aria-label={`Editar ${user.name}`}>
-                    ✎ Editar
-                  </button>
-                  {!isAdmin(user) ? (
-                    <button onClick={() => handleDelete(user)} className="flex-1 text-xs py-2 text-pos-danger border border-pos-danger/30 rounded-lg touch-target hover:bg-pos-danger/10 text-center" aria-label={`Eliminar ${user.name}`}>
-                      ✕ Eliminar
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEditModal(user)}
+                      className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-lg border border-pos-secondary/20 text-pos-secondary bg-pos-secondary/5 active:bg-pos-secondary/15 touch-target transition-colors"
+                      aria-label={`Editar ${user.name}`}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span>Editar</span>
                     </button>
-                  ) : (
-                    <span className="flex-1 text-xs py-2 text-pos-muted text-center">—</span>
-                  )}
+
+                    {isAdmin(user) ? (
+                      <span className="flex-1 flex items-center justify-center text-xs py-2 rounded-lg bg-pos-muted/5 text-pos-muted/50">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mr-1">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        Protegido
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleDelete(user)}
+                        className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-lg border border-pos-danger/20 text-pos-danger bg-pos-danger/5 active:bg-pos-danger/15 touch-target transition-colors"
+                        aria-label={`Eliminar ${user.name}`}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                        <span>Eliminar</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

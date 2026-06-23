@@ -155,7 +155,7 @@ let nextSaleItemId = 1;
 
 export const useAppStore = create<AppStore>((set, get) => ({
   // ── Defaults ──
-  page: "dashboard",
+  page: "pos",
   busy: false,
   notification: null,
   items: [],

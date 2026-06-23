@@ -5,15 +5,15 @@ describe("Store — dashboard default page", () => {
     vi.resetModules();
   });
 
-  it("1.1 — default page should be dashboard", async () => {
+  it("1.1 — default page should be pos", async () => {
     // Use dynamic import to get a fresh store instance with the current default
     const { useAppStore } = await import("@/store");
-    expect(useAppStore.getState().page).toBe("dashboard");
+    expect(useAppStore.getState().page).toBe("pos");
   });
 
-  it("1.1 — setPage works with dashboard target", async () => {
+  it("1.1 — setPage works with pos target", async () => {
     const { useAppStore } = await import("@/store");
-    useAppStore.getState().setPage("dashboard");
-    expect(useAppStore.getState().page).toBe("dashboard");
+    useAppStore.getState().setPage("pos");
+    expect(useAppStore.getState().page).toBe("pos");
   });
 });
