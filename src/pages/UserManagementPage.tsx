@@ -513,7 +513,7 @@ export default function UserManagementPage() {
                   <div className="flex items-center gap-2.5 mb-2.5">
                     {/* Avatar circle */}
                     <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${user.role === "admin" ? "bg-pos-secondary/15" : "bg-pos-muted/10"}`}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`w-4.5 h-4.5 ${user.role === "admin" ? "text-pos-secondary" : "text-pos-muted"}`}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={`w-4.5 h-4.5 ${user.role === "admin" ? "text-pos-secondary" : "text-pos-muted"}`}>
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                         <circle cx="12" cy="7" r="4" />
                       </svg>
@@ -524,7 +524,8 @@ export default function UserManagementPage() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold text-pos-text truncate">{user.name}</span>
                         {isAdmin(user) && (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-pos-muted shrink-0" title="Admin — no se puede eliminar">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-pos-muted shrink-0">
+                            <title>Admin — no se puede eliminar</title>
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                           </svg>
@@ -565,7 +566,7 @@ export default function UserManagementPage() {
                       className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-lg border border-pos-secondary/20 text-pos-secondary bg-pos-secondary/5 active:bg-pos-secondary/15 touch-target transition-colors"
                       aria-label={`Editar ${user.name}`}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
@@ -574,7 +575,7 @@ export default function UserManagementPage() {
 
                     {isAdmin(user) ? (
                       <span className="flex-1 flex items-center justify-center text-xs py-2 rounded-lg bg-pos-muted/5 text-pos-muted/50">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mr-1">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mr-1">
                           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
@@ -586,7 +587,7 @@ export default function UserManagementPage() {
                         className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-lg border border-pos-danger/20 text-pos-danger bg-pos-danger/5 active:bg-pos-danger/15 touch-target transition-colors"
                         aria-label={`Eliminar ${user.name}`}
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
                           <polyline points="3 6 5 6 21 6" />
                           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                           <line x1="10" y1="11" x2="10" y2="17" />

@@ -57,10 +57,14 @@ describe("NavigationBar — permission filtering", () => {
 
     renderNav();
 
+    // Sidebar: main pages visible (POS appears in subtitle + nav button)
     expect(screen.getByText("Inicio")).toBeInTheDocument();
-    expect(screen.getByText("POS")).toBeInTheDocument();
-    expect(screen.getByText("Productos")).toBeInTheDocument();
+    expect(screen.getAllByText("POS").length).toBeGreaterThan(0);
     expect(screen.getByText("Caja")).toBeInTheDocument();
+
+    // Config section is visible (open by default in sidebar)
+    expect(screen.getByText("Configuración")).toBeInTheDocument();
+    expect(screen.getByText("Productos")).toBeInTheDocument();
     expect(screen.getByText("Facturación")).toBeInTheDocument();
     expect(screen.getByText("Clientes")).toBeInTheDocument();
     expect(screen.getByText("Estadísticas")).toBeInTheDocument();
@@ -80,8 +84,9 @@ describe("NavigationBar — permission filtering", () => {
 
     renderNav();
 
+    // Config section open by default — Estadísticas NOT in sidebar
     expect(screen.queryByText("Estadísticas")).toBeNull();
-    // Other pages should still be visible
+    // Other pages should be visible
     expect(screen.getByText("Facturación")).toBeInTheDocument();
     expect(screen.getByText("Clientes")).toBeInTheDocument();
     expect(screen.getByText("Admin")).toBeInTheDocument();
@@ -112,13 +117,14 @@ describe("NavigationBar — permission filtering", () => {
       name: "limited",
       password: "pass",
       role: "custom",
-      permissions: ["ventas"],
+      permissions: ["ventas", "caja", "productos"],
       active: true,
     });
     await useAuthStore.getState().login("limited", "pass");
 
     renderNav();
 
+    // Admin should NOT appear (no admin permission)
     expect(screen.queryByText("Admin")).toBeNull();
   });
 
@@ -138,14 +144,14 @@ describe("NavigationBar — permission filtering", () => {
     // Dashboard is the only unconditional page
     expect(screen.getByText("Inicio")).toBeInTheDocument();
 
-    // All permission-gated pages should be hidden
-    expect(screen.queryByText("POS")).toBeNull();
+    // All permission-gated main pages should be hidden
+    // "POS" appears only as sidebar subtitle (1 element), not as nav button
+    const posElements = screen.queryAllByText("POS");
+    expect(posElements.length).toBe(1); // just the subtitle
     expect(screen.queryByText("Caja")).toBeNull();
-    expect(screen.queryByText("Productos")).toBeNull();
-    expect(screen.queryByText("Facturación")).toBeNull();
-    expect(screen.queryByText("Clientes")).toBeNull();
-    expect(screen.queryByText("Estadísticas")).toBeNull();
-    expect(screen.queryByText("Admin")).toBeNull();
+
+    // Config dropdown should not exist (no permitted sub-pages)
+    expect(screen.queryByText("Configuración")).toBeNull();
   });
 });
 
@@ -180,7 +186,9 @@ describe("NavigationBar — user info", () => {
 
     renderNav();
 
-    expect(screen.getByText("Salir")).toBeInTheDocument();
+    // Sidebar: user avatar with initial + logout icon
+    expect(screen.getByText("admin")).toBeInTheDocument();
+    expect(screen.getByTitle("Cerrar sesión")).toBeInTheDocument();
   });
 
   it("logout button logs out and navigates to login page", async () => {
@@ -190,7 +198,7 @@ describe("NavigationBar — user info", () => {
 
     renderNav();
 
-    await user.click(screen.getByText("Salir"));
+    await user.click(screen.getByTitle("Cerrar sesión"));
 
     expect(useAuthStore.getState().currentUser).toBeNull();
     expect(useAppStore.getState().page).toBe("login");

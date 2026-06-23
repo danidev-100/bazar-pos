@@ -104,7 +104,7 @@ export default function App() {
   return (
     <StoreProvider initialStoreId="store_1">
       {isAuthenticated ? (
-        <div className="flex flex-col h-screen w-screen overflow-hidden">
+        <div className="flex h-screen w-screen overflow-hidden">
           <NavigationBar />
           <main className="flex-1 overflow-auto p-4">
             {needsAdminGate ? (

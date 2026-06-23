@@ -234,7 +234,7 @@ function ModuleCard({ label, icon, target }: ModuleConfig) {
   return (
     <button
       onClick={() => setPage(target)}
-      className="relative flex flex-col items-center justify-center gap-3 rounded-xl border border-pos-muted/10 bg-pos-surface p-6 md:p-7 shadow-sm hover:shadow-md active:scale-[0.97] transition-all duration-200 cursor-pointer group overflow-hidden"
+      className="relative w-full flex flex-col items-center justify-center gap-3 rounded-xl border border-pos-muted/10 bg-pos-surface p-6 md:p-7 shadow-sm hover:shadow-md active:scale-[0.97] transition-all duration-200 cursor-pointer group overflow-hidden"
     >
       {/* Top accent bar */}
       <span
@@ -292,7 +292,7 @@ export default function DashboardPage() {
       {/* Responsive card grid — 3 per row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
         {visibleModules.map((mod, i) => (
-          <div key={mod.label} className="card-enter" style={{ animationDelay: `${i * 0.04}s` }}>
+          <div key={mod.label} className="card-enter w-full" style={{ animationDelay: `${i * 0.04}s` }}>
             <ModuleCard {...mod} />
           </div>
         ))}

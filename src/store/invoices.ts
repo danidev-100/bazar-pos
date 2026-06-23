@@ -25,6 +25,7 @@ export type Invoice = {
   paymentMethod: "cash" | "card" | "mixed" | "credit";
   date: string;
   storeId: string;
+  createdBy: string;
 };
 
 // ──────────────────────────────────────────────
@@ -59,7 +60,7 @@ export type InvoicesStore = {
    * Assigns the next sequential number for the sale's store.
    * If no customerName is provided, defaults to "Consumidor Final".
    */
-  generateInvoice: (sale: CompletedSale, customerName?: string) => Invoice;
+  generateInvoice: (sale: CompletedSale, customerName?: string, createdBy?: string) => Invoice;
 
   /** Get all invoices scoped to a store, newest first. */
   getInvoicesByStore: (storeId: string) => Invoice[];
@@ -76,6 +77,7 @@ export type InvoicesStore = {
     query?: string,
     dateFrom?: string,
     dateTo?: string,
+    userName?: string,
   ) => Invoice[];
 
   /** Get the next sequential number for a store without issuing an invoice. */
@@ -90,7 +92,7 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
   invoices: [],
   counters: {},
 
-  generateInvoice: (sale, customerName) => {
+  generateInvoice: (sale, customerName, createdBy) => {
     const storeId = sale.storeId;
     const existingMax = get().invoices
       .filter((inv) => inv.storeId === storeId)
@@ -116,6 +118,7 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
       paymentMethod: sale.paymentMethod,
       date: new Date().toISOString(),
       storeId,
+      createdBy: createdBy ?? "—",
     };
 
     set({
@@ -155,8 +158,12 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
   getInvoiceById: (id) =>
     get().invoices.find((inv) => inv.id === id) ?? null,
 
-  searchInvoices: (storeId, query, dateFrom, dateTo) => {
+  searchInvoices: (storeId, query, dateFrom, dateTo, userName) => {
     let results = get().invoices.filter((inv) => inv.storeId === storeId);
+
+    if (userName) {
+      results = results.filter((inv) => inv.createdBy === userName);
+    }
 
     if (query) {
       const lower = query.toLowerCase();
@@ -173,7 +180,7 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
     }
 
     if (dateTo) {
-      const to = new Date(dateTo).getTime();
+      const to = new Date(dateTo + "T23:59:59.999").getTime();
       results = results.filter((inv) => new Date(inv.date).getTime() <= to);
     }
 

@@ -94,6 +94,10 @@ export default function InvoiceDetail({
             <span className="text-pos-muted text-xs">Venta N°</span>
             <p className="text-pos-text font-mono">{invoice.saleId}</p>
           </div>
+          <div>
+            <span className="text-pos-muted text-xs">Creado por</span>
+            <p className="text-pos-text font-medium">{invoice.createdBy}</p>
+          </div>
         </div>
       </div>
 

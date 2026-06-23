@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAppStore, type CompletedSale } from "@/store";
+import { useAuthStore } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
 import {
   useInvoicesStore,
@@ -38,6 +39,7 @@ export default function BillingPage() {
   const { storeId } = useActiveStore();
   const completedSales = useAppStore((s) => s.completedSales);
   const generateInvoice = useInvoicesStore((s) => s.generateInvoice);
+  const currentUser = useAuthStore((s) => s.currentUser);
 
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(
     null,
@@ -60,7 +62,7 @@ export default function BillingPage() {
       return;
     }
 
-    const invoice = generateInvoice(sale);
+    const invoice = generateInvoice(sale, undefined, currentUser?.name);
     setSelectedInvoiceId(invoice.id);
     useAppStore
       .getState()

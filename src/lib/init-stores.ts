@@ -244,6 +244,7 @@ async function initInvoices(): Promise<void> {
         paymentMethod: r.payment_method,
         date: r.created_at,
         storeId,
+        createdBy: r.created_by ?? "—",
       };
     });
 

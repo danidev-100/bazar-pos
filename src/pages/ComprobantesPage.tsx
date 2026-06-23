@@ -253,7 +253,7 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
     setError(null);
 
     if (!tipo) { setError("Seleccioná un tipo de comprobante"); return; }
-    if (tipo === "factura" && !clienteNombre.trim()) { setError("Para factura necesitás un cliente"); return; }
+    if (!clienteNombre.trim()) { setError("Seleccioná un cliente"); return; }
     if (tipo === "factura" && !clienteCuit.trim()) { setError("Para factura necesitás el CUIT del cliente"); return; }
 
     const validItems = items.filter((r) => r.product_name.trim() && r.quantity > 0);
@@ -318,35 +318,35 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
 
       {error && <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-sm rounded-lg px-3 py-2">{error}</div>}
 
-      {/* Cliente search */}
-      {tipo === "factura" && (
-        <div className="relative">
-          <label className="block text-sm font-medium text-pos-text mb-1">Cliente <span className="text-pos-danger">*</span></label>
-          <input type="text" value={clienteSearch} onChange={(e) => { setClienteSearch(e.target.value); setClienteId(null); setShowClientDropdown(true); }}
-            onFocus={() => setShowClientDropdown(true)} onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
-            placeholder="Buscá cliente por nombre…" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
-          {showClientDropdown && !clienteId && filteredCustomers.length > 0 && (
-            <div className="absolute z-10 top-full left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-              {filteredCustomers.map((c) => (
-                <button key={c.id} type="button" onMouseDown={() => selectCustomer(c)}
-                  className="w-full text-left px-3 py-2 text-sm text-pos-text hover:bg-pos-background/50 transition-colors">
-                  {c.name} {c.cuit ? <span className="text-pos-muted">({c.cuit})</span> : ""}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Cliente search — todos los comprobantes */}
+      <div className="relative">
+        <label className="block text-sm font-medium text-pos-text mb-1">
+          Cliente {tipo === "factura" && <span className="text-pos-danger">*</span>}
+        </label>
+        <input type="text" value={clienteSearch} onChange={(e) => { setClienteSearch(e.target.value); setClienteId(null); setShowClientDropdown(true); }}
+          onFocus={() => setShowClientDropdown(true)} onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+          placeholder="Buscá cliente por nombre…" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
+        {showClientDropdown && !clienteId && filteredCustomers.length > 0 && (
+          <div className="absolute z-10 top-full left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+            {filteredCustomers.map((c) => (
+              <button key={c.id} type="button" onMouseDown={() => selectCustomer(c)}
+                className="w-full text-left px-3 py-2 text-sm text-pos-text hover:bg-pos-background/50 transition-colors">
+                {c.name} {c.cuit ? <span className="text-pos-muted">({c.cuit})</span> : ""}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Cliente fields for factura */}
-      {tipo === "factura" && clienteId && (
+      {/* Cliente datos (todos los comprobantes) */}
+      {clienteId && (
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-pos-text mb-1">Nombre</label>
             <input type="text" value={clienteNombre} readOnly className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm bg-pos-background/50" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-pos-text mb-1">CUIT <span className="text-pos-danger">*</span></label>
+            <label className="block text-sm font-medium text-pos-text mb-1">CUIT {tipo === "factura" && <span className="text-pos-danger">*</span>}</label>
             <input type="text" value={clienteCuit} onChange={(e) => setClienteCuit(e.target.value)} placeholder="XX-XXXXXXXX-X" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
           </div>
           <div className="col-span-2">
@@ -356,12 +356,12 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
         </div>
       )}
 
-      {/* Cliente simple for other types */}
-      {tipo !== "factura" && (
+      {/* Manual client name when no search result selected */}
+      {!clienteId && !clienteSearch.trim() && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-pos-text mb-1">Cliente</label>
-            <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} placeholder="Consumidor Final" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
+            <input type="text" value={clienteNombre} onChange={(e) => { setClienteNombre(e.target.value); setClienteId(null); }} placeholder="Consumidor Final" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
           </div>
           <div>
             <label className="block text-sm font-medium text-pos-text mb-1">CUIT</label>

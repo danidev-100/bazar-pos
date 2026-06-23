@@ -373,6 +373,7 @@ export default function POSPage() {
       .generateInvoice(
         lastCompletedSale,
         lastCompletedSale.customerName ?? undefined,
+        currentUser?.name,
       );
 
     exportInvoicePdf(invoice);
