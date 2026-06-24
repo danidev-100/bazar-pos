@@ -3,10 +3,11 @@ import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
 import { useAuthStore } from "@/store/auth";
-import BrandFilter from "@/components/BrandFilter";
-import CategoryTree from "@/components/CategoryTree";
 import ProductForm from "@/components/ProductForm";
 import StockMovementLog from "@/components/StockMovementLog";
+import ImportProductsModal from "@/components/ImportProductsModal";
+import BulkPriceIncreaseModal from "@/components/BulkPriceIncreaseModal";
+import BulkCategoryModal from "@/components/BulkCategoryModal";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
@@ -29,16 +30,29 @@ export default function ProductsPage() {
   const categories = useProductsStore((s) => s.categories);
   const brands = useBrandsStore((s) => s.brands);
   const isUnlocked = useAuthStore((s) => s.hasPermission("productos"));
+  const adjustStock = useProductsStore((s) => s.adjustStock);
+  const deleteProduct = useProductsStore((s) => s.deleteProduct);
+  const updateProduct = useProductsStore((s) => s.updateProduct);
+  const currentUser = useAuthStore((s) => s.currentUser);
+
+  const [editingStockId, setEditingStockId] = useState<number | null>(null);
+  const [editingStockVal, setEditingStockVal] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
 
   const [search, setSearch] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
   const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
+  const [stockFilter, setStockFilter] = useState<"all" | "critical" | "medium">("all");
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
     null,
   );
   const [centerView, setCenterView] = useState<CenterView>({ kind: "list" });
+  const [showImport, setShowImport] = useState(false);
+  const [showBulkPrice, setShowBulkPrice] = useState(false);
+  const [showBulkCategory, setShowBulkCategory] = useState(false);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
 
   const storeProducts = products.filter((p) => p.store_id === storeId);
   const storeCategories = categories.filter((c) => c.store_id === storeId);
@@ -74,9 +88,19 @@ export default function ProductsPage() {
     : bySearch;
 
   // Filter products by selected brand
-  const filteredProducts = selectedBrandId
+  const byBrand = selectedBrandId
     ? byCategory.filter((p) => p.brandId === selectedBrandId)
     : byCategory;
+
+  // Filter products by stock level
+  const filteredProducts = useMemo(() => {
+    if (stockFilter === "all") return byBrand;
+    return byBrand.filter((p) => {
+      if (stockFilter === "critical") return p.minStock > 0 && p.stock <= p.minStock;
+      if (stockFilter === "medium") return p.midStock > 0 && p.stock <= p.midStock;
+      return true;
+    });
+  }, [byBrand, stockFilter]);
 
   const selectedProduct = selectedProductId
     ? storeProducts.find((p) => p.id === selectedProductId) ?? null
@@ -126,22 +150,6 @@ export default function ProductsPage() {
     exportToExcel(data, productExportColumns, "Productos");
   }, [filteredProducts, storeCategories, brands, isUnlocked]);
 
-  function handleCategoryEdit(cat: Category) {
-    setCenterView({ kind: "edit-category", category: cat });
-  }
-
-  function handleCategorySelect(id: number | null) {
-    setSelectedCategoryId(id);
-    setSelectedProductId(null);
-    setCenterView({ kind: "list" });
-  }
-
-  function handleBrandSelect(id: number | null) {
-    setSelectedBrandId(id);
-    setSelectedProductId(null);
-    setCenterView({ kind: "list" });
-  }
-
   function handleProductSelect(id: number) {
     setSelectedProductId(id);
     setCenterView({ kind: "list" });
@@ -157,21 +165,7 @@ export default function ProductsPage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
-      {/* ── Left panel: Category tree + Brand filter ── */}
-      <aside className="w-full lg:w-64 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full flex flex-col gap-4">
-        <CategoryTree
-          selectedId={selectedCategoryId}
-          onSelect={handleCategorySelect}
-          onEdit={handleCategoryEdit}
-        />
-        <hr className="border-pos-muted/10" />
-        <BrandFilter
-          selectedId={selectedBrandId}
-          onSelect={handleBrandSelect}
-        />
-      </aside>
-
-      {/* ── Center panel: Product list / form ── */}
+      {/* ── Product list / form ── */}
       <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto">
         {centerView.kind === "list" && (
           <>
@@ -206,6 +200,12 @@ export default function ProductsPage() {
                   </>
                 )}
                 <button
+                  onClick={() => setShowImport(true)}
+                  className="text-xs px-3 py-1.5 border border-pos-muted/30 text-pos-text rounded-lg touch-target hover:bg-pos-background/50"
+                >
+                  + Importar
+                </button>
+                <button
                   onClick={() => setCenterView({ kind: "create" })}
                   className="text-xs px-3 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
                 >
@@ -214,14 +214,73 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Search */}
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre o código de barras…"
-              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target mb-3"
-            />
+            {/* Search + stock filter */}
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por nombre o código de barras…"
+                className="flex-1 border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+              />
+              <button
+                onClick={() => {
+                  if (stockFilter === "all") setStockFilter("critical");
+                  else if (stockFilter === "critical") setStockFilter("medium");
+                  else setStockFilter("all");
+                }}
+                className={`shrink-0 px-3 py-2 rounded-lg text-xs font-medium touch-target transition-all border ${
+                  stockFilter === "critical"
+                    ? "bg-pos-danger/10 border-pos-danger/40 text-pos-danger ring-1 ring-pos-danger/20"
+                    : stockFilter === "medium"
+                      ? "bg-yellow-500/10 border-yellow-500/40 text-yellow-600 ring-1 ring-yellow-500/20"
+                      : "border-pos-muted/20 text-pos-muted hover:border-pos-muted/40 hover:text-pos-text"
+                }`}
+              >
+                {stockFilter === "critical"
+                  ? "🔴 Crítico"
+                  : stockFilter === "medium"
+                    ? "🟡 Medio"
+                    : "📊 Stock"}
+              </button>
+            </div>
+
+            {/* Bulk actions */}
+            {selectedProductIds.length > 0 && (
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-pos-secondary/10 border border-pos-secondary/30 rounded-lg">
+                <span className="text-xs font-medium text-pos-text mr-1">
+                  {selectedProductIds.length} seleccionado{selectedProductIds.length !== 1 ? "s" : ""}
+                </span>
+
+                <button
+                  onClick={() => setShowBulkPrice(true)}
+                  className="text-xs px-2.5 py-1.5 bg-pos-accent text-white rounded-lg touch-target hover:opacity-90"
+                >
+                  +% Precio
+                </button>
+
+                <button
+                  onClick={() => setShowBulkCategory(true)}
+                  className="text-xs px-2.5 py-1.5 bg-pos-secondary text-white rounded-lg touch-target hover:opacity-90"
+                >
+                  Categoría
+                </button>
+
+                <button
+                  onClick={() => setShowBulkDelete(true)}
+                  className="text-xs px-2.5 py-1.5 bg-pos-danger text-white rounded-lg touch-target hover:opacity-90"
+                >
+                  Eliminar
+                </button>
+
+                <button
+                  onClick={() => setSelectedProductIds([])}
+                  className="text-xs px-2.5 py-1.5 border border-pos-muted/30 text-pos-muted rounded-lg touch-target hover:bg-pos-background/50 ml-auto"
+                >
+                  Limpiar
+                </button>
+              </div>
+            )}
 
             {/* Product table */}
             {filteredProducts.length === 0 ? (
@@ -233,10 +292,27 @@ export default function ProductsPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+                <div className="overflow-x-auto">
                 <table className="w-full text-xm">
                     <thead>
                     <tr className="text-pos-muted border-b border-pos-muted/20 ">
+                      <th className="w-8 py-2 pr-1">
+                        <input
+                          type="checkbox"
+                          checked={
+                            filteredProducts.length > 0 &&
+                            selectedProductIds.length === filteredProducts.length
+                          }
+                          onChange={() => {
+                            if (selectedProductIds.length === filteredProducts.length) {
+                              setSelectedProductIds([]);
+                            } else {
+                              setSelectedProductIds(filteredProducts.map((p) => p.id));
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </th>
                       <th className="text-left py-2 pr-2 font-medium font-mono text-xs">
                         Código
                       </th>
@@ -281,6 +357,20 @@ export default function ProductsPage() {
                               : ""
                           }`}
                         >
+                          <td className="w-8 py-2 pr-1" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedProductIds.includes(p.id)}
+                              onChange={() => {
+                                setSelectedProductIds((prev) =>
+                                  prev.includes(p.id)
+                                    ? prev.filter((id) => id !== p.id)
+                                    : [...prev, p.id],
+                                );
+                              }}
+                              className="cursor-pointer"
+                            />
+                          </td>
                           <td className="py-2 pr-2 text-pos-muted font-mono text-xs">
                             {p.barcode ?? "—"}
                           </td>
@@ -297,16 +387,60 @@ export default function ProductsPage() {
                           )}
                           <td
                             className={`py-2 px-2 text-right font-mono font-bold ${
-                              p.stock < 0
+                              p.stock <= p.minStock && p.minStock > 0
                                 ? "text-pos-danger"
-                                : p.minStock > 0 && p.stock <= p.minStock
+                                : p.midStock > 0 && p.stock <= p.midStock
                                   ? "text-yellow-500"
                                   : "text-pos-success"
                             }`}
                           >
-                            {p.stock}
-                            {p.minStock > 0 && p.stock <= p.minStock && (
-                              <span className="text-[10px] text-pos-muted ml-1">↓</span>
+                            {editingStockId === p.id ? (
+                              <input
+                                type="number"
+                                min={0}
+                                value={editingStockVal}
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "" || /^\d+$/.test(val)) {
+                                    setEditingStockVal(val);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const qty = parseInt(editingStockVal, 10);
+                                  if (!isNaN(qty) && qty >= 0 && qty !== p.stock) {
+                                    adjustStock(p.id, qty, currentUser?.name);
+                                  }
+                                  setEditingStockId(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    (e.target as HTMLInputElement).blur();
+                                  }
+                                  if (e.key === "Escape") {
+                                    setEditingStockId(null);
+                                  }
+                                }}
+                                className="w-16 text-right text-xs font-bold font-mono bg-pos-background border border-pos-secondary rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                              />
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingStockId(p.id);
+                                  setEditingStockVal(String(p.stock));
+                                }}
+                                className="hover:bg-pos-background/50 px-1 -mx-1 rounded transition-colors cursor-text"
+                              >
+                                {p.stock}
+                              </button>
+                            )}
+                            {editingStockId !== p.id && p.minStock > 0 && p.stock <= p.minStock && (
+                              <span className="text-[10px] text-pos-muted ml-1">🔴</span>
+                            )}
+                            {editingStockId !== p.id && p.minStock > 0 && p.stock > p.minStock && p.midStock > 0 && p.stock <= p.midStock && (
+                              <span className="text-[10px] text-pos-muted ml-1">🟡</span>
                             )}
                           </td>
                           <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
@@ -373,6 +507,94 @@ export default function ProductsPage() {
           }
         />
       </aside>
+
+      {/* ── Import Products Modal ── */}
+      {showImport && (
+        <ImportProductsModal
+          onClose={() => setShowImport(false)}
+          onImported={() => setShowImport(false)}
+        />
+      )}
+
+      {/* ── Bulk Price Modal ── */}
+      {showBulkPrice && (
+        <BulkPriceIncreaseModal
+          products={storeProducts}
+          selectedIds={selectedProductIds}
+          onApply={(pct) => {
+            for (const id of selectedProductIds) {
+              const prod = products.find((p) => p.id === id);
+              if (prod) {
+                const newPrice = Math.round(prod.price * (1 + pct / 100) * 100) / 100;
+                updateProduct(id, { price: newPrice, store_id: storeId });
+              }
+            }
+            setSelectedProductIds([]);
+          }}
+          onClose={() => setShowBulkPrice(false)}
+        />
+      )}
+
+      {/* ── Bulk Category Modal ── */}
+      {showBulkCategory && (
+        <BulkCategoryModal
+          categories={storeCategories}
+          selectedIds={selectedProductIds}
+          currentCategoryId={null}
+          onApply={(catId) => {
+            for (const id of selectedProductIds) {
+              updateProduct(id, { category_id: catId, store_id: storeId });
+            }
+            setSelectedProductIds([]);
+          }}
+          onClose={() => setShowBulkCategory(false)}
+        />
+      )}
+
+      {/* ── Bulk Delete Confirmation ── */}
+      {showBulkDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowBulkDelete(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-pos-surface rounded-2xl shadow-2xl border border-pos-muted/10 mx-4 p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="text-5xl mb-4">🗑️</div>
+              <h3 className="text-base font-bold text-pos-text mb-1">
+                Eliminar Productos
+              </h3>
+              <p className="text-sm text-pos-muted/70 mb-6">
+                ¿Eliminar {selectedProductIds.length} producto
+                {selectedProductIds.length !== 1 ? "s" : ""}? No se puede
+                deshacer.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBulkDelete(false)}
+                className="flex-1 px-4 py-2.5 border border-pos-muted/20 text-pos-muted rounded-xl text-sm font-medium touch-target hover:bg-pos-background/50 hover:text-pos-text transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  for (const id of selectedProductIds) {
+                    deleteProduct(id);
+                  }
+                  setSelectedProductIds([]);
+                  setShowBulkDelete(false);
+                }}
+                className="flex-1 px-4 py-2.5 bg-pos-danger text-white rounded-xl text-sm font-bold touch-target transition-all hover:shadow-lg"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

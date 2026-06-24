@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAppStore, useAuthStore, useAdminStore } from "@/store";
 import BrandList from "@/components/BrandList";
+import CategoryList from "@/components/CategoryList";
 import BulkPriceModal from "@/components/BulkPriceModal";
 import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
 
@@ -8,7 +9,7 @@ import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
 // Admin section definitions
 // ──────────────────────────────────────────────
 
-type SectionId = "brands" | "bulk-price" | "backup" | "settings";
+type SectionId = "categories" | "brands" | "bulk-price" | "backup" | "settings";
 
 type SectionDef = {
   id: SectionId;
@@ -16,6 +17,17 @@ type SectionDef = {
   description: string;
   icon: React.ReactNode;
 };
+
+function CategoriesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <path d="M4 4h6v6H4z" />
+      <path d="M14 4h6v6h-6z" />
+      <path d="M4 14h6v6H4z" />
+      <path d="M14 14h6v6h-6z" />
+    </svg>
+  );
+}
 
 function BrandsIcon() {
   return (
@@ -59,6 +71,12 @@ function SettingsIcon() {
 
 const SECTIONS: SectionDef[] = [
   {
+    id: "categories",
+    label: "Categorías",
+    description: "gestioná tus categorías de productos",
+    icon: <CategoriesIcon />,
+  },
+  {
     id: "brands",
     label: "Marcas",
     description: "gestioná tus marcas de productos",
@@ -89,6 +107,7 @@ const SECTIONS: SectionDef[] = [
 // ──────────────────────────────────────────────
 
 const ACCENTS: Record<string, { bg: string; text: string; bar: string }> = {
+  categories:  { bg: "bg-rose-500/8",    text: "text-rose-600",    bar: "#e11d48" },
   brands:      { bg: "bg-violet-500/8",  text: "text-violet-600",  bar: "#8b5cf6" },
   "bulk-price": { bg: "bg-emerald-500/8", text: "text-emerald-600", bar: "#10b981" },
   backup:      { bg: "bg-amber-500/8",   text: "text-amber-600",   bar: "#f59e0b" },
@@ -101,6 +120,16 @@ const ACCENTS: Record<string, { bg: string; text: string; bar: string }> = {
 
 export default function AdminPage() {
   const [activeSection, setActiveSection] = useState<SectionId | null>(null);
+
+  // Escape goes back to root admin
+  useEffect(() => {
+    if (!activeSection) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setActiveSection(null);
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [activeSection]);
 
   // Show card grid
   if (!activeSection) {
@@ -171,6 +200,7 @@ export default function AdminPage() {
       </button>
 
       {/* Section title */}
+      {activeSection === "categories" && <CategoriesSection />}
       {activeSection === "brands" && <BrandsSection />}
       {activeSection === "bulk-price" && <BulkPriceSection />}
       {activeSection === "backup" && <BackupSection />}
@@ -182,6 +212,17 @@ export default function AdminPage() {
 // ──────────────────────────────────────────────
 // Section detail components
 // ──────────────────────────────────────────────
+
+function CategoriesSection() {
+  return (
+    <div>
+      <h3 className="text-base font-semibold text-pos-text mb-4">Categorías</h3>
+      <div className="max-w-2xl">
+        <CategoryList />
+      </div>
+    </div>
+  );
+}
 
 function BrandsSection() {
   return (

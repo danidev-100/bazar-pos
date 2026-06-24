@@ -1,0 +1,180 @@
+import { useState, useEffect, useMemo } from "react";
+import type { Product } from "@/store/products";
+
+// ──────────────────────────────────────────────
+// Props
+// ──────────────────────────────────────────────
+
+type BulkPriceModalProps = {
+  products: Product[];
+  selectedIds: number[];
+  onApply: (percentage: number) => void;
+  onClose: () => void;
+};
+
+// ──────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────
+
+export default function BulkPriceModal({
+  products,
+  selectedIds,
+  onApply,
+  onClose,
+}: BulkPriceModalProps) {
+  const [percentage, setPercentage] = useState("");
+  const [animOut, setAnimOut] = useState(false);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") closeWithAnim();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function closeWithAnim() {
+    setAnimOut(true);
+    setTimeout(onClose, 150);
+  }
+
+  const selected = useMemo(
+    () => products.filter((p) => selectedIds.includes(p.id)),
+    [products, selectedIds],
+  );
+
+  const pct = parseFloat(percentage) || 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={closeWithAnim}
+    >
+      <div
+        className={`w-full max-w-md bg-pos-surface rounded-2xl shadow-2xl border border-pos-muted/10 mx-4 transition-all duration-150 ${
+          animOut ? "opacity-0 scale-95" : "opacity-100 scale-100"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Header ── */}
+        <div className="p-5 pb-4 border-b border-pos-muted/10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-pos-accent/10 flex items-center justify-center text-lg">
+              📈
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-pos-text">
+                Aumentar Precio
+              </h3>
+              <p className="text-xs text-pos-muted/60">
+                {selectedIds.length} producto{selectedIds.length !== 1 ? "s" : ""}{" "}
+                seleccionado{selectedIds.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={closeWithAnim}
+            className="w-8 h-8 flex items-center justify-center text-pos-muted/50 hover:text-pos-text rounded-lg hover:bg-pos-background/50 transition-colors touch-target"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="p-5 space-y-4">
+          {/* Percentage input */}
+          <div>
+            <label className="block text-xs font-semibold text-pos-muted uppercase tracking-wide mb-1.5">
+              Porcentaje de aumento
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={percentage}
+                autoFocus
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
+                    setPercentage(val);
+                  }
+                }}
+                placeholder="ej: 15"
+                className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-xl text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-accent touch-target bg-pos-background"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-bold text-pos-muted/40">
+                %
+              </span>
+            </div>
+          </div>
+
+          {/* Preview */}
+          {pct > 0 && selected.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
+                Vista previa ({selected.length > 5 ? "primeros 5" : "todos"})
+              </p>
+              <div className="bg-pos-background/50 rounded-xl divide-y divide-pos-muted/10 overflow-hidden">
+                {selected.slice(0, 5).map((p) => {
+                  const newPrice =
+                    Math.round(p.price * (1 + pct / 100) * 100) / 100;
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between px-3 py-2 text-xs"
+                    >
+                      <span className="text-pos-text truncate flex-1 mr-2">
+                        {p.name}
+                      </span>
+                      <span className="font-mono text-pos-muted line-through mr-2">
+                        ${p.price.toFixed(2)}
+                      </span>
+                      <span className="font-mono font-bold text-pos-accent">
+                        ${newPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  );
+                })}
+                {selected.length > 5 && (
+                  <div className="px-3 py-2 text-xs text-pos-muted/50 italic text-center">
+                    ... y {selected.length - 5} producto{selected.length - 5 !== 1 ? "s" : ""} más
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {pct <= 0 && (
+            <div className="flex items-center gap-2.5 bg-pos-background/50 rounded-xl px-4 py-3 text-xs text-pos-muted">
+              <span>💡</span>
+              <span>Ingresá un porcentaje mayor a 0 para ver la previsualización</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="p-5 pt-4 border-t border-pos-muted/10 flex gap-3">
+          <button
+            onClick={closeWithAnim}
+            className="flex-1 px-4 py-2.5 border border-pos-muted/20 text-pos-muted rounded-xl text-sm font-medium touch-target hover:bg-pos-background/50 hover:text-pos-text transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => {
+              if (pct > 0) {
+                onApply(pct);
+                closeWithAnim();
+              }
+            }}
+            disabled={pct <= 0}
+            className="flex-1 px-4 py-2.5 bg-pos-accent text-white rounded-xl text-sm font-bold touch-target transition-all hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+          >
+            Aumentar {pct > 0 ? `${pct}%` : ""}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -29,6 +29,7 @@ export default function ProductSearchModal({
   const cartItems = useAppStore((s) => s.items);
   const [search, setSearch] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [animOut, setAnimOut] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -50,23 +51,22 @@ export default function ProductSearchModal({
   // Reset selection when results change
   useEffect(() => {
     setSelectedIndex(0);
-  }, [filtered]);
+  }, [filtered.length]);
 
   // Auto-focus search on mount
   useEffect(() => {
-    inputRef.current?.focus();
+    requestAnimationFrame(() => inputRef.current?.focus());
   }, []);
 
   // Keyboard navigation
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        onClose();
+        setAnimOut(true);
+        setTimeout(onClose, 150);
         return;
       }
-
       if (filtered.length === 0) return;
-
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex((prev) => Math.min(prev + 1, filtered.length - 1));
@@ -82,19 +82,25 @@ export default function ProductSearchModal({
           .reduce((sum, i) => sum + i.quantity, 0);
         if (!product.price || product.price <= 0 || product.stock - inCart <= 0)
           return;
-        onAddToCart({ id: product.id, name: product.name, price: product.price });
-        // Keep modal open — refocus search for next product
+        onAddToCart({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+        });
         inputRef.current?.focus();
       }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose, onAddToCart, filtered, selectedIndex, cartItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, selectedIndex, cartItems, onAddToCart]);
 
   // Scroll selected item into view
   useEffect(() => {
     if (!listRef.current) return;
-    const selected = listRef.current.children[selectedIndex] as HTMLElement | undefined;
+    const selected = listRef.current.children[
+      selectedIndex
+    ] as HTMLElement | undefined;
     selected?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
@@ -105,26 +111,32 @@ export default function ProductSearchModal({
     if (!product.price || product.price <= 0 || product.stock - inCart <= 0)
       return;
     onAddToCart({ id: product.id, name: product.name, price: product.price });
-    // Keep modal open for fast consecutive adds
     inputRef.current?.focus();
   }
 
   const hasNoProducts = storeProducts.length === 0;
 
+  function closeWithAnim() {
+    setAnimOut(true);
+    setTimeout(onClose, 150);
+  }
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-24 bg-black/40"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 bg-black/50 backdrop-blur-sm"
+      onClick={closeWithAnim}
     >
       <div
-        className="w-full max-w-lg bg-pos-surface rounded-2xl shadow-2xl border border-pos-muted/10 overflow-hidden mx-4"
+        className={`w-full max-w-lg bg-pos-surface rounded-2xl shadow-2xl border border-pos-muted/10 overflow-hidden mx-4 transition-all duration-150 ${
+          animOut ? "opacity-0 scale-95 translate-y-2" : "opacity-100 scale-100 translate-y-0"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Search header ── */}
         <div className="p-4 border-b border-pos-muted/10">
           <div className="relative">
             <svg
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-pos-muted/40"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-pos-muted/35"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -140,27 +152,47 @@ export default function ProductSearchModal({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscá por nombre o código de barras…"
               aria-label="Buscar productos"
-              className="w-full border border-pos-muted/30 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-background"
+              className="w-full border border-pos-muted/25 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-background"
             />
           </div>
-          <p className="text-xs text-pos-muted/50 mt-2 text-center">
-            También podés escanear el código de barras directamente
-          </p>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <kbd className="text-[11px] font-mono text-pos-muted/40 bg-pos-background/50 px-1.5 py-0.5 rounded border border-pos-muted/10">
+              ↑↓
+            </kbd>
+            <span className="text-[11px] text-pos-muted/50">Navegar</span>
+            <span className="text-pos-muted/20">·</span>
+            <kbd className="text-[11px] font-mono text-pos-muted/40 bg-pos-background/50 px-1.5 py-0.5 rounded border border-pos-muted/10">
+              Enter
+            </kbd>
+            <span className="text-[11px] text-pos-muted/50">Agregar</span>
+            <span className="text-pos-muted/20">·</span>
+            <kbd className="text-[11px] font-mono text-pos-muted/40 bg-pos-background/50 px-1.5 py-0.5 rounded border border-pos-muted/10">
+              Esc
+            </kbd>
+            <span className="text-[11px] text-pos-muted/50">Cerrar</span>
+          </div>
         </div>
 
         {/* ── Product list ── */}
         <div className="max-h-[55vh] overflow-y-auto p-2">
           {hasNoProducts ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-sm text-pos-muted italic">
-                No hay productos en esta tienda. Agregá productos desde la
-                página Productos.
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <div className="text-4xl mb-3 text-pos-muted/30">📦</div>
+              <p className="text-sm text-pos-muted font-medium">
+                No hay productos en esta tienda
+              </p>
+              <p className="text-xs text-pos-muted/50 mt-1">
+                Agregá productos desde la página Productos
               </p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-sm text-pos-muted italic">
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <div className="text-4xl mb-3 text-pos-muted/30">🔍</div>
+              <p className="text-sm text-pos-muted font-medium">
                 No hay resultados para "{search}"
+              </p>
+              <p className="text-xs text-pos-muted/50 mt-1">
+                Probá con otro nombre o código de barras
               </p>
             </div>
           ) : (
@@ -178,19 +210,19 @@ export default function ProductSearchModal({
                     onClick={() => handleTap(product)}
                     onMouseEnter={() => setSelectedIndex(idx)}
                     disabled={outOfStock}
-                    className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg border touch-target transition-all active:scale-[0.99] ${
+                    className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl border touch-target transition-all active:scale-[0.99] ${
                       isSelected
-                        ? "border-pos-secondary ring-2 ring-pos-secondary/40 bg-pos-secondary/10"
+                        ? "border-pos-secondary ring-2 ring-pos-secondary/30 bg-pos-secondary/8 shadow-sm"
                         : outOfStock
-                          ? "border-pos-muted/10 opacity-40 cursor-not-allowed"
+                          ? "border-pos-muted/8 opacity-40 cursor-not-allowed"
                           : availableStock < 25
-                            ? "border-pos-danger/30 hover:border-pos-danger bg-pos-danger/5"
-                            : "border-pos-muted/10 hover:border-pos-secondary/40 hover:bg-pos-secondary/5"
+                            ? "border-pos-danger/25 hover:border-pos-danger/60 bg-pos-danger/5"
+                            : "border-pos-muted/8 hover:border-pos-secondary/30 hover:bg-pos-secondary/5"
                     }`}
                     aria-label={
                       outOfStock
                         ? `${product.name} — sin stock`
-                        : `${product.name} — $${product.price} — Enter para agregar`
+                        : `${product.name} — $${product.price}`
                     }
                   >
                     {/* Stock dot */}
@@ -198,10 +230,10 @@ export default function ProductSearchModal({
                       className={`shrink-0 w-2 h-2 rounded-full ${
                         outOfStock
                           ? "bg-pos-muted/30"
-                          : availableStock < 25
+                          : product.minStock > 0 && availableStock <= product.minStock
                             ? "bg-pos-danger"
-                            : availableStock < 50
-                              ? "bg-pos-accent"
+                            : product.midStock > 0 && availableStock <= product.midStock
+                              ? "bg-yellow-500"
                               : "bg-pos-success"
                       }`}
                     />
@@ -226,30 +258,34 @@ export default function ProductSearchModal({
                           className={`shrink-0 text-[10px] font-medium ${
                             outOfStock
                               ? "text-pos-muted"
-                              : availableStock < 25
+                              : product.minStock > 0 && availableStock <= product.minStock
                                 ? "text-pos-danger"
                                 : "text-pos-muted/60"
                           }`}
                         >
-                          {outOfStock ? "Sin stock" : `${availableStock} uds`}
+                          {outOfStock
+                            ? "Sin stock"
+                            : `${availableStock} uds`}
                         </span>
                       </div>
                     </div>
 
                     {/* Add icon */}
                     {!outOfStock && (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="w-4 h-4 text-pos-muted/40 shrink-0"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
+                      <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-pos-secondary/10 text-pos-secondary transition-colors group-hover:bg-pos-secondary/20">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-3.5 h-3.5"
+                        >
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </div>
                     )}
                   </button>
                 );
@@ -261,14 +297,26 @@ export default function ProductSearchModal({
         {/* ── Footer ── */}
         <div className="p-3 border-t border-pos-muted/10 flex items-center justify-between">
           <span className="text-xs text-pos-muted/40">
-            {filtered.length} producto{filtered.length !== 1 ? "s" : ""}
+            {filtered.length > 0
+              ? `${filtered.length} producto${filtered.length !== 1 ? "s" : ""}`
+              : "Sin resultados"}
           </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-pos-muted hover:text-pos-text touch-target rounded-lg hover:bg-pos-background/50 transition-colors"
-          >
-            Cerrar
-          </button>
+          <div className="flex gap-2">
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="text-xs px-3 py-1.5 text-pos-muted hover:text-pos-text touch-target rounded-lg hover:bg-pos-background/50 transition-colors"
+              >
+                Limpiar
+              </button>
+            )}
+            <button
+              onClick={closeWithAnim}
+              className="text-xs px-3 py-1.5 text-pos-muted hover:text-pos-text touch-target rounded-lg hover:bg-pos-background/50 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>

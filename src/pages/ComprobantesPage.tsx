@@ -6,6 +6,8 @@ import { useComprobantesStore, type Comprobante, type ComprobanteTipo, getTipoLa
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 import { useAppStore } from "@/store";
 
+const TIPOS: ComprobanteTipo[] = ["factura", "boleta", "nota_credito", "nota_debito", "ticket"];
+
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
@@ -51,6 +53,9 @@ export default function ComprobantesPage() {
   const comprobantes = useComprobantesStore((s) => s.comprobantes);
   const [view, setView] = useState<View>({ kind: "list" });
   const [search, setSearch] = useState("");
+  const [filterTipo, setFilterTipo] = useState<ComprobanteTipo[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const storeComprobantes = useMemo(
     () => comprobantes.filter((c) => c.store_id === storeId).sort((a, b) => b.id - a.id),
@@ -58,15 +63,42 @@ export default function ComprobantesPage() {
   );
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return storeComprobantes;
-    const q = search.toLowerCase();
-    return storeComprobantes.filter(
-      (c) =>
-        c.numero.toLowerCase().includes(q) ||
-        c.cliente_nombre.toLowerCase().includes(q) ||
-        c.tipo.toLowerCase().includes(q),
+    let result = storeComprobantes;
+
+    // Filter by tipo
+    if (filterTipo.length > 0) {
+      result = result.filter((c) => filterTipo.includes(c.tipo));
+    }
+
+    // Filter by date range
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      result = result.filter((c) => new Date(c.fecha) >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((c) => new Date(c.fecha) <= to);
+    }
+
+    // Filter by search (número + cliente)
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.numero.toLowerCase().includes(q) ||
+          c.cliente_nombre.toLowerCase().includes(q),
+      );
+    }
+
+    return result;
+  }, [storeComprobantes, search, filterTipo, dateFrom, dateTo]);
+
+  function toggleTipo(tipo: ComprobanteTipo) {
+    setFilterTipo((prev) =>
+      prev.includes(tipo) ? prev.filter((t) => t !== tipo) : [...prev, tipo],
     );
-  }, [storeComprobantes, search]);
+  }
 
   const columns: ExportColumn[] = [
     { header: "N°", key: "numero" },
@@ -120,12 +152,58 @@ export default function ComprobantesPage() {
 
       {view.kind === "list" && (
         <>
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por número, tipo o cliente…" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
+          {/* Filters */}
+          <div className="flex flex-col gap-2">
+            {/* Search */}
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por número o cliente…" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
+
+            {/* Tipo filter */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-pos-muted font-medium mr-1">Tipo:</span>
+              {TIPOS.map((t) => {
+                const active = filterTipo.includes(t);
+                return (
+                  <button
+                    key={t}
+                    onClick={() => toggleTipo(t)}
+                    className={`text-xs px-2.5 py-1 rounded-full border touch-target transition-all ${
+                      active
+                        ? "bg-pos-secondary text-white border-pos-secondary"
+                        : "border-pos-muted/20 text-pos-muted hover:border-pos-secondary/40 hover:text-pos-text"
+                    }`}
+                  >
+                    {getTipoLabel(t)}
+                  </button>
+                );
+              })}
+              {filterTipo.length > 0 && (
+                <button onClick={() => setFilterTipo([])} className="text-xs text-pos-muted hover:text-pos-danger ml-1 touch-target">✕</button>
+              )}
+            </div>
+
+            {/* Date range */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-pos-muted font-medium">Fecha:</span>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                className="text-xs border border-pos-muted/30 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-background" />
+              <span className="text-xs text-pos-muted">→</span>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                className="text-xs border border-pos-muted/30 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-background" />
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-xs text-pos-muted hover:text-pos-danger touch-target">✕</button>
+              )}
+              {filterTipo.length > 0 && (
+                <span className="text-xs text-pos-muted/50 ml-auto">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>
+              )}
+            </div>
+          </div>
           <div className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto">
             {filtered.length === 0 ? (
               <div className="flex items-center justify-center h-48">
                 <p className="text-sm text-pos-muted italic text-center">
-                  {search ? "No se encontraron comprobantes" : "Todavía no hay comprobantes. Creá uno desde '+ Nuevo Comprobante'."}
+                  {search || filterTipo.length > 0 || dateFrom || dateTo
+                    ? "No se encontraron comprobantes con esos filtros"
+                    : "Todavía no hay comprobantes. Creá uno desde '+ Nuevo Comprobante'."}
                 </p>
               </div>
             ) : (

@@ -103,6 +103,7 @@ async function ensureTables(db: Database): Promise<void> {
       cost_price REAL NOT NULL DEFAULT 0,
       stock INTEGER NOT NULL DEFAULT 0,
       min_stock INTEGER NOT NULL DEFAULT 0,
+      mid_stock INTEGER NOT NULL DEFAULT 0,
       category_id INTEGER,
       brand_id INTEGER,
       store_id TEXT NOT NULL,

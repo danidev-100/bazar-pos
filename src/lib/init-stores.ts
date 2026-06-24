@@ -41,7 +41,7 @@ async function initBrands(): Promise<void> {
 async function initProducts(): Promise<void> {
   try {
     const [productRows, catRows, movRows] = await Promise.all([
-      select<any>("SELECT id, barcode, name, price, cost_price, stock, min_stock, category_id, brand_id, store_id FROM products"),
+      select<any>("SELECT id, barcode, name, price, cost_price, stock, min_stock, mid_stock, category_id, brand_id, store_id FROM products"),
       select<any>("SELECT id, name, parent_id, store_id FROM categories"),
       select<any>("SELECT id, product_id, type, quantity, delta, reference_id, user_id, store_id, created_at FROM stock_movements"),
     ]);
@@ -54,6 +54,7 @@ async function initProducts(): Promise<void> {
       costPrice: r.cost_price,
       stock: r.stock,
       minStock: r.min_stock,
+      midStock: r.mid_stock ?? 0,
       category_id: r.category_id,
       brandId: r.brand_id,
       store_id: r.store_id,

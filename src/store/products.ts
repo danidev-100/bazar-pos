@@ -12,6 +12,7 @@ export type Product = {
   price: number;
   stock: number;
   minStock: number;
+  midStock: number;
   category_id: number | null;
   costPrice: number;
   brandId: number | null;
@@ -64,7 +65,7 @@ export type ProductsStore = {
   stockMovements: StockMovement[];
 
   /** Add a product. Throws if barcode duplicate in same store. */
-  addProduct: (data: Omit<Product, "id" | "costPrice" | "brandId" | "minStock"> & { costPrice?: number; brandId?: number | null; minStock?: number }) => Product;
+  addProduct: (data: Omit<Product, "id" | "costPrice" | "brandId" | "minStock" | "midStock"> & { costPrice?: number; brandId?: number | null; minStock?: number; midStock?: number }) => Product;
 
   /** Update product fields by id. */
   updateProduct: (id: number, updates: Partial<Omit<Product, "id">>) => void;
@@ -130,6 +131,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       id: nextProductId++,
       ...data,
       minStock: data.minStock ?? 0,
+      midStock: data.midStock ?? 0,
       costPrice: data.costPrice ?? 0,
       brandId: data.brandId ?? null,
     };
@@ -138,8 +140,8 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     // Persist to SQLite
     const now = new Date().toISOString();
     execute(
-      `INSERT INTO products (id, barcode, name, price, cost_price, stock, min_stock, category_id, brand_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending')`,
-      [product.id, product.barcode, product.name, product.price, product.costPrice, product.stock, product.minStock, product.category_id, product.brandId, product.store_id, now, now],
+      `INSERT INTO products (id, barcode, name, price, cost_price, stock, min_stock, mid_stock, category_id, brand_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending')`,
+      [product.id, product.barcode, product.name, product.price, product.costPrice, product.stock, product.minStock, product.midStock, product.category_id, product.brandId, product.store_id, now, now],
     )
       .then(() => enqueueSync("product", product.id, "insert", product.store_id))
       .catch(() => {});
@@ -173,8 +175,8 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     if (current) {
       const now = new Date().toISOString();
       execute(
-        `UPDATE products SET barcode=$1, name=$2, price=$3, cost_price=$4, stock=$5, min_stock=$6, category_id=$7, brand_id=$8, store_id=$9, updated_at=$10, sync_status='pending' WHERE id=$11`,
-        [current.barcode, current.name, current.price, current.costPrice, current.stock, current.minStock, current.category_id, current.brandId, current.store_id, now, id],
+      `UPDATE products SET barcode=$1, name=$2, price=$3, cost_price=$4, stock=$5, min_stock=$6, mid_stock=$7, category_id=$8, brand_id=$9, store_id=$10, updated_at=$11, sync_status='pending' WHERE id=$12`,
+      [current.barcode, current.name, current.price, current.costPrice, current.stock, current.minStock, current.midStock, current.category_id, current.brandId, current.store_id, now, id],
       )
         .then(() => enqueueSync("product", id, "update", current.store_id))
         .catch(() => {});

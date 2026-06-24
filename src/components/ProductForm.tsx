@@ -20,6 +20,8 @@ type FormData = {
   costPrice: string;
   brandId: string; // string because select value
   category_id: string; // string because select value
+  minStock: string;
+  midStock: string;
 };
 
 const INITIAL_FORM: FormData = {
@@ -29,6 +31,8 @@ const INITIAL_FORM: FormData = {
   costPrice: "0",
   brandId: "",
   category_id: "",
+  minStock: "0",
+  midStock: "0",
 };
 
 // ──────────────────────────────────────────────
@@ -95,6 +99,8 @@ export default function ProductForm({
         costPrice: String(editProduct.costPrice),
         brandId: editProduct.brandId != null ? String(editProduct.brandId) : "",
         category_id: editProduct.category_id != null ? String(editProduct.category_id) : "",
+        minStock: String(editProduct.minStock),
+        midStock: String(editProduct.midStock),
       });
       setError(null);
     } else {
@@ -111,6 +117,8 @@ export default function ProductForm({
     const costPrice = parseFloat(form.costPrice);
     const categoryId = form.category_id ? Number(form.category_id) : null;
     const brandId = form.brandId ? Number(form.brandId) : null;
+    const minStock = parseInt(form.minStock, 10) || 0;
+    const midStock = parseInt(form.midStock, 10) || 0;
 
     const result = productSchema.safeParse({
       name: form.name.trim(),
@@ -139,6 +147,8 @@ export default function ProductForm({
           price: result.data.price,
           costPrice: result.data.costPrice,
           brandId: result.data.brandId,
+          minStock,
+          midStock,
           category_id: result.data.category_id,
           store_id: storeId,
         });
@@ -150,7 +160,8 @@ export default function ProductForm({
           costPrice: result.data.costPrice,
           brandId: result.data.brandId,
           stock: 0,
-          minStock: 0,
+          minStock,
+          midStock,
           category_id: result.data.category_id,
           store_id: storeId,
         });
@@ -260,7 +271,7 @@ export default function ProductForm({
             htmlFor="product-brand"
             className="block text-sm font-medium text-pos-text mb-1"
           >
-            Brand
+            Marca
             <span className="text-pos-muted ml-1">(opcional)</span>
           </label>
           <select
@@ -269,7 +280,7 @@ export default function ProductForm({
             onChange={(e) => setForm({ ...form, brandId: e.target.value })}
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           >
-            <option value="">— No brand —</option>
+            <option value="">— Sin marca —</option>
             {storeBrands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -301,6 +312,49 @@ export default function ProductForm({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Stock levels */}
+      <div>
+        <p className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
+          Niveles de Stock
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label
+              htmlFor="product-min-stock"
+              className="block text-xs font-medium text-pos-muted mb-1"
+            >
+              <span className="inline-block w-2 h-2 rounded-full bg-pos-danger shrink-0 mr-1.5" />
+              Stock crítico
+            </label>
+            <input
+              id="product-min-stock"
+              type="number"
+              min={0}
+              value={form.minStock}
+              onChange={(e) => setForm({ ...form, minStock: e.target.value })}
+              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="product-mid-stock"
+              className="block text-xs font-medium text-pos-muted mb-1"
+            >
+              <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 shrink-0 mr-1.5" />
+              Stock medio
+            </label>
+            <input
+              id="product-mid-stock"
+              type="number"
+              min={0}
+              value={form.midStock}
+              onChange={(e) => setForm({ ...form, midStock: e.target.value })}
+              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Buttons */}
