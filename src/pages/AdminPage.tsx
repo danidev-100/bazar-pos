@@ -303,10 +303,11 @@ function BackupSection() {
     setRestoring(true);
     try {
       const result = await importBackup(file);
-      showNotification(`Respaldo restaurado — ${result.tables} tablas, ${result.rows} filas`);
+      showNotification(`Respaldo restaurado — ${result.tables} tablas, ${result.rows} filas — recargando...`);
+      // Force full reload so all stores re-read from the fresh DB data
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       showNotification(err instanceof Error ? err.message : "Error al restaurar el respaldo");
-    } finally {
       setRestoring(false);
       e.target.value = "";
     }
