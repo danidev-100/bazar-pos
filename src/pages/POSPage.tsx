@@ -388,7 +388,7 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-full">
+    <div className="flex flex-col gap-4 h-full">
       {/* ── Cash Register Gate ── */}
       {!hasOpenShift ? (
         <div className="flex-1 flex items-center justify-center">
@@ -418,13 +418,13 @@ export default function POSPage() {
         </div>
       ) : (
         <>
-          {/* ── Left: Product Grid ── */}
-          <section className={`flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto ${scanFlash ? "scan-flash" : ""}`}>
+          {/* ── Top: Product Grid (takes most space) ── */}
+          <section className={`flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto min-h-0 ${scanFlash ? "scan-flash" : ""}`}>
             <ProductGrid onAddToCart={handleAddToCart} searchInputRef={searchInputRef} />
           </section>
 
-          {/* ── Right: Cart Panel ── */}
-          <aside className="w-full lg:w-96 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto max-h-64 lg:max-h-full">
+          {/* ── Bottom: Cart Panel (horizontal bar) ── */}
+          <aside className="w-full shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto max-h-48">
             <CartPanel
               onCheckout={handleCheckout}
               onSelectCustomer={() => setShowCustomerSelect(true)}

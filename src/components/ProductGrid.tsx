@@ -84,7 +84,7 @@ export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGrid
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto overflow-x-auto auto-rows-max pr-1">
+        <div className="flex flex-col gap-1 overflow-y-auto pr-1">
           {filtered.map((product) => {
             const cartQty = cartItems
               .filter((i) => i.productId === product.id)
@@ -96,49 +96,46 @@ export default function ProductGrid({ onAddToCart, searchInputRef }: ProductGrid
                 key={product.id}
                 onClick={() => handleTap(product)}
                 disabled={outOfStock}
-                className={`relative flex flex-col items-center justify-center bg-pos-surface border rounded-xl p-4 touch-target transition-all active:scale-95 ${
+                className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg border touch-target transition-all active:scale-[0.99] ${
                   outOfStock
-                    ? "border-pos-muted/20 opacity-40 cursor-not-allowed"
+                    ? "border-pos-muted/10 opacity-40 cursor-not-allowed"
                     : availableStock < 25
-                      ? "border-pos-danger/50 hover:border-pos-danger bg-pos-danger/5"
-                      : "border-pos-muted/10 hover:border-pos-secondary/50 hover:shadow-sm"
+                      ? "border-pos-danger/30 hover:border-pos-danger bg-pos-danger/5"
+                      : "border-pos-muted/10 hover:border-pos-secondary/40 hover:bg-pos-secondary/5"
                 }`}
                 aria-label={outOfStock ? `${product.name} — sin stock` : `Agregar ${product.name} al carrito`}
               >
-                {outOfStock && (
-                  <span className="absolute top-1 right-1 text-[10px] font-semibold uppercase tracking-wide text-pos-danger bg-pos-danger/10 px-1.5 py-0.5 rounded">
-                    Sin stock
-                  </span>
-                )}
+                {/* Stock indicator dot */}
+                <span className={`shrink-0 w-2 h-2 rounded-full ${
+                  outOfStock ? "bg-pos-muted/30" : availableStock < 25 ? "bg-pos-danger" : availableStock < 50 ? "bg-pos-accent" : "bg-pos-success"
+                }`} />
 
-                <span className="text-3xl mb-2" role="img" aria-hidden="true">
-                  📦
+                {/* Name + barcode */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-pos-text truncate">{product.name}</p>
+                  {product.barcode && (
+                    <p className="text-[10px] text-pos-muted/50 font-mono truncate">{product.barcode}</p>
+                  )}
+                </div>
+
+                {/* Stock */}
+                <span className={`shrink-0 text-xs font-medium ${
+                  outOfStock ? "text-pos-muted" : availableStock < 25 ? "text-pos-danger" : "text-pos-muted"
+                }`}>
+                  {outOfStock ? "Sin stock" : `${availableStock} uds`}
                 </span>
 
-                <span className="text-sm font-semibold text-pos-text text-center leading-tight line-clamp-2">
-                  {product.name}
-                </span>
-
-                <span className="text-lg font-bold text-pos-secondary mt-1 font-mono">
+                {/* Price */}
+                <span className="shrink-0 text-base font-bold font-mono text-pos-secondary min-w-[80px] text-right">
                   ${product.price.toFixed(2)}
                 </span>
 
-                <span className={`text-xs mt-1 font-medium ${
-                  outOfStock
-                    ? "text-pos-muted"
-                    : availableStock < 25
-                      ? "text-pos-danger"
-                      : availableStock < 50
-                        ? "text-pos-accent"
-                        : "text-pos-muted"
-                }`}>
-                  {outOfStock ? "Sin stock" : `Stock: ${availableStock}`}
-                </span>
-
-                {product.barcode && (
-                  <span className="text-[10px] text-pos-muted mt-1 font-mono truncate max-w-full">
-                    {product.barcode}
-                  </span>
+                {/* Add icon */}
+                {!outOfStock && (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-pos-muted/40 shrink-0">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
                 )}
               </button>
             );

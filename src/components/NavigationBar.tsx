@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAppStore, useAuthStore, type Page } from "@/store";
 import { type Permission } from "@/store/auth";
 import { getSyncState, triggerSync } from "@/hooks/useSync";
@@ -44,6 +44,12 @@ export default function NavigationBar() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const logout = useAuthStore((s) => s.logout);
   const [configOpen, setConfigOpen] = useState(true); // open by default in sidebar
+  const [clock, setClock] = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const visibleMain = MAIN_PAGES.filter((p) => {
     if (!p.permission) return true;
@@ -86,6 +92,16 @@ export default function NavigationBar() {
       <div className="px-4 py-4 border-b border-white/10">
         <h1 className="text-sm font-bold tracking-wide">Sistema Ventas</h1>
         <p className="text-[10px] text-white/50 mt-0.5">POS</p>
+      </div>
+
+      {/* Live clock */}
+      <div className="px-4 py-3 border-b border-white/10 text-center">
+        <p className="text-xl font-bold font-mono tabular-nums tracking-wider text-white">
+          {clock.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+        </p>
+        <p className="text-xs text-white/50 mt-1 capitalize tabular-nums leading-relaxed">
+          {clock.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+        </p>
       </div>
 
       {/* Navigation */}
