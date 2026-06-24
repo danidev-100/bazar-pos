@@ -6,7 +6,7 @@ import { useInvoicesStore } from "@/store/invoices";
 import { useAuthStore } from "@/store/auth";
 import { useCashClosingStore } from "@/store/cash-closing";
 import { exportInvoicePdf } from "@/lib/pdf-export";
-import ProductGrid from "@/components/ProductGrid";
+import ProductSearchModal from "@/components/ProductSearchModal";
 import CartPanel from "@/components/CartPanel";
 import CheckoutModal from "@/components/CheckoutModal";
 import CustomerSelectModal from "@/components/CustomerSelectModal";
@@ -185,9 +185,9 @@ export default function POSPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [showOpenShift, setShowOpenShift] = useState(false);
   const [noStockProduct, setNoStockProduct] = useState<string | null>(null);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const hintShown = useRef(false);
 
   // Check for open shift (reactively — subscribes to shifts)
@@ -224,8 +224,7 @@ export default function POSPage() {
       setShowCheckout(true);
     }, [storeId]),
     onFocusSearch: useCallback(() => {
-      searchInputRef.current?.focus();
-      searchInputRef.current?.select();
+      setShowSearchModal(true);
     }, []),
     onNewSale: useCallback(() => {
       const { items } = useAppStore.getState();
@@ -418,19 +417,40 @@ export default function POSPage() {
         </div>
       ) : (
         <>
-          {/* ── Top: Product Grid (takes most space) ── */}
-          <section className={`flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto min-h-0 ${scanFlash ? "scan-flash" : ""}`}>
-            <ProductGrid onAddToCart={handleAddToCart} searchInputRef={searchInputRef} />
-          </section>
+          {/* ── Search trigger ── */}
+          <div className="shrink-0">
+            <button
+              onClick={() => setShowSearchModal(true)}
+              className="w-full flex items-center gap-3 bg-pos-surface border border-pos-muted/20 rounded-xl px-4 py-3.5 text-sm text-pos-muted hover:text-pos-text hover:border-pos-secondary/40 transition-all touch-target group"
+            >
+              <svg className="w-5 h-5 text-pos-muted/40 group-hover:text-pos-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span>Buscar productos por nombre o código</span>
+              <kbd className="ml-auto text-[11px] font-mono text-pos-muted/30 bg-pos-background/50 px-1.5 py-0.5 rounded border border-pos-muted/10">F2</kbd>
+            </button>
+            <p className="text-[11px] text-pos-muted/40 text-center mt-1.5">
+              O escaneá el código de barras directamente
+            </p>
+          </div>
 
-          {/* ── Bottom: Cart Panel (horizontal bar) ── */}
-          <aside className="w-full shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto max-h-48">
+          {/* ── Cart Panel (vertical — full height) ── */}
+          <aside className={`flex-1 min-h-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto ${scanFlash ? "scan-flash" : ""}`}>
             <CartPanel
               onCheckout={handleCheckout}
               onSelectCustomer={() => setShowCustomerSelect(true)}
               onOpenShift={handleOpenShift}
             />
           </aside>
+
+          {/* ── Product Search Modal ── */}
+          {showSearchModal && (
+            <ProductSearchModal
+              onAddToCart={handleAddToCart}
+              onClose={() => setShowSearchModal(false)}
+            />
+          )}
         </>
       )}
 

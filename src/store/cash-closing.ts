@@ -20,6 +20,21 @@ export type Shift = {
   reconciledAt: string | null;
 };
 
+export type CashMovementMethod = "cash" | "card" | "transfer" | "other";
+export type CashMovementType = "withdrawal" | "deposit";
+
+export type CashMovement = {
+  id: number;
+  shiftId: number;
+  type: CashMovementType;
+  amount: number;
+  method: CashMovementMethod;
+  reason: string;
+  createdBy: string;
+  storeId: string;
+  createdAt: string;
+};
+
 export type ShiftSummary = {
   shift: Shift;
   totalSales: number;
@@ -28,6 +43,10 @@ export type ShiftSummary = {
   transactionCount: number;
   itemCount: number;
   topProducts: { name: string; quantity: number; total: number }[];
+  /** Total cash withdrawn from the shift */
+  withdrawalsTotal: number;
+  /** Total cash deposited into the shift */
+  depositsTotal: number;
 };
 
 // ──────────────────────────────────────────────
@@ -67,12 +86,27 @@ export function computeVariance(
 
 export type CashClosingStore = {
   shifts: Shift[];
+  cashMovements: CashMovement[];
 
   /** Open a new shift with an opening cash balance. Throws if an open shift exists. */
   openShift: (employee: string, storeId: string, openingBalance?: number) => Shift;
 
   /** Close an open shift. */
   closeShift: (shiftId: number) => void;
+
+  /** Record a cash movement (withdrawal or deposit) for a shift. */
+  recordCashMovement: (
+    shiftId: number,
+    type: CashMovementType,
+    amount: number,
+    reason: string,
+    createdBy: string,
+    storeId: string,
+    method?: CashMovementMethod,
+  ) => CashMovement;
+
+  /** Get all cash movements for a shift, newest first. */
+  getShiftCashMovements: (shiftId: number) => CashMovement[];
 
   /** Reconcile a closed shift with declared cash amount. */
   reconcile: (
@@ -98,8 +132,11 @@ export type CashClosingStore = {
 // Store implementation
 // ──────────────────────────────────────────────
 
+let nextMovementId = 1;
+
 export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
   shifts: [],
+  cashMovements: [],
 
   openShift: (employee, storeId, openingBalance = 0) => {
     const open = get().shifts.find(
@@ -164,6 +201,39 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       .catch(() => {});
   },
 
+  recordCashMovement: (shiftId, type, amount, reason, createdBy, storeId, method = "cash") => {
+    const movement: CashMovement = {
+      id: nextMovementId++,
+      shiftId,
+      type,
+      amount,
+      method,
+      reason,
+      createdBy,
+      storeId,
+      createdAt: new Date().toISOString(),
+    };
+
+    set({ cashMovements: [...get().cashMovements, movement] });
+
+    // Persist to SQLite
+    execute(
+      `INSERT INTO cash_movements (shift_id, type, amount, method, reason, created_by, store_id, created_at, sync_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
+      [shiftId, type, amount, method, reason, createdBy, storeId, movement.createdAt],
+    )
+      .then(() => enqueueSync("cash_movement", movement.id, "insert", storeId))
+      .catch(() => {});
+
+    return movement;
+  },
+
+  getShiftCashMovements: (shiftId) => {
+    return get()
+      .cashMovements.filter((m) => m.shiftId === shiftId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  },
+
   reconcile: (shiftId, declaredCash, completedSales) => {
     const shift = get().shifts.find((s) => s.id === shiftId);
     if (!shift) throw new Error("Shift not found");
@@ -175,8 +245,20 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       shift.openTime,
       shift.closeTime!,
     );
-    // Expected = sales in cash + opening balance
-    const expectedTotal = salesCash + (shift.openingBalance ?? 0);
+
+    // Include cash movements in expected total
+    const movements = get().cashMovements.filter(
+      (m) => m.shiftId === shiftId && m.method === "cash",
+    );
+    const withdrawalsTotal = movements
+      .filter((m) => m.type === "withdrawal")
+      .reduce((sum, m) => sum + m.amount, 0);
+    const depositsTotal = movements
+      .filter((m) => m.type === "deposit")
+      .reduce((sum, m) => sum + m.amount, 0);
+
+    // Expected = sales in cash + opening balance - withdrawals + deposits
+    const expectedTotal = salesCash + (shift.openingBalance ?? 0) - withdrawalsTotal + depositsTotal;
     const variance = computeVariance(declaredCash, expectedTotal);
     const reconciliationStatus = variance === 0 ? "matched" : "mismatch";
 
@@ -242,6 +324,15 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
 
     const totalSales = Math.round((cashTotal + cardTotal) * 100) / 100;
 
+    // Cash movements
+    const movements = get().cashMovements.filter((m) => m.shiftId === shiftId);
+    const withdrawalsTotal = movements
+      .filter((m) => m.type === "withdrawal")
+      .reduce((sum, m) => sum + m.amount, 0);
+    const depositsTotal = movements
+      .filter((m) => m.type === "deposit")
+      .reduce((sum, m) => sum + m.amount, 0);
+
     // Build product aggregation
     const productMap = new Map<string, { quantity: number; total: number }>();
     for (const sale of shiftSales) {
@@ -272,6 +363,8 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       transactionCount: shiftSales.length,
       itemCount: shiftSales.reduce((sum, s) => sum + s.items.reduce((q, i) => q + i.quantity, 0), 0),
       topProducts,
+      withdrawalsTotal,
+      depositsTotal,
     };
   },
 

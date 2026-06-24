@@ -37,7 +37,7 @@ export default function ClosureReport({
     );
   }
 
-  const { shift, totalSales, cashTotal, cardTotal, transactionCount, itemCount, topProducts } = summary;
+  const { shift, totalSales, cashTotal, cardTotal, transactionCount, itemCount, topProducts, withdrawalsTotal, depositsTotal } = summary;
 
   return (
     <div className="space-y-3">
@@ -102,6 +102,31 @@ export default function ClosureReport({
             </span>
           </div>
         </div>
+
+        {/* Cash Movements */}
+        {(withdrawalsTotal > 0 || depositsTotal > 0) && (
+          <div className="px-4 py-3 space-y-2">
+            <h4 className="text-xs font-semibold text-pos-text uppercase tracking-wide">
+              Movimientos de Caja
+            </h4>
+            {withdrawalsTotal > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-pos-muted">Retiros</span>
+                <span className="text-sm font-mono font-bold text-pos-danger">
+                  −${withdrawalsTotal.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {depositsTotal > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-pos-muted">Depósitos</span>
+                <span className="text-sm font-mono font-bold text-pos-success">
+                  +${depositsTotal.toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Reconciliation */}
         {shift.reconciliationStatus && (

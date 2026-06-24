@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCashClosingStore, type Shift } from "@/store/cash-closing";
+import { useCashClosingStore, type Shift, type CashMovement } from "@/store/cash-closing";
 
 // ──────────────────────────────────────────────
 // Props
@@ -69,6 +69,10 @@ export default function ShiftPanel({
   // ── Open state ──
   if (currentShift) {
     const openTime = new Date(currentShift.openTime);
+    const movements = useCashClosingStore((s) =>
+      s.cashMovements.filter((m) => m.shiftId === currentShift.id)
+    );
+
     return (
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
@@ -94,6 +98,43 @@ export default function ShiftPanel({
             Abierto {openTime.toLocaleDateString()} a las{" "}
             {openTime.toLocaleTimeString()}
           </div>
+
+          {/* Cash movements */}
+          {movements.length > 0 && (
+            <div className="bg-pos-background/50 rounded-lg p-2.5 space-y-1.5">
+              <p className="text-[11px] font-semibold text-pos-muted uppercase tracking-wide">
+                Movimientos
+              </p>
+              {movements.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className={`shrink-0 w-1.5 h-1.5 rounded-full ${
+                        m.type === "withdrawal"
+                          ? "bg-pos-danger"
+                          : "bg-pos-success"
+                      }`}
+                    />
+                    <span className="text-pos-muted truncate">
+                      {m.reason || (m.type === "withdrawal" ? "Retiro" : "Depósito")}
+                    </span>
+                  </span>
+                  <span
+                    className={`shrink-0 font-mono font-medium ${
+                      m.type === "withdrawal"
+                        ? "text-pos-danger"
+                        : "text-pos-success"
+                    }`}
+                  >
+                    {m.type === "withdrawal" ? "−" : "+"}$&nbsp;{m.amount.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {error && (
             <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-xs rounded-lg px-3 py-2">

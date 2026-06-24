@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useCashClosingStore, computeExpectedCash, computeVariance, type Shift } from "@/store/cash-closing";
+import { useCashClosingStore, computeExpectedCash, computeVariance, type Shift, type CashMovement } from "@/store/cash-closing";
 import { useAppStore, type CompletedSale } from "@/store";
 
 // ──────────────────────────────────────────────
@@ -26,14 +26,36 @@ export default function ReconciliationForm({
   const [declaredCash, setDeclaredCash] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
+  const movements = useCashClosingStore((s) =>
+    s.cashMovements.filter((m) => m.shiftId === shift.id),
+  );
+
+  const withdrawalsTotal = useMemo(
+    () =>
+      movements
+        .filter((m) => m.type === "withdrawal")
+        .reduce((sum, m) => sum + m.amount, 0),
+    [movements],
+  );
+
+  const depositsTotal = useMemo(
+    () =>
+      movements
+        .filter((m) => m.type === "deposit")
+        .reduce((sum, m) => sum + m.amount, 0),
+    [movements],
+  );
+
   const expectedCash = useMemo(
     () => computeExpectedCash(completedSales, shift.openTime, shift.closeTime!),
     [completedSales, shift.openTime, shift.closeTime],
   );
 
+  const expectedWithMovements = expectedCash + shift.openingBalance - withdrawalsTotal + depositsTotal;
+
   const declaredNum = parseFloat(declaredCash) || 0;
   const previewVariance = declaredCash
-    ? computeVariance(declaredNum, expectedCash)
+    ? computeVariance(declaredNum, expectedWithMovements)
     : null;
 
   // Already reconciled — show result
@@ -60,19 +82,29 @@ export default function ReconciliationForm({
 
           <div className="bg-pos-background/50 rounded-lg p-3 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-pos-muted">Dinero en Caja</span>
-              <span className="font-mono">${shift.declaredCash!.toFixed(2)}</span>
+              <span className="text-pos-muted">Ventas Efectivo</span>
+              <span className="font-mono text-pos-success">+${expectedCash.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-pos-muted">− Apertura</span>
-              <span className="font-mono text-pos-danger">
-                −${shift.openingBalance.toFixed(2)}
-              </span>
+              <span className="text-pos-muted">Apertura de Caja</span>
+              <span className="font-mono text-pos-success">+${shift.openingBalance.toFixed(2)}</span>
             </div>
+            {withdrawalsTotal > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-pos-muted">Retiros</span>
+                <span className="font-mono text-pos-danger">−${withdrawalsTotal.toFixed(2)}</span>
+              </div>
+            )}
+            {depositsTotal > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-pos-muted">Depósitos</span>
+                <span className="font-mono text-pos-success">+${depositsTotal.toFixed(2)}</span>
+              </div>
+            )}
             <hr className="border-pos-muted/20" />
             <div className="flex items-center justify-between text-sm font-semibold">
-              <span className="text-pos-text">= Ventas Efectivo</span>
-              <span className="font-mono">${expectedCash.toFixed(2)}</span>
+              <span className="text-pos-text">Esperado en Caja</span>
+              <span className="font-mono">${expectedWithMovements.toFixed(2)}</span>
             </div>
           </div>
 
@@ -144,19 +176,29 @@ export default function ReconciliationForm({
 
         <div className="bg-pos-background/50 rounded-lg p-3 space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-pos-muted">Dinero en Caja</span>
-            <span className="font-mono">${declaredNum.toFixed(2)}</span>
+            <span className="text-pos-muted">Ventas Efectivo</span>
+            <span className="font-mono text-pos-success">+${expectedCash.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-pos-muted">− Apertura</span>
-            <span className="font-mono text-pos-danger">
-              −${shift.openingBalance.toFixed(2)}
-            </span>
+            <span className="text-pos-muted">Apertura de Caja</span>
+            <span className="font-mono text-pos-success">+${shift.openingBalance.toFixed(2)}</span>
           </div>
+          {withdrawalsTotal > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-pos-muted">Retiros</span>
+              <span className="font-mono text-pos-danger">−${withdrawalsTotal.toFixed(2)}</span>
+            </div>
+          )}
+          {depositsTotal > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-pos-muted">Depósitos</span>
+              <span className="font-mono text-pos-success">+${depositsTotal.toFixed(2)}</span>
+            </div>
+          )}
           <hr className="border-pos-muted/20" />
           <div className="flex items-center justify-between text-sm font-semibold">
-            <span className="text-pos-text">= Ventas Efectivo</span>
-            <span className="font-mono">${expectedCash.toFixed(2)}</span>
+            <span className="text-pos-text">= Esperado en Caja</span>
+            <span className="font-mono">${expectedWithMovements.toFixed(2)}</span>
           </div>
         </div>
 

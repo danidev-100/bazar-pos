@@ -4,6 +4,7 @@ import { useProductsStore } from "@/store/products";
 import { useAuthStore } from "@/store/auth";
 import { useCashClosingStore } from "@/store/cash-closing";
 import { useActiveStore } from "@/store/context";
+import CashMovementModal from "@/components/CashMovementModal";
 
 // ──────────────────────────────────────────────
 // Props
@@ -59,6 +60,7 @@ export default function CartPanel({
   const hasOpenShift = openShift !== null;
 
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showMovementModal, setShowMovementModal] = useState(false);
 
   // Returns max quantity available for a product based on stock
   function getMaxQuantity(productId: number): number {
@@ -82,6 +84,7 @@ export default function CartPanel({
   }
 
   const [stockError, setStockErrorState] = useState<number | null>(null);
+  const [editingQty, setEditingQty] = useState<Record<number, string>>({});
 
   function setStockError(productId: number) {
     setStockErrorState(productId);
@@ -135,12 +138,20 @@ export default function CartPanel({
                 </span>
               )}
             </div>
-            <button
-              onClick={handleCloseShift}
-              className="text-pos-danger hover:text-pos-danger/80 touch-target px-2 py-0.5 rounded"
-            >
-              Cerrar
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowMovementModal(true)}
+                className="text-pos-accent hover:text-pos-accent/80 touch-target px-2 py-0.5 rounded text-xs font-medium"
+              >
+                Retirar
+              </button>
+              <button
+                onClick={handleCloseShift}
+                className="text-pos-danger hover:text-pos-danger/80 touch-target px-2 py-0.5 rounded"
+              >
+                Cerrar
+              </button>
+            </div>
           </>
         ) : (
           <>
@@ -180,91 +191,129 @@ export default function CartPanel({
         {isEmpty ? (
           <div className="flex items-center justify-center h-48">
             <p className="text-sm text-pos-muted italic">
-              El carrito está vacío. Tocá un producto para agregarlo.
+              Carrito vacío. Buscá productos con F2 o escaneá un código de barras.
             </p>
           </div>
         ) : (
-          items.map((item) => (
+          items.map((item, idx) => (
             <div
               key={item.productId}
               onClick={() => selectCartItem(item.productId)}
-              className={`bg-pos-surface border rounded-xl p-3 cursor-pointer transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                 selectedCartItemId === item.productId
                   ? "border-pos-secondary ring-1 ring-pos-secondary/30"
-                  : "border-pos-muted/10"
+                  : "border-pos-muted/10 hover:border-pos-muted/30"
               }`}
             >
-              {/* Product name + remove */}
-              <div className="flex items-start justify-between mb-2">
-                <span className="text-sm font-medium text-pos-text leading-tight flex-1 mr-2">
-                  {item.productName}
-                </span>
+              {/* Item index */}
+              <span className="shrink-0 w-5 text-center text-xs font-mono font-bold text-pos-muted/50">
+                {idx + 1}
+              </span>
+
+              {/* Product name */}
+              <span className="flex-1 min-w-0 text-sm font-medium text-pos-text truncate">
+                {item.productName}
+              </span>
+
+              {/* Price */}
+              <span className="shrink-0 text-xs font-mono text-pos-muted tabular-nums min-w-[60px] text-right">
+                ${item.unitPrice.toFixed(2)}
+              </span>
+
+              {/* Subtotal */}
+              <span className="shrink-0 text-sm font-bold font-mono text-pos-text tabular-nums min-w-[70px] text-right">
+                ${item.subtotal.toFixed(2)}
+              </span>
+
+              {/* Quantity controls */}
+              <div className="shrink-0 flex items-center gap-0.5">
                 <button
-                  onClick={() => removeItem(item.productId)}
-                  className="text-pos-danger text-lg leading-none touch-target w-8 h-8 flex items-center justify-center rounded-lg hover:bg-pos-danger/10 transition-colors"
-                  aria-label={`Eliminar ${item.productName} del carrito`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    safeUpdateQuantity(item.productId, item.quantity - 1);
+                    setEditingQty((prev) => {
+                      const next = { ...prev };
+                      delete next[item.productId];
+                      return next;
+                    });
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-md text-pos-text font-bold text-base touch-target hover:bg-pos-muted/10 transition-colors"
+                  aria-label={`Disminuir cantidad de ${item.productName}`}
                 >
-                  ✕
+                  −
                 </button>
-              </div>
-
-              {/* Price + quantity controls */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-mono text-pos-muted">
-                  ${item.unitPrice.toFixed(2)} c/u
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() =>
-                      safeUpdateQuantity(item.productId, item.quantity - 1)
+                <input
+                  type="number"
+                  min={1}
+                  max={getMaxQuantity(item.productId)}
+                  value={editingQty[item.productId] ?? String(item.quantity)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "" || /^\d+$/.test(raw)) {
+                      setEditingQty((prev) => ({
+                        ...prev,
+                        [item.productId]: raw,
+                      }));
                     }
-                    className="w-9 h-9 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-lg text-pos-text font-bold text-lg touch-target hover:bg-pos-muted/10 transition-colors"
-                    aria-label={`Disminuir cantidad de ${item.productName}`}
-                  >
-                    −
-                  </button>
-
-                  <input
-                    type="number"
-                    min={1}
-                    max={getMaxQuantity(item.productId)}
-                    value={item.quantity}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
+                  }}
+                  onBlur={() => {
+                    const raw = editingQty[item.productId];
+                    if (raw !== undefined) {
+                      const val = parseInt(raw, 10);
                       if (!isNaN(val) && val >= 1) {
                         safeUpdateQuantity(item.productId, val);
                       }
-                    }}
-                    className="w-14 text-center text-sm font-bold font-mono text-pos-text bg-pos-background border border-pos-muted/20 rounded-lg px-1 py-1.5 focus:outline-none focus:ring-2 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    aria-label={`Cantidad de ${item.productName}`}
-                  />
-
-                  <button
-                    onClick={() =>
-                      safeUpdateQuantity(item.productId, item.quantity + 1)
+                      setEditingQty((prev) => {
+                        const next = { ...prev };
+                        delete next[item.productId];
+                        return next;
+                      });
                     }
-                    className="w-9 h-9 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-lg text-pos-text font-bold text-lg touch-target hover:bg-pos-muted/10 transition-colors"
-                    aria-label={`Aumentar cantidad de ${item.productName}`}
-                  >
-                    +
-                  </button>
-                </div>
-
-                {/* Stock warning */}
-                {stockError === item.productId && (
-                  <div className="text-[10px] text-pos-danger mt-1 text-right">
-                    Stock insuficiente
-                  </div>
-                )}
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  className="w-10 text-center text-xs font-bold font-mono text-pos-text bg-pos-background border border-pos-muted/20 rounded-md px-0.5 py-1 focus:outline-none focus:ring-2 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  aria-label={`Cantidad de ${item.productName}`}
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    safeUpdateQuantity(item.productId, item.quantity + 1);
+                    setEditingQty((prev) => {
+                      const next = { ...prev };
+                      delete next[item.productId];
+                      return next;
+                    });
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-pos-background border border-pos-muted/20 rounded-md text-pos-text font-bold text-base touch-target hover:bg-pos-muted/10 transition-colors"
+                  aria-label={`Aumentar cantidad de ${item.productName}`}
+                >
+                  +
+                </button>
               </div>
 
-              {/* Line subtotal */}
-              <div className="text-right mt-1">
-                <span className="text-sm font-bold font-mono text-pos-text">
-                  ${item.subtotal.toFixed(2)}
+              {/* Stock warning */}
+              {stockError === item.productId && (
+                <span className="shrink-0 text-[10px] text-pos-danger font-medium">
+                  Stock insuf.
                 </span>
-              </div>
+              )}
+
+              {/* Remove */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeItem(item.productId);
+                }}
+                className="shrink-0 w-6 h-6 flex items-center justify-center text-pos-muted/40 hover:text-pos-danger touch-target rounded-md hover:bg-pos-danger/10 transition-colors"
+                aria-label={`Eliminar ${item.productName} del carrito`}
+              >
+                ✕
+              </button>
             </div>
           )))}
       </div>
@@ -331,6 +380,18 @@ export default function CartPanel({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Cash Movement Modal ── */}
+      {showMovementModal && openShift && (
+        <CashMovementModal
+          shiftId={openShift.id}
+          storeId={storeId}
+          onClose={() => setShowMovementModal(false)}
+          onComplete={() => {
+            setShowMovementModal(false);
+          }}
+        />
       )}
     </div>
   );

@@ -288,6 +288,19 @@ async function ensureTables(db: Database): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       sync_status TEXT NOT NULL DEFAULT 'pending'
     )`,
+    // ── Cash Movements (retiros/depósitos) ──
+    `CREATE TABLE IF NOT EXISTS cash_movements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      shift_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('withdrawal','deposit')),
+      amount REAL NOT NULL CHECK(amount > 0),
+      method TEXT NOT NULL DEFAULT 'cash' CHECK(method IN ('cash','card','transfer','other')),
+      reason TEXT DEFAULT '',
+      created_by TEXT NOT NULL,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
   ];
 
   for (const sql of tables) {
