@@ -9,8 +9,8 @@ import { useCashClosingStore } from "@/store/cash-closing";
 
 let initialized = false;
 
-export async function initAllStores(): Promise<void> {
-  if (initialized) return;
+export async function initAllStores(force = false): Promise<void> {
+  if (initialized && !force) return;
   initialized = true;
 
   await Promise.all([

@@ -110,8 +110,8 @@ export async function importBackup(file: File): Promise<{ tables: number; rows: 
     await execute("PRAGMA foreign_keys = ON");
   } catch { /* ignore */ }
 
-  // Reload all stores from DB
-  await initAllStores();
+  // Force-reload all stores from DB (ignore the initialized guard)
+  await initAllStores(true);
 
   return { tables: tableCount, rows: rowCount };
 }
