@@ -179,7 +179,7 @@ function PlantillaEditor({
   const [dirty, setDirty] = useState(false);
   const [showVars, setShowVars] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load saved (or default) on mount
   useEffect(() => {
