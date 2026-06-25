@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { execute, enqueueSync } from "@/lib/db";
+import { execute, enqueueSync, transaction } from "@/lib/db";
 
 export type PedidoItem = {
   id: number;
@@ -87,24 +87,30 @@ export const usePedidosStore = create<PedidosStore>((set, get) => ({
 
     set({ pedidos: [...get().pedidos, pedido] });
 
-    // Persist pedido header
-    execute(
-      `INSERT INTO pedidos (id, proveedor_id, date, status, total, notes, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
-      [pedido.id, pedido.proveedor_id, pedido.date, pedido.status, pedido.total, pedido.notes, pedido.store_id, now, now],
-    )
-      .then(async () => {
-        await enqueueSync("pedido", pedido.id, "insert", pedido.store_id);
+    // Persist pedido header + items in a single transaction
+    const stmts: Array<{ sql: string; bind?: unknown[] }> = [
+      {
+        sql: `INSERT INTO pedidos (id, proveedor_id, date, status, total, notes, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+        bind: [pedido.id, pedido.proveedor_id, pedido.date, pedido.status, pedido.total, pedido.notes, pedido.store_id, now, now],
+      },
+      {
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["pedido", pedido.id, "insert", pedido.store_id, now, now],
+      },
+    ];
 
-        // Persist items
-        for (const item of pedido.items) {
-          await execute(
-            `INSERT INTO pedido_items (id, pedido_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
-            [item.id, item.pedido_id, item.product_id, item.product_name, item.quantity, item.unit_price, item.subtotal, pedido.store_id, now, now],
-          );
-          await enqueueSync("pedido_item", item.id, "insert", pedido.store_id);
-        }
-      })
-      .catch(() => {});
+    for (const item of pedido.items) {
+      stmts.push({
+        sql: `INSERT INTO pedido_items (id, pedido_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+        bind: [item.id, item.pedido_id, item.product_id, item.product_name, item.quantity, item.unit_price, item.subtotal, pedido.store_id, now, now],
+      });
+      stmts.push({
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["pedido_item", item.id, "insert", pedido.store_id, now, now],
+      });
+    }
+
+    transaction(stmts).catch(() => {});
 
     return pedido;
   },

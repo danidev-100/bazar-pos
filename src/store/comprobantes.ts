@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { execute, enqueueSync } from "@/lib/db";
+import { execute, enqueueSync, transaction } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -155,22 +155,30 @@ export const useComprobantesStore = create<ComprobantesStore>((set, get) => ({
       },
     });
 
-    // Persist header
-    execute(
-      `INSERT INTO comprobantes (id, tipo, numero, cliente_nombre, cliente_cuit, cliente_direccion, fecha, subtotal, iva, total, sale_id, notes, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending')`,
-      [comprobante.id, comprobante.tipo, comprobante.numero, comprobante.cliente_nombre, comprobante.cliente_cuit, comprobante.cliente_direccion, comprobante.fecha, comprobante.subtotal, comprobante.iva, comprobante.total, comprobante.sale_id, comprobante.notes, comprobante.store_id, now, now],
-    )
-      .then(async () => {
-        await enqueueSync("comprobante", comprobante.id, "insert", comprobante.store_id);
-        for (const item of comprobante.items) {
-          await execute(
-            `INSERT INTO comprobante_items (id, comprobante_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
-            [item.id, item.comprobante_id, item.product_id, item.product_name, item.quantity, item.unit_price, item.subtotal, comprobante.store_id, now, now],
-          );
-          await enqueueSync("comprobante_item", item.id, "insert", comprobante.store_id);
-        }
-      })
-      .catch(() => {});
+    // Persist header + items in a single transaction
+    const stmts = [
+      {
+        sql: `INSERT INTO comprobantes (id, tipo, numero, cliente_nombre, cliente_cuit, cliente_direccion, fecha, subtotal, iva, total, sale_id, notes, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending')`,
+        bind: [comprobante.id, comprobante.tipo, comprobante.numero, comprobante.cliente_nombre, comprobante.cliente_cuit, comprobante.cliente_direccion, comprobante.fecha, comprobante.subtotal, comprobante.iva, comprobante.total, comprobante.sale_id, comprobante.notes, comprobante.store_id, now, now],
+      },
+      {
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["comprobante", comprobante.id, "insert", comprobante.store_id, now, now],
+      },
+    ];
+
+    for (const item of comprobante.items) {
+      stmts.push({
+        sql: `INSERT INTO comprobante_items (id, comprobante_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+        bind: [item.id, item.comprobante_id, item.product_id, item.product_name, item.quantity, item.unit_price, item.subtotal, comprobante.store_id, now, now],
+      });
+      stmts.push({
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["comprobante_item", item.id, "insert", comprobante.store_id, now, now],
+      });
+    }
+
+    transaction(stmts).catch(() => {});
 
     return comprobante;
   },

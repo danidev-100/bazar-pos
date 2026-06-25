@@ -307,6 +307,103 @@ async function ensureTables(db: Database): Promise<void> {
   for (const sql of tables) {
     await db.execute(sql);
   }
+
+  // ── Indexes ──
+  // WARNING: only add CREATE INDEX IF NOT EXISTS — existing DBs must not break
+  const indexes = [
+    // Sales
+    `CREATE INDEX IF NOT EXISTS idx_sales_store_created ON sales(store_id, created_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_sales_shift ON sales(shift_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status)`,
+
+    // Sale items
+    `CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_sale_items_product ON sale_items(product_id)`,
+
+    // Invoices
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_store_number ON invoices(store_id, invoice_number)`,
+    `CREATE INDEX IF NOT EXISTS idx_invoices_sale ON invoices(sale_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_invoices_created ON invoices(created_at)`,
+
+    // Invoice items
+    `CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)`,
+
+    // Brands
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_brands_store_name ON brands(store_id, name)`,
+
+    // Categories
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_store_name ON categories(store_id, name)`,
+    `CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id)`,
+
+    // Products
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_products_store_barcode ON products(store_id, barcode)`,
+    `CREATE INDEX IF NOT EXISTS idx_products_store_id ON products(store_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)`,
+
+    // Stock movements
+    `CREATE INDEX IF NOT EXISTS idx_stock_movements_product ON stock_movements(product_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_stock_movements_type ON stock_movements(type)`,
+    `CREATE INDEX IF NOT EXISTS idx_stock_movements_created ON stock_movements(created_at)`,
+
+    // Shifts
+    `CREATE INDEX IF NOT EXISTS idx_shifts_store_status ON shifts(store_id, status)`,
+    `CREATE INDEX IF NOT EXISTS idx_shifts_employee ON shifts(employee_name)`,
+
+    // Cash closings
+    `CREATE INDEX IF NOT EXISTS idx_cash_closings_shift ON cash_closings(shift_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_cash_closings_store ON cash_closings(store_id)`,
+
+    // Customers
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_store_name ON customers(store_id, name)`,
+
+    // Credit payments
+    `CREATE INDEX IF NOT EXISTS idx_credit_payments_customer ON credit_payments(customer_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_credit_payments_store ON credit_payments(store_id)`,
+
+    // Expenses
+    `CREATE INDEX IF NOT EXISTS idx_expenses_store_date ON expenses(store_id, date)`,
+
+    // Proveedores
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_proveedores_store_name ON proveedores(store_id, name)`,
+
+    // Pedidos
+    `CREATE INDEX IF NOT EXISTS idx_pedidos_store_proveedor ON pedidos(store_id, proveedor_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_pedidos_store_status ON pedidos(store_id, status)`,
+    `CREATE INDEX IF NOT EXISTS idx_pedidos_created ON pedidos(created_at)`,
+
+    // Pedido items
+    `CREATE INDEX IF NOT EXISTS idx_pedido_items_pedido ON pedido_items(pedido_id)`,
+
+    // Comprobantes
+    `CREATE INDEX IF NOT EXISTS idx_comprobantes_store_tipo ON comprobantes(store_id, tipo)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_comprobantes_numero ON comprobantes(store_id, numero)`,
+    `CREATE INDEX IF NOT EXISTS idx_comprobantes_created ON comprobantes(created_at)`,
+
+    // Comprobante items
+    `CREATE INDEX IF NOT EXISTS idx_comprobante_items_comprobante ON comprobante_items(comprobante_id)`,
+
+    // Sync queue
+    `CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity)`,
+    `CREATE INDEX IF NOT EXISTS idx_sync_queue_created ON sync_queue(created_at)`,
+
+    // Cash movements
+    `CREATE INDEX IF NOT EXISTS idx_cash_movements_shift ON cash_movements(shift_id)`,
+
+    // Sync logs
+    `CREATE INDEX IF NOT EXISTS idx_sync_logs_entity ON sync_logs(entity)`,
+    `CREATE INDEX IF NOT EXISTS idx_sync_logs_created ON sync_logs(created_at)`,
+  ];
+
+  for (const sql of indexes) {
+    try {
+      await db.execute(sql);
+    } catch (err) {
+      console.warn("Failed to create index (non-fatal):", sql, err);
+    }
+  }
 }
 
 /** Execute a SQL statement with optional bind parameters. */
@@ -317,6 +414,32 @@ export async function execute(
   const db = await getDb();
   const result = await db.execute(sql, bind) as { rowsAffected: number };
   return { rowsAffected: result.rowsAffected };
+}
+
+/**
+ * Execute multiple SQL statements inside a single transaction.
+ * If any statement fails, all changes are rolled back.
+ *
+ * Usage:
+ *   await transaction([
+ *     { sql: "INSERT INTO x (a) VALUES ($1)", bind: [1] },
+ *     { sql: "INSERT INTO y (b) VALUES ($1)", bind: [2] },
+ *   ]);
+ */
+export async function transaction(
+  statements: Array<{ sql: string; bind?: unknown[] }>,
+): Promise<void> {
+  const db = await getDb();
+  try {
+    await db.execute("BEGIN IMMEDIATE TRANSACTION");
+    for (const stmt of statements) {
+      await db.execute(stmt.sql, stmt.bind ?? []);
+    }
+    await db.execute("COMMIT");
+  } catch (err) {
+    await db.execute("ROLLBACK");
+    throw err;
+  }
 }
 
 /** Select rows from the database. */

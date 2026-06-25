@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { useProductsStore } from "./products";
 import { useCustomersStore, type Customer } from "./customers";
 import { useComprobantesStore, type ComprobanteTipo } from "./comprobantes";
-import { execute, enqueueSync } from "@/lib/db";
+import { execute, enqueueSync, transaction as dbTransaction } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Page navigation enum (no React Router)
@@ -372,28 +372,35 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
-    // ── Persist sale to SQLite ──
+    // ── Persist sale + items in a single transaction ──
     const now = new Date().toISOString();
     const dbCash = paymentMethod === "mixed" ? (cashAmount ?? 0) : paymentMethod === "cash" ? (amountPaid ?? null) : null;
     const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) : paymentMethod === "card" ? total : null;
-    execute(
-      `INSERT INTO sales (id, total, payment_method, cash_amount, card_amount, change, status, customer_name, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')`,
-      [sale.id, total, paymentMethod, dbCash, dbCard, change, "completed", sale.customerName, resolvedStoreId, now, now],
-    )
-      .then(async () => {
-        await enqueueSync("sale", sale.id, "insert", resolvedStoreId);
 
-        // ── Persist sale items ──
-        for (const item of sale.items) {
-          const saleItemId = nextSaleItemId++;
-          await execute(
-            `INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
-            [saleItemId, sale.id, item.productId, item.productName, item.quantity, item.unitPrice, item.subtotal, resolvedStoreId, now, now],
-          );
-          await enqueueSync("sale_item", saleItemId, "insert", resolvedStoreId);
-        }
-      })
-      .catch(() => {});
+    const stmts = [
+      {
+        sql: `INSERT INTO sales (id, total, payment_method, cash_amount, card_amount, change, status, customer_name, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')`,
+        bind: [sale.id, total, paymentMethod, dbCash, dbCard, change, "completed", sale.customerName, resolvedStoreId, now, now],
+      },
+      {
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["sale", sale.id, "insert", resolvedStoreId, now, now],
+      },
+    ];
+
+    for (const item of sale.items) {
+      const saleItemId = nextSaleItemId++;
+      stmts.push({
+        sql: `INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+        bind: [saleItemId, sale.id, item.productId, item.productName, item.quantity, item.unitPrice, item.subtotal, resolvedStoreId, now, now],
+      });
+      stmts.push({
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["sale_item", saleItemId, "insert", resolvedStoreId, now, now],
+      });
+    }
+
+    dbTransaction(stmts).catch(() => {});
 
     return sale;
   },

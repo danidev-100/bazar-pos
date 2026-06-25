@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { CompletedSale } from "@/store";
-import { execute, enqueueSync } from "@/lib/db";
+import { execute, enqueueSync, transaction } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -126,26 +126,32 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
       counters: { ...get().counters, [storeId]: nextNum },
     });
 
-    // Persist to SQLite
+    // Persist invoice + items in a single transaction
     const now = new Date().toISOString();
-    execute(
-      `INSERT INTO invoices (id, invoice_number, sale_id, customer_name, total, payment_method, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
-      [invoice.id, invoice.sequentialNumber, invoice.saleId, invoice.customer, invoice.total, invoice.paymentMethod, storeId, now, now],
-    )
-      .then(async () => {
-        await enqueueSync("invoice", invoice.id, "insert", storeId);
+    const stmts = [
+      {
+        sql: `INSERT INTO invoices (id, invoice_number, sale_id, customer_name, total, payment_method, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+        bind: [invoice.id, invoice.sequentialNumber, invoice.saleId, invoice.customer, invoice.total, invoice.paymentMethod, storeId, now, now],
+      },
+      {
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["invoice", invoice.id, "insert", storeId, now, now],
+      },
+    ];
 
-        // ── Persist invoice items ──
-        for (const item of invoice.items) {
-          const invoiceItemId = nextInvoiceItemId++;
-          await execute(
-            `INSERT INTO invoice_items (id, invoice_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
-            [invoiceItemId, invoice.id, item.productName, item.quantity, item.unitPrice, item.subtotal, storeId, now, now],
-          );
-          await enqueueSync("invoice_item", invoiceItemId, "insert", storeId);
-        }
-      })
-      .catch(() => {});
+    for (const item of invoice.items) {
+      const invoiceItemId = nextInvoiceItemId++;
+      stmts.push({
+        sql: `INSERT INTO invoice_items (id, invoice_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
+        bind: [invoiceItemId, invoice.id, item.productName, item.quantity, item.unitPrice, item.subtotal, storeId, now, now],
+      });
+      stmts.push({
+        sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+        bind: ["invoice_item", invoiceItemId, "insert", storeId, now, now],
+      });
+    }
+
+    transaction(stmts).catch(() => {});
 
     return invoice;
   },
