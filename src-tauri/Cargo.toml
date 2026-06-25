@@ -1,6 +1,6 @@
 [package]
 name = "sistema-ventas"
-version = "1.6.3"
+version = "1.7.0"
 description = "Multi-store POS desktop application"
 authors = [""]
 edition = "2021"
