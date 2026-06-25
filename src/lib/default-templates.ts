@@ -127,7 +127,7 @@ const COMPANY_HEADER = `
       <div class="company-info">{{company_web}}</div>
     </div>
     <div class="header-right">
-      {{company_logo}}
+      <img src="{{company_logo_src}}" alt="Logo" style="max-height:60px;margin-bottom:8px;" />
     </div>
   </div>
 `;

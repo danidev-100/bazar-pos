@@ -61,10 +61,8 @@ export async function buildComprobanteHtml(data: TemplateData, tipo: string, sto
     // Company data not available — use defaults
   }
 
-  // Build logo HTML if available
-  data.company_logo = companyLogo
-    ? `<img src="${companyLogo.replace(/"/g, "&quot;")}" alt="Logo" style="max-height:60px;margin-bottom:8px;" />`
-    : "";
+  // Build logo src if available
+  data.company_logo_src = companyLogo;
 
   try {
     const store = usePlantillasStore.getState();

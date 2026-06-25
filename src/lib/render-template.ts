@@ -38,7 +38,8 @@ export type TemplateData = {
   company_cuit: string;
   company_email: string;
   company_web: string;
-  company_logo: string;
+  /** Raw base64 src for the logo image — template must wrap in <img> */
+  company_logo_src: string;
 };
 
 // ──────────────────────────────────────────────
@@ -150,8 +151,6 @@ export function comprobanteToTemplateData(c: ComprobanteLike, company?: Record<s
     company_cuit: company?.cuit ?? "",
     company_email: company?.email ?? "",
     company_web: company?.web ?? "",
-    company_logo: company?.logo_base64
-      ? `<img src="${company.logo_base64}" alt="Logo" style="max-height:60px;margin-bottom:8px;" />`
-      : "",
+    company_logo_src: company?.logo_base64 ?? "",
   };
 }

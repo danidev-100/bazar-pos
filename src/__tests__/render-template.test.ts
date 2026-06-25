@@ -13,7 +13,7 @@ const COMPANY_FIELDS = {
   company_cuit: "30-12345678-9",
   company_email: "contacto@miempresa.com",
   company_web: "www.miempresa.com",
-  company_logo: "",
+  company_logo_src: "",
 };
 
 // ──────────────────────────────────────────────
