@@ -4,6 +4,7 @@ import BrandList from "@/components/BrandList";
 import CategoryList from "@/components/CategoryList";
 import BulkPriceModal from "@/components/BulkPriceModal";
 import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
+import { runSeeder } from "@/lib/seeder";
 
 // ──────────────────────────────────────────────
 // Admin section definitions
@@ -363,7 +364,28 @@ function SettingsSection() {
   const theme = useAdminStore((s) => s.theme);
   const toggleTheme = useAdminStore((s) => s.toggleTheme);
   const setPage = useAppStore((s) => s.setPage);
+  const showNotification = useAppStore((s) => s.showNotification);
   const currentUser = useAuthStore((s) => s.currentUser);
+  const [seeding, setSeeding] = useState(false);
+
+  async function handleSeeder() {
+    const confirmed = confirm(
+      "⚠️ Datos de prueba\n\nEsta acción va a ELIMINAR todos los datos actuales y generar:\n" +
+      `• 8000 productos\n• 2000 clientes\n• 200 proveedores\n• 1000 pedidos\n• 5000 comprobantes\n• 500 gastos\n\n` +
+      "¿Estás seguro?",
+    );
+    if (!confirmed) return;
+
+    setSeeding(true);
+    try {
+      await runSeeder();
+      showNotification("Seeder completado. Recargando…");
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : "Error en seeder");
+      setSeeding(false);
+    }
+  }
 
   return (
     <div>
@@ -421,6 +443,23 @@ function SettingsSection() {
               </div>
               <span className="text-xs text-pos-muted">Oscuro</span>
             </div>
+          </button>
+        </div>
+
+        {/* Test data seeder */}
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
+            Datos de prueba
+          </h4>
+          <p className="text-xs text-pos-muted mb-3">
+            Generá datos masivos para probar performance. Todos los datos actuales se eliminan.
+          </p>
+          <button
+            onClick={handleSeeder}
+            disabled={seeding}
+            className="w-full px-4 py-2 text-sm font-medium rounded-lg border border-amber-500/30 text-amber-700 bg-amber-500/10 touch-target hover:bg-amber-500/20 disabled:opacity-50 transition-opacity"
+          >
+            {seeding ? "Generando datos…" : "Generar datos de prueba"}
           </button>
         </div>
       </div>

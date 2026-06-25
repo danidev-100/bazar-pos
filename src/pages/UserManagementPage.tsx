@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useAppStore } from "@/store";
 import {
   useAuthStore,
   type AuthUser,
@@ -66,6 +67,7 @@ type FormData = {
 // ──────────────────────────────────────────────
 
 export default function UserManagementPage() {
+  const setPage = useAppStore((s) => s.setPage);
   const users = useAuthStore((s) => s.users);
   const currentUser = useAuthStore((s) => s.currentUser);
   const addUser = useAuthStore((s) => s.addUser);
@@ -235,6 +237,17 @@ export default function UserManagementPage() {
 
   return (
     <div>
+      {/* Back button */}
+      <button
+        onClick={() => setPage("admin")}
+        className="flex items-center gap-1.5 text-sm text-pos-muted hover:text-pos-text transition-colors mb-4 touch-target"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Volver
+      </button>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-pos-text">
