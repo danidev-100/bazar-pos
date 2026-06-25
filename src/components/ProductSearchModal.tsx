@@ -3,6 +3,8 @@ import { useAppStore } from "@/store";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore } from "@/store/products";
 
+const RENDER_BATCH = 200;
+
 // ──────────────────────────────────────────────
 // Props
 // ──────────────────────────────────────────────
@@ -30,8 +32,10 @@ export default function ProductSearchModal({
   const [search, setSearch] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [animOut, setAnimOut] = useState(false);
+  const [renderCount, setRenderCount] = useState(RENDER_BATCH);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const storeProducts = useMemo(
     () => products.filter((p) => p.store_id === storeId),
@@ -94,6 +98,30 @@ export default function ProductSearchModal({
     return () => window.removeEventListener("keydown", handleKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, selectedIndex, cartItems, onAddToCart]);
+
+  // Reset render limit when search changes
+  useEffect(() => {
+    setRenderCount(RENDER_BATCH);
+    setSelectedIndex(0);
+  }, [search]);
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || renderCount >= filtered.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setRenderCount((prev) => Math.min(prev + RENDER_BATCH, filtered.length));
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filtered.length, renderCount]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -197,7 +225,7 @@ export default function ProductSearchModal({
             </div>
           ) : (
             <div ref={listRef} className="flex flex-col gap-1">
-              {filtered.map((product, idx) => {
+              {filtered.slice(0, renderCount).map((product, idx) => {
                 const isSelected = idx === selectedIndex;
                 const cartQty = cartItems
                   .filter((i) => i.productId === product.id)
@@ -290,6 +318,17 @@ export default function ProductSearchModal({
                   </button>
                 );
               })}
+              {/* Sentinel — infinite scroll trigger */}
+              <div
+                ref={sentinelRef}
+                className="flex items-center justify-center py-4 text-xs text-pos-muted/40"
+              >
+                {renderCount < filtered.length
+                  ? `${filtered.length - renderCount} más… — seguí scrolleando`
+                  : filtered.length > RENDER_BATCH
+                    ? `Mostrando ${filtered.length} productos`
+                    : ""}
+              </div>
             </div>
           )}
         </div>
