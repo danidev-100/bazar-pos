@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProveedoresStore } from "@/store/proveedores";
 import { useProductsStore } from "@/store/products";
 import { usePedidosStore, type Pedido } from "@/store/pedidos";
+import { useKeyboardListNavigation } from "@/hooks/useKeyboardListNavigation";
 
 interface ItemRow {
   key: number;
@@ -51,6 +52,18 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
     () => storeProveedores.filter((p) => p.name.toLowerCase().includes(proveedorSearch.toLowerCase())),
     [storeProveedores, proveedorSearch],
   );
+
+  const provInputRef = useRef<HTMLInputElement>(null);
+  const { selectedIndex: provIndex, handleKeyDown: provKeyDown, setSelectedIndex: setProvIndex } = useKeyboardListNavigation({
+    itemCount: filteredProveedores.length,
+    onSelect: (i) => {
+      const p = filteredProveedores[i];
+      setProveedorId(p.id);
+      setProveedorSearch(p.name);
+      setShowProvDropdown(false);
+    },
+    enabled: showProvDropdown && !proveedorId && filteredProveedores.length > 0,
+  });
 
   const total = useMemo(
     () => Math.round(items.reduce((s, i) => s + i.subtotal, 0) * 100) / 100,
@@ -173,6 +186,7 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
             Proveedor <span className="text-pos-danger">*</span>
           </label>
           <input
+            ref={provInputRef}
             id="ped-proveedor"
             type="text"
             value={proveedorId ? storeProveedores.find((p) => p.id === proveedorId)?.name ?? "" : proveedorSearch}
@@ -183,12 +197,13 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
             }}
             onFocus={() => setShowProvDropdown(true)}
             onBlur={() => setTimeout(() => setShowProvDropdown(false), 200)}
+            onKeyDown={provKeyDown}
             placeholder="Buscá proveedor por nombre…"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />
           {showProvDropdown && !proveedorId && filteredProveedores.length > 0 && (
             <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-              {filteredProveedores.map((p) => (
+              {filteredProveedores.map((p, i) => (
                 <button
                   key={p.id}
                   type="button"
@@ -197,7 +212,12 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
                     setProveedorSearch(p.name);
                     setShowProvDropdown(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm text-pos-text hover:bg-pos-background/50 transition-colors"
+                  onMouseEnter={() => setProvIndex(i)}
+                  className={`w-full text-left px-3 py-2 text-sm touch-target transition-colors ${
+                    i === provIndex
+                      ? "bg-pos-secondary/10 text-pos-secondary font-medium"
+                      : "text-pos-text hover:bg-pos-background/50"
+                  }`}
                 >
                   {p.name}
                 </button>
@@ -323,11 +343,18 @@ type ProductRowProps = {
 function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove }: ProductRowProps) {
   const [search, setSearch] = useState(row.product_name);
   const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(
     () => allProducts.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())),
     [allProducts, search],
   );
+
+  const { selectedIndex, handleKeyDown, setSelectedIndex } = useKeyboardListNavigation({
+    itemCount: filtered.length,
+    onSelect: (i) => handleSelect(filtered[i].id),
+    enabled: showDropdown && !row.product_id && filtered.length > 0,
+  });
 
   function handleSelect(productId: number) {
     onSelect(row.key, productId);
@@ -340,6 +367,7 @@ function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove 
     <tr className="border-b border-pos-muted/10">
       <td className="py-1 pr-1 relative">
         <input
+          ref={inputRef}
           type="text"
           value={row.product_id ? search : search}
           onChange={(e) => {
@@ -352,17 +380,23 @@ function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove 
           }}
           onFocus={() => setShowDropdown(true)}
           onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          onKeyDown={handleKeyDown}
           placeholder="Buscá producto…"
           className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-pos-secondary"
         />
         {showDropdown && !row.product_id && filtered.length > 0 && (
           <div className="absolute z-10 top-full left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-            {filtered.map((p) => (
+            {filtered.map((p, i) => (
               <button
                 key={p.id}
                 type="button"
                 onMouseDown={() => handleSelect(p.id)}
-                className="w-full text-left px-3 py-1.5 text-sm text-pos-text hover:bg-pos-background/50 transition-colors"
+                onMouseEnter={() => setSelectedIndex(i)}
+                className={`w-full text-left px-3 py-1.5 text-sm touch-target transition-colors ${
+                  i === selectedIndex
+                    ? "bg-pos-secondary/10 text-pos-secondary font-medium"
+                    : "text-pos-text hover:bg-pos-background/50"
+                }`}
               >
                 {p.name}
               </button>

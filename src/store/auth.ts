@@ -89,7 +89,6 @@ export type AuthStore = {
 // ──────────────────────────────────────────────
 
 const USERS_KEY = "auth_users";
-const CURRENT_USER_ID_KEY = "auth_current_user_id";
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -171,26 +170,6 @@ function saveUsers(users: AuthUser[]): void {
   }
 }
 
-function loadCurrentUserId(): string | null {
-  try {
-    return localStorage.getItem(CURRENT_USER_ID_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function saveCurrentUserId(id: string | null): void {
-  try {
-    if (id) {
-      localStorage.setItem(CURRENT_USER_ID_KEY, id);
-    } else {
-      localStorage.removeItem(CURRENT_USER_ID_KEY);
-    }
-  } catch {
-    // localStorage unavailable — skip
-  }
-}
-
 // ──────────────────────────────────────────────
 // Default admin permissions
 // ──────────────────────────────────────────────
@@ -245,15 +224,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return;
     }
 
-    // Restore session
-    const currentUserId = loadCurrentUserId();
-    let currentUser: AuthUser | null = null;
-    if (currentUserId) {
-      const found = users.find((u) => u.id === currentUserId && u.active);
-      if (found) currentUser = found;
-    }
-
-    set({ users, currentUser, _hydrated: true });
+    set({ users, _hydrated: true });
+    // Not restoring currentUser from localStorage — login required on every app start
   },
 
   // ── Login ──
@@ -278,7 +250,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     set({ currentUser: user });
-    saveCurrentUserId(user.id);
     return { success: true };
   },
 
@@ -286,7 +257,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: () => {
     set({ currentUser: null });
-    saveCurrentUserId(null);
   },
 
   // ── Add User ──

@@ -120,13 +120,14 @@ function wrapThermal(title: string, body: string): string {
 const COMPANY_HEADER = `
   <div class="header">
     <div class="header-left">
-      <div class="company-name">MI EMPRESA S.R.L.</div>
-      <div class="company-sublabel">CUIT 30-12345678-9 · Ingresos Brutos 123456-7</div>
-      <div class="company-info">Av. Corrientes 1234, CABA · Tel: (011) 4567-8901</div>
-      <div class="company-info">contacto@miempresa.com · www.miempresa.com</div>
+      <div class="company-name">{{company_name}}</div>
+      <div class="company-sublabel">{{company_cuit}}</div>
+      <div class="company-info">{{company_address}}</div>
+      <div class="company-info">{{company_phone}} · {{company_email}}</div>
+      <div class="company-info">{{company_web}}</div>
     </div>
     <div class="header-right">
-      <div class="logo-placeholder">LOGO</div>
+      {{company_logo}}
     </div>
   </div>
 `;
@@ -204,8 +205,8 @@ const FOOTER = `
   <div class="footer">
     <div class="thanks">¡Gracias por su preferencia!</div>
     <div class="legal">
-      MI EMPRESA S.R.L. - CUIT 30-12345678-9<br>
-      Av. Corrientes 1234, CABA - contact@miempresa.com<br>
+      {{company_name}} - {{company_cuit}}<br>
+      {{company_address}} - {{company_email}}<br>
       {{numero}}
     </div>
   </div>
@@ -221,6 +222,7 @@ const NOTES_BLOCK = `
 const THERMAL_FOOTER = `
   <div class="footer">
     <div class="thanks">¡Gracias!</div>
+    {{company_name}}<br>
     {{numero}}
   </div>
 `;
@@ -282,10 +284,10 @@ const BOLETA_TEMPLATE = wrapPage("Boleta", `
 
 const TICKET_TEMPLATE = wrapThermal("Ticket", `
   <div class="center">
-    <div class="company-name">MI EMPRESA S.R.L.</div>
-    <div class="company-info">CUIT 30-12345678-9</div>
-    <div class="company-info">Av. Corrientes 1234, CABA</div>
-    <div class="company-info">Tel: (011) 4567-8901</div>
+    <div class="company-name">{{company_name}}</div>
+    <div class="company-info">{{company_cuit}}</div>
+    <div class="company-info">{{company_address}}</div>
+    <div class="company-info">{{company_phone}}</div>
   </div>
 
   <hr class="sep-dash">

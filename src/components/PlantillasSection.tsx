@@ -42,6 +42,13 @@ const SAMPLE_DATA: TemplateData = {
     { product_name: "Producto A", quantity: "2", unit_price: "$250.00", subtotal: "$500.00" },
     { product_name: "Producto B", quantity: "1", unit_price: "$500.00", subtotal: "$500.00" },
   ],
+  company_name: "Mi Empresa S.R.L.",
+  company_phone: "(011) 4567-8901",
+  company_address: "Av. Corrientes 1234, CABA",
+  company_cuit: "30-12345678-9",
+  company_email: "contacto@miempresa.com",
+  company_web: "www.miempresa.com",
+  company_logo: "",
 };
 
 // ──────────────────────────────────────────────

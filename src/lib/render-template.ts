@@ -31,6 +31,14 @@ export type TemplateData = {
   tipo_label: string;
   notes: string;
   items: TemplateItemRow[];
+  /** Company info — set from CompanySettings */
+  company_name: string;
+  company_phone: string;
+  company_address: string;
+  company_cuit: string;
+  company_email: string;
+  company_web: string;
+  company_logo: string;
 };
 
 // ──────────────────────────────────────────────
@@ -117,7 +125,7 @@ function formatDate(d: string | Date): string {
   return date.toLocaleDateString("es-AR");
 }
 
-export function comprobanteToTemplateData(c: ComprobanteLike): TemplateData {
+export function comprobanteToTemplateData(c: ComprobanteLike, company?: Record<string, string>): TemplateData {
   return {
     cliente_nombre: c.cliente_nombre || "Consumidor Final",
     cliente_cuit: c.cliente_cuit ?? "",
@@ -135,5 +143,15 @@ export function comprobanteToTemplateData(c: ComprobanteLike): TemplateData {
       unit_price: fmt(i.unit_price),
       subtotal: fmt(i.subtotal),
     })),
+    // Company info — defaults to empty, overridden by buildComprobanteHtml
+    company_name: company?.name ?? "",
+    company_phone: company?.phone ?? "",
+    company_address: company?.address ?? "",
+    company_cuit: company?.cuit ?? "",
+    company_email: company?.email ?? "",
+    company_web: company?.web ?? "",
+    company_logo: company?.logo_base64
+      ? `<img src="${company.logo_base64}" alt="Logo" style="max-height:60px;margin-bottom:8px;" />`
+      : "",
   };
 }

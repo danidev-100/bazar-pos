@@ -6,6 +6,7 @@ import { useComprobantesStore, type Comprobante, type ComprobanteTipo, getTipoLa
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 import { printComprobante } from "@/lib/pdf-export";
 import { useAppStore } from "@/store";
+import { useKeyboardListNavigation } from "@/hooks/useKeyboardListNavigation";
 
 const TIPOS: ComprobanteTipo[] = ["factura", "boleta", "nota_credito", "nota_debito", "ticket"];
 
@@ -295,6 +296,13 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
     [storeCustomers, clienteSearch],
   );
 
+  const clientInputRef = useRef<HTMLInputElement>(null);
+  const { selectedIndex: clientIndex, handleKeyDown: clientKeyDown, setSelectedIndex: setClientIndex } = useKeyboardListNavigation({
+    itemCount: filteredCustomers.length,
+    onSelect: (i) => selectCustomer(filteredCustomers[i]),
+    enabled: showClientDropdown && !clienteId && filteredCustomers.length > 0,
+  });
+
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
   const calculatedIva = tipo === "factura" ? Math.round(subtotal * ivaPercent / 100 * 100) / 100 : 0;
   const calculatedTotal = Math.round((subtotal + calculatedIva) * 100) / 100;
@@ -402,14 +410,19 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
         <label className="block text-sm font-medium text-pos-text mb-1">
           Cliente {tipo === "factura" && <span className="text-pos-danger">*</span>}
         </label>
-        <input type="text" value={clienteSearch} onChange={(e) => { setClienteSearch(e.target.value); setClienteId(null); setShowClientDropdown(true); }}
+        <input ref={clientInputRef} type="text" value={clienteSearch} onChange={(e) => { setClienteSearch(e.target.value); setClienteId(null); setShowClientDropdown(true); }}
           onFocus={() => setShowClientDropdown(true)} onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+          onKeyDown={clientKeyDown}
           placeholder="Buscá cliente por nombre…" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
         {showClientDropdown && !clienteId && filteredCustomers.length > 0 && (
           <div className="absolute z-10 top-full left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-            {filteredCustomers.map((c) => (
-              <button key={c.id} type="button" onMouseDown={() => selectCustomer(c)}
-                className="w-full text-left px-3 py-2 text-sm text-pos-text hover:bg-pos-background/50 transition-colors">
+            {filteredCustomers.map((c, i) => (
+              <button key={c.id} type="button" onMouseDown={() => selectCustomer(c)} onMouseEnter={() => setClientIndex(i)}
+                className={`w-full text-left px-3 py-2 text-sm touch-target transition-colors ${
+                  i === clientIndex
+                    ? "bg-pos-secondary/10 text-pos-secondary font-medium"
+                    : "text-pos-text hover:bg-pos-background/50"
+                }`}>
                 {c.name} {c.cuit ? <span className="text-pos-muted">({c.cuit})</span> : ""}
               </button>
             ))}
@@ -534,7 +547,14 @@ function ProductSearchRow({
 }) {
   const [search, setSearch] = useState(row.product_name);
   const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const filtered = useMemo(() => allProducts.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())), [allProducts, search]);
+
+  const { selectedIndex, handleKeyDown, setSelectedIndex } = useKeyboardListNavigation({
+    itemCount: filtered.length,
+    onSelect: (i) => handleSelect(filtered[i].id),
+    enabled: showDropdown && !row.product_id && filtered.length > 0,
+  });
 
   function handleSelect(productId: number) {
     onSelect(row.key, productId);
@@ -546,14 +566,20 @@ function ProductSearchRow({
   return (
     <tr className="border-b border-pos-muted/10">
       <td className="py-1 pr-1 relative">
-        <input type="text" value={row.product_id ? search : search} onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); if (row.product_id) onChange(row.key, "product_id", null); }}
-          onFocus={() => setShowDropdown(true)} onBlur={() => setTimeout(() => setShowDropdown(false), 200)} placeholder="Buscá producto…"
+        <input ref={inputRef} type="text" value={row.product_id ? search : search} onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); if (row.product_id) onChange(row.key, "product_id", null); }}
+          onFocus={() => setShowDropdown(true)} onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          onKeyDown={handleKeyDown}
+          placeholder="Buscá producto…"
           className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-pos-secondary" />
         {showDropdown && !row.product_id && filtered.length > 0 && (
           <div className="absolute z-10 top-full left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-            {filtered.map((p) => (
-              <button key={p.id} type="button" onMouseDown={() => handleSelect(p.id)}
-                className="w-full text-left px-3 py-1.5 text-sm text-pos-text hover:bg-pos-background/50 transition-colors">{p.name}</button>
+            {filtered.map((p, i) => (
+              <button key={p.id} type="button" onMouseDown={() => handleSelect(p.id)} onMouseEnter={() => setSelectedIndex(i)}
+                className={`w-full text-left px-3 py-1.5 text-sm touch-target transition-colors ${
+                  i === selectedIndex
+                    ? "bg-pos-secondary/10 text-pos-secondary font-medium"
+                    : "text-pos-text hover:bg-pos-background/50"
+                }`}>{p.name}</button>
             ))}
           </div>
         )}

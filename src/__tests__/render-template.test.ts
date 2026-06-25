@@ -3,6 +3,20 @@ import { renderTemplate, type TemplateData } from "@/lib/render-template";
 import { getDefaultTemplate } from "@/lib/default-templates";
 
 // ──────────────────────────────────────────────
+// Shared company defaults
+// ──────────────────────────────────────────────
+
+const COMPANY_FIELDS = {
+  company_name: "Mi Empresa S.R.L.",
+  company_phone: "(011) 4567-8901",
+  company_address: "Av. Corrientes 1234, CABA",
+  company_cuit: "30-12345678-9",
+  company_email: "contacto@miempresa.com",
+  company_web: "www.miempresa.com",
+  company_logo: "",
+};
+
+// ──────────────────────────────────────────────
 // Fixtures
 // ──────────────────────────────────────────────
 
@@ -21,6 +35,7 @@ const sampleData: TemplateData = {
     { product_name: "Arroz 1kg", quantity: "2", unit_price: "$250,00", subtotal: "$500,00" },
     { product_name: "Fideos 500g", quantity: "3", unit_price: "$120,00", subtotal: "$360,00" },
   ],
+  ...COMPANY_FIELDS,
 };
 
 const emptyItemsData: TemplateData = {

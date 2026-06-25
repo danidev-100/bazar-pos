@@ -4,6 +4,7 @@ import BrandList from "@/components/BrandList";
 import CategoryList from "@/components/CategoryList";
 import BulkPriceModal from "@/components/BulkPriceModal";
 import PlantillasSection from "@/components/PlantillasSection";
+import CompanySettings from "@/components/CompanySettings";
 import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
 import { runSeeder } from "@/lib/seeder";
 
@@ -11,7 +12,7 @@ import { runSeeder } from "@/lib/seeder";
 // Admin section definitions
 // ──────────────────────────────────────────────
 
-type SectionId = "categories" | "brands" | "bulk-price" | "backup" | "settings" | "plantillas";
+type SectionId = "categories" | "brands" | "bulk-price" | "backup" | "settings" | "plantillas" | "empresa";
 
 type SectionDef = {
   id: SectionId;
@@ -83,6 +84,19 @@ function PlantillasIcon() {
   );
 }
 
+function CompanyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <line x1="6.5" y1="6.5" x2="6.5" y2="6.5" strokeWidth={3} />
+      <line x1="17.5" y1="6.5" x2="17.5" y2="6.5" strokeWidth={3} />
+    </svg>
+  );
+}
+
 const SECTIONS: SectionDef[] = [
   {
     id: "categories",
@@ -120,6 +134,12 @@ const SECTIONS: SectionDef[] = [
     description: "personalizá el formato de impresión",
     icon: <PlantillasIcon />,
   },
+  {
+    id: "empresa",
+    label: "Empresa",
+    description: "datos de tu empresa para comprobantes",
+    icon: <CompanyIcon />,
+  },
 ];
 
 // ──────────────────────────────────────────────
@@ -133,6 +153,7 @@ const ACCENTS: Record<string, { bg: string; text: string; bar: string }> = {
   backup:      { bg: "bg-amber-500/8",   text: "text-amber-600",   bar: "#f59e0b" },
   settings:    { bg: "bg-sky-500/8",     text: "text-sky-600",     bar: "#0ea5e9" },
   plantillas:  { bg: "bg-indigo-500/8",   text: "text-indigo-600",  bar: "#6366f1" },
+  empresa:     { bg: "bg-teal-500/8",     text: "text-teal-600",    bar: "#14b8a6" },
 };
 
 // ──────────────────────────────────────────────
@@ -227,6 +248,7 @@ export default function AdminPage() {
       {activeSection === "backup" && <BackupSection />}
       {activeSection === "settings" && <SettingsSection />}
       {activeSection === "plantillas" && <PlantillasSection />}
+      {activeSection === "empresa" && <CompanySection />}
     </div>
   );
 }
@@ -484,6 +506,15 @@ function SettingsSection() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CompanySection() {
+  return (
+    <div>
+      <h3 className="text-base font-semibold text-pos-text mb-4">Empresa</h3>
+      <CompanySettings />
     </div>
   );
 }

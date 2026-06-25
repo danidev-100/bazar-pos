@@ -510,6 +510,28 @@ export const plantillas = sqliteTable(
 );
 
 // ──────────────────────────────────────────────
+// Company settings
+// ──────────────────────────────────────────────
+
+export const companySettings = sqliteTable(
+  "company_settings",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull().default(""),
+    phone: text("phone").notNull().default(""),
+    address: text("address").notNull().default(""),
+    cuit: text("cuit").notNull().default(""),
+    email: text("email").notNull().default(""),
+    web: text("web").notNull().default(""),
+    logo_base64: text("logo_base64").notNull().default(""),
+    ...syncColumns,
+  },
+  (table) => ({
+    storeIdx: uniqueIndex("idx_company_settings_store").on(table.store_id),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Sync Logs (infrastructure — conflict audit trail)
 // ──────────────────────────────────────────────
 

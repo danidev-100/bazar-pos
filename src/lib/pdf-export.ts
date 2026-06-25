@@ -3,6 +3,7 @@ import type { Comprobante } from "@/store/comprobantes";
 import { renderTemplate, comprobanteToTemplateData, type ComprobanteLike, type TemplateData } from "@/lib/render-template";
 import { getDefaultTemplate } from "@/lib/default-templates";
 import { usePlantillasStore } from "@/store/plantillas";
+import { select } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Adapters
@@ -36,8 +37,35 @@ function invoiceToComprobanteLike(invoice: Invoice, tipo: string): ComprobanteLi
 /**
  * Build the print HTML for a comprobante-like object.
  * Uses saved template (by tipo+storeId), falls back to default template on error.
+ * Injects company data from CompanySettings.
  */
 export async function buildComprobanteHtml(data: TemplateData, tipo: string, storeId: string): Promise<string> {
+  // Fetch company data
+  let companyLogo = "";
+  try {
+    const rows = await select<{ name: string; phone: string; address: string; cuit: string; email: string; web: string; logo_base64: string }>(
+      `SELECT name, phone, address, cuit, email, web, logo_base64 FROM company_settings WHERE store_id = $1 LIMIT 1`,
+      [storeId],
+    );
+    if (rows.length > 0) {
+      const c = rows[0];
+      data.company_name = c.name;
+      data.company_phone = c.phone;
+      data.company_address = c.address;
+      data.company_cuit = c.cuit;
+      data.company_email = c.email;
+      data.company_web = c.web;
+      companyLogo = c.logo_base64;
+    }
+  } catch {
+    // Company data not available — use defaults
+  }
+
+  // Build logo HTML if available
+  data.company_logo = companyLogo
+    ? `<img src="${companyLogo.replace(/"/g, "&quot;")}" alt="Logo" style="max-height:60px;margin-bottom:8px;" />`
+    : "";
+
   try {
     const store = usePlantillasStore.getState();
     const template = await store.getPlantillaOrDefault(tipo, storeId);

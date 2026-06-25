@@ -312,6 +312,21 @@ async function ensureTables(db: Database): Promise<void> {
       sync_status TEXT DEFAULT 'pending',
       UNIQUE(store_id, tipo)
     )`,
+    // ── Company settings ──
+    `CREATE TABLE IF NOT EXISTS company_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT '',
+      phone TEXT NOT NULL DEFAULT '',
+      address TEXT NOT NULL DEFAULT '',
+      cuit TEXT NOT NULL DEFAULT '',
+      email TEXT NOT NULL DEFAULT '',
+      web TEXT NOT NULL DEFAULT '',
+      logo_base64 TEXT NOT NULL DEFAULT '',
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending',
+      UNIQUE(store_id)
+    )`,
   ];
 
   for (const sql of tables) {

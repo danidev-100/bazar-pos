@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useCustomersStore, type Customer } from "@/store/customers";
 import { useActiveStore } from "@/store/context";
+import { useKeyboardListNavigation } from "@/hooks/useKeyboardListNavigation";
 
 // ──────────────────────────────────────────────
 // Props
@@ -23,10 +24,25 @@ export default function CustomerSelectModal({
   const searchCustomers = useCustomersStore((s) => s.searchCustomers);
   const getCustomersByStore = useCustomersStore((s) => s.getCustomersByStore);
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const customers = query.trim()
     ? searchCustomers(storeId, query)
     : getCustomersByStore(storeId);
+
+  const { selectedIndex, handleKeyDown, setSelectedIndex } = useKeyboardListNavigation({
+    itemCount: customers.length,
+    onSelect: (i) => {
+      onSelect(customers[i]);
+      onClose();
+    },
+    enabled: customers.length > 0,
+  });
+
+  // Auto-focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -48,9 +64,11 @@ export default function CustomerSelectModal({
 
           {/* Search */}
           <input
+            ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Buscar cliente…"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />
@@ -80,14 +98,19 @@ export default function CustomerSelectModal({
                   : "Todavía no hay clientes"}
               </p>
             ) : (
-              customers.map((c) => (
+              customers.map((c, i) => (
                 <button
                   key={c.id}
                   onClick={() => {
                     onSelect(c);
                     onClose();
                   }}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-pos-background/50 hover:bg-pos-background touch-target transition-colors border border-pos-muted/10"
+                  onMouseEnter={() => setSelectedIndex(i)}
+                  className={`w-full text-left px-4 py-3 rounded-xl touch-target transition-colors border ${
+                    i === selectedIndex
+                      ? "bg-pos-secondary/10 border-pos-secondary/30 text-pos-text"
+                      : "bg-pos-background/50 hover:bg-pos-background border-pos-muted/10"
+                  }`}
                 >
                   <div className="text-sm font-medium text-pos-text">
                     {c.name}
