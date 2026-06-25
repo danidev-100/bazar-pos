@@ -4,6 +4,7 @@ import { useCustomersStore } from "@/store/customers";
 import { useProductsStore } from "@/store/products";
 import { useComprobantesStore, type Comprobante, type ComprobanteTipo, getTipoLabel } from "@/store/comprobantes";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { printComprobante } from "@/lib/pdf-export";
 import { useAppStore } from "@/store";
 
 const TIPOS: ComprobanteTipo[] = ["factura", "boleta", "nota_credito", "nota_debito", "ticket"];
@@ -591,41 +592,8 @@ function ComprobanteDetail({ comprobante, onBack }: { comprobante: Comprobante; 
     ticket: "bg-gray-50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800",
   };
 
-  function handlePrint() {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`
-      <html><head><meta charset="utf-8"><title>${comprobante.numero}</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Courier New', monospace; font-size: 12px; padding: 20px; }
-        h1 { text-align: center; font-size: 18px; margin-bottom: 4px; }
-        .tipo { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th { text-align: left; padding: 4px 2px; border-bottom: 1px solid #000; font-size: 11px; }
-        td { padding: 3px 2px; }
-        .num { text-align: right; }
-        .footer { text-align: center; margin-top: 16px; border-top: 1px dashed #888; padding-top: 8px; font-size: 11px; }
-      </style></head><body>
-      <h1>${comprobante.tipo === "factura" ? "FACTURA" : comprobante.tipo === "boleta" ? "BOLETA" : comprobante.tipo === "nota_credito" ? "NOTA DE CRÉDITO" : comprobante.tipo === "nota_debito" ? "NOTA DE DÉBITO" : "TICKET"}</h1>
-      <div class="tipo">${comprobante.numero}</div>
-      <p>Fecha: ${new Date(comprobante.fecha).toLocaleDateString("es-AR")}</p>
-      <p>Cliente: ${comprobante.cliente_nombre}</p>
-      ${comprobante.cliente_cuit ? `<p>CUIT: ${comprobante.cliente_cuit}</p>` : ""}
-      ${comprobante.cliente_direccion ? `<p>Dirección: ${comprobante.cliente_direccion}</p>` : ""}
-      <table><thead><tr><th>Producto</th><th class="num">Cant</th><th class="num">P.Unit</th><th class="num">Subtotal</th></tr></thead><tbody>
-      ${comprobante.items.map((i) => `<tr><td>${i.product_name}</td><td class="num">${i.quantity}</td><td class="num">$${i.unit_price.toFixed(2)}</td><td class="num">$${i.subtotal.toFixed(2)}</td></tr>`).join("")}
-      </tbody></table>
-      <div style="text-align:right;margin-top:8px;border-top:1px solid #000;padding-top:4px;">
-        ${comprobante.iva > 0 ? `<p>Subtotal: $${comprobante.subtotal.toFixed(2)}</p><p>IVA: $${comprobante.iva.toFixed(2)}</p>` : ""}
-        <p style="font-weight:bold;font-size:14px;">TOTAL: $${comprobante.total.toFixed(2)}</p>
-        </div>
-      ${comprobante.notes ? `<p>Notas: ${comprobante.notes}</p>` : ""}
-      <div class="footer">${comprobante.numero}</div>
-      </body></html>
-    `);
-    w.document.close();
-    setTimeout(() => w.print(), 500);
+  async function handlePrint() {
+    await printComprobante(comprobante);
   }
 
   return (

@@ -3,9 +3,10 @@ import { useAppStore } from "@/store";
 import { useProductsStore } from "@/store/products";
 import { useActiveStore } from "@/store/context";
 import { useInvoicesStore } from "@/store/invoices";
+import { useComprobantesStore } from "@/store/comprobantes";
 import { useAuthStore } from "@/store/auth";
 import { useCashClosingStore } from "@/store/cash-closing";
-import { exportInvoicePdf } from "@/lib/pdf-export";
+import { exportInvoicePdf, printComprobante } from "@/lib/pdf-export";
 import ProductSearchModal from "@/components/ProductSearchModal";
 import CartPanel from "@/components/CartPanel";
 import CheckoutModal from "@/components/CheckoutModal";
@@ -367,6 +368,20 @@ export default function POSPage() {
   function handlePrint() {
     if (!lastCompletedSale) return;
 
+    // Use comprobante if user selected a tipo at checkout
+    const comprobante = useComprobantesStore
+      .getState()
+      .comprobantes
+      .find((c) => c.sale_id === lastCompletedSale.id);
+
+    if (comprobante) {
+      printComprobante(comprobante);
+      showNotification(`Imprimiendo ${comprobante.tipo} ${comprobante.numero}`);
+      setTimeout(() => dismissNotification(), 4000);
+      return;
+    }
+
+    // Fallback: legacy Invoice (shouldn't happen if user picked a tipo)
     const invoice = useInvoicesStore
       .getState()
       .generateInvoice(
@@ -375,9 +390,9 @@ export default function POSPage() {
         currentUser?.name,
       );
 
-    exportInvoicePdf(invoice);
+    exportInvoicePdf(invoice, "ticket");
 
-    showNotification(`Factura ${invoice.invoiceNumber} — elegí "Guardar como PDF" en el diálogo de impresión`);
+    showNotification(`Comprobante ${invoice.invoiceNumber} — elegí "Guardar como PDF" en el diálogo de impresión`);
     setTimeout(() => dismissNotification(), 5000);
   }
 

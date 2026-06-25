@@ -458,3 +458,4 @@ export { useProveedoresStore } from "./proveedores";
 export { usePedidosStore } from "./pedidos";
 export { useComprobantesStore } from "./comprobantes";
 export { useExpensesStore } from "./expenses";
+export { usePlantillasStore } from "./plantillas";

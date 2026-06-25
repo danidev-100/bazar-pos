@@ -302,6 +302,16 @@ async function ensureTables(db: Database): Promise<void> {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       sync_status TEXT NOT NULL DEFAULT 'pending'
     )`,
+    // ── Plantillas (print templates) ──
+    `CREATE TABLE IF NOT EXISTS plantillas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id TEXT NOT NULL,
+      tipo TEXT NOT NULL,
+      template_html TEXT NOT NULL,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending',
+      UNIQUE(store_id, tipo)
+    )`,
   ];
 
   for (const sql of tables) {

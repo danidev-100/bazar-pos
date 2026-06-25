@@ -3,6 +3,7 @@ import { useAppStore, useAuthStore, useAdminStore } from "@/store";
 import BrandList from "@/components/BrandList";
 import CategoryList from "@/components/CategoryList";
 import BulkPriceModal from "@/components/BulkPriceModal";
+import PlantillasSection from "@/components/PlantillasSection";
 import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
 import { runSeeder } from "@/lib/seeder";
 
@@ -10,7 +11,7 @@ import { runSeeder } from "@/lib/seeder";
 // Admin section definitions
 // ──────────────────────────────────────────────
 
-type SectionId = "categories" | "brands" | "bulk-price" | "backup" | "settings";
+type SectionId = "categories" | "brands" | "bulk-price" | "backup" | "settings" | "plantillas";
 
 type SectionDef = {
   id: SectionId;
@@ -70,6 +71,18 @@ function SettingsIcon() {
   );
 }
 
+function PlantillasIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
 const SECTIONS: SectionDef[] = [
   {
     id: "categories",
@@ -101,6 +114,12 @@ const SECTIONS: SectionDef[] = [
     description: "tema, usuarios y preferencias",
     icon: <SettingsIcon />,
   },
+  {
+    id: "plantillas",
+    label: "Plantillas",
+    description: "personalizá el formato de impresión",
+    icon: <PlantillasIcon />,
+  },
 ];
 
 // ──────────────────────────────────────────────
@@ -113,6 +132,7 @@ const ACCENTS: Record<string, { bg: string; text: string; bar: string }> = {
   "bulk-price": { bg: "bg-emerald-500/8", text: "text-emerald-600", bar: "#10b981" },
   backup:      { bg: "bg-amber-500/8",   text: "text-amber-600",   bar: "#f59e0b" },
   settings:    { bg: "bg-sky-500/8",     text: "text-sky-600",     bar: "#0ea5e9" },
+  plantillas:  { bg: "bg-indigo-500/8",   text: "text-indigo-600",  bar: "#6366f1" },
 };
 
 // ──────────────────────────────────────────────
@@ -206,6 +226,7 @@ export default function AdminPage() {
       {activeSection === "bulk-price" && <BulkPriceSection />}
       {activeSection === "backup" && <BackupSection />}
       {activeSection === "settings" && <SettingsSection />}
+      {activeSection === "plantillas" && <PlantillasSection />}
     </div>
   );
 }

@@ -488,6 +488,28 @@ export const syncQueue = sqliteTable(
 );
 
 // ──────────────────────────────────────────────
+// Plantillas — print templates (syncable)
+// ──────────────────────────────────────────────
+
+export const plantillas = sqliteTable(
+  "plantillas",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    tipo: text("tipo", {
+      enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket"],
+    }).notNull(),
+    template_html: text("template_html").notNull(),
+    ...syncColumns,
+  },
+  (table) => ({
+    storeTipoIdx: uniqueIndex("idx_plantillas_store_tipo").on(
+      table.store_id,
+      table.tipo,
+    ),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Sync Logs (infrastructure — conflict audit trail)
 // ──────────────────────────────────────────────
 

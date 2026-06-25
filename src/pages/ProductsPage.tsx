@@ -3,6 +3,7 @@ import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
 import { useAuthStore } from "@/store/auth";
+import { useBarcodeInput } from "@/hooks/useBarcodeInput";
 import ProductForm from "@/components/ProductForm";
 import StockMovementLog from "@/components/StockMovementLog";
 import ImportProductsModal from "@/components/ImportProductsModal";
@@ -62,6 +63,36 @@ export default function ProductsPage() {
     () => products.filter((p) => p.store_id === storeId),
     [products, storeId],
   );
+
+  // ── Barcode scanning in product form ──
+  const [scannedBarcode, setScannedBarcode] = useState("");
+
+  useBarcodeInput({
+    active: centerView.kind === "create" || centerView.kind === "edit",
+    onBarcode: useCallback(
+      (barcode: string) => {
+        if (centerView.kind === "create") {
+          const existing = storeProducts.find((p) => p.barcode === barcode);
+          if (existing) {
+            // Product already exists — navigate to edit
+            setSelectedProductId(existing.id);
+            setCenterView({ kind: "edit", product: existing });
+            return;
+          }
+        }
+        setScannedBarcode(barcode);
+      },
+      [centerView.kind, storeProducts],
+    ),
+  });
+
+  // Reset scanned barcode when the form closes
+  useEffect(() => {
+    if (centerView.kind !== "create" && centerView.kind !== "edit") {
+      setScannedBarcode("");
+    }
+  }, [centerView.kind]);
+
   const storeCategories = useMemo(
     () => categories.filter((c) => c.store_id === storeId),
     [categories, storeId],
@@ -537,6 +568,7 @@ export default function ProductsPage() {
             editProduct={null}
             onSaved={handleSaved}
             onCancel={handleCancel}
+            scannedBarcode={scannedBarcode}
           />
         )}
 
@@ -545,6 +577,7 @@ export default function ProductsPage() {
             editProduct={centerView.product}
             onSaved={handleSaved}
             onCancel={handleCancel}
+            scannedBarcode={scannedBarcode}
           />
         )}
 

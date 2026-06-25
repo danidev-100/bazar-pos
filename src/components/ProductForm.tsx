@@ -65,12 +65,15 @@ interface ProductFormProps {
   editProduct: Product | null;
   onSaved: () => void;
   onCancel: () => void;
+  /** Barcode captured by scanner — auto-fills the barcode field */
+  scannedBarcode?: string;
 }
 
 export default function ProductForm({
   editProduct,
   onSaved,
   onCancel,
+  scannedBarcode,
 }: ProductFormProps) {
   const { storeId } = useActiveStore();
   const categories = useProductsStore((s) => s.categories);
@@ -82,6 +85,7 @@ export default function ProductForm({
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showScanHint, setShowScanHint] = useState(!editProduct);
 
   const storeCategories = categories.filter((c) => c.store_id === storeId);
   const flatCategories = flattenCategories(storeCategories, null, 0, []);
@@ -102,12 +106,22 @@ export default function ProductForm({
         minStock: String(editProduct.minStock),
         midStock: String(editProduct.midStock),
       });
+      setShowScanHint(false);
       setError(null);
     } else {
       setForm(INITIAL_FORM);
+      setShowScanHint(true);
       setError(null);
     }
   }, [editProduct]);
+
+  // Auto-fill barcode when scanned from the parent
+  useEffect(() => {
+    if (scannedBarcode) {
+      setForm((prev) => ({ ...prev, barcode: scannedBarcode }));
+      setShowScanHint(false);
+    }
+  }, [scannedBarcode]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -213,9 +227,15 @@ export default function ProductForm({
         >
           Código de barras
           <span className="text-pos-muted ml-1">(opcional)</span>
+          {showScanHint && (
+            <span className="ml-2 text-xs text-pos-secondary animate-pulse">
+              📷 Escaneá el código
+            </span>
+          )}
         </label>
         <input
           id="product-barcode"
+          autoFocus={!editProduct}
           value={form.barcode}
           onChange={(e) => setForm({ ...form, barcode: e.target.value })}
           placeholder="ej. 77912345"
