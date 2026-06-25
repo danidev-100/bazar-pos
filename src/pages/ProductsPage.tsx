@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProductsStore, type Product, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
@@ -9,6 +9,8 @@ import ImportProductsModal from "@/components/ImportProductsModal";
 import BulkPriceIncreaseModal from "@/components/BulkPriceIncreaseModal";
 import BulkCategoryModal from "@/components/BulkCategoryModal";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+
+const RENDER_BATCH = 200;
 
 // ──────────────────────────────────────────────
 // Views for the center panel
@@ -28,7 +30,7 @@ export default function ProductsPage() {
   const { storeId } = useActiveStore();
   const products = useProductsStore((s) => s.products);
   const categories = useProductsStore((s) => s.categories);
-  const brands = useBrandsStore((s) => s.brands);
+  const brandsList = useBrandsStore((s) => s.brands);
   const isUnlocked = useAuthStore((s) => s.hasPermission("productos"));
   const adjustStock = useProductsStore((s) => s.adjustStock);
   const deleteProduct = useProductsStore((s) => s.deleteProduct);
@@ -53,9 +55,46 @@ export default function ProductsPage() {
   const [showBulkPrice, setShowBulkPrice] = useState(false);
   const [showBulkCategory, setShowBulkCategory] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [renderCount, setRenderCount] = useState(RENDER_BATCH);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const storeProducts = products.filter((p) => p.store_id === storeId);
-  const storeCategories = categories.filter((c) => c.store_id === storeId);
+  const storeProducts = useMemo(
+    () => products.filter((p) => p.store_id === storeId),
+    [products, storeId],
+  );
+  const storeCategories = useMemo(
+    () => categories.filter((c) => c.store_id === storeId),
+    [categories, storeId],
+  );
+
+  // Pre-compute category lookup + descendant map once
+  const catById = useMemo(() => new Map(storeCategories.map((c) => [c.id, c])), [storeCategories]);
+  const brandById = useMemo(() => new Map(brandsList.map((b) => [b.id, b.name])), [brandsList]);
+
+  const catDescendants = useMemo(() => {
+    const childrenOf = new Map<number, number[]>();
+    for (const c of storeCategories) {
+      if (c.parent_id != null) {
+        const list = childrenOf.get(c.parent_id) ?? [];
+        list.push(c.id);
+        childrenOf.set(c.parent_id, list);
+      }
+    }
+    // Pre-compute full descendant set for every category
+    const allDescendants = new Map<number, Set<number>>();
+    function getDescendants(id: number): Set<number> {
+      let cached = allDescendants.get(id);
+      if (cached) return cached;
+      const set = new Set<number>([id]);
+      for (const childId of childrenOf.get(id) ?? []) {
+        for (const d of getDescendants(childId)) set.add(d);
+      }
+      allDescendants.set(id, set);
+      return set;
+    }
+    for (const c of storeCategories) getDescendants(c.id);
+    return allDescendants;
+  }, [storeCategories]);
 
   // Filter products by search
   const bySearch = useMemo(() => {
@@ -71,19 +110,8 @@ export default function ProductsPage() {
   // Filter products by selected category (include subcategory products)
   const byCategory = selectedCategoryId
     ? bySearch.filter((p) => {
-        const descendantIds = new Set<number>();
-        const collectDescendants = (parentId: number) => {
-          storeCategories
-            .filter((c) => c.parent_id === parentId)
-            .forEach((c) => {
-              descendantIds.add(c.id);
-              collectDescendants(c.id);
-            });
-        };
-        collectDescendants(selectedCategoryId);
-        descendantIds.add(selectedCategoryId);
-
-        return p.category_id !== null && descendantIds.has(p.category_id);
+        const ids = catDescendants.get(selectedCategoryId);
+        return p.category_id !== null && ids?.has(p.category_id);
       })
     : bySearch;
 
@@ -102,6 +130,29 @@ export default function ProductsPage() {
     });
   }, [byBrand, stockFilter]);
 
+  // Reset render limit when filters change
+  useEffect(() => {
+    setRenderCount(RENDER_BATCH);
+  }, [search, selectedCategoryId, selectedBrandId, stockFilter]);
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || renderCount >= filteredProducts.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setRenderCount((prev) => Math.min(prev + RENDER_BATCH, filteredProducts.length));
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filteredProducts.length, renderCount]);
+
   const selectedProduct = selectedProductId
     ? storeProducts.find((p) => p.id === selectedProductId) ?? null
     : null;
@@ -118,37 +169,37 @@ export default function ProductsPage() {
 
   const exportProductData = useCallback(() => {
     const data = filteredProducts.map((p) => {
-      const cat = storeCategories.find((c) => c.id === p.category_id);
-      const brand = brands.find((b) => b.id === p.brandId);
+      const catName = p.category_id != null ? catById.get(p.category_id)?.name : undefined;
+      const brandName = p.brandId != null ? brandById.get(p.brandId) : undefined;
       return {
         codigo: p.barcode ?? "—",
         nombre: p.name,
         precio: `$${p.price.toFixed(2)}`,
         ...(isUnlocked ? { costo: `$${p.costPrice.toFixed(2)}` } : {}),
         stock: p.stock,
-        marca: brand?.name ?? "—",
-        categoria: cat?.name ?? "—",
+        marca: brandName ?? "—",
+        categoria: catName ?? "—",
       };
     });
     exportTableToPdf(data, productExportColumns, "Productos");
-  }, [filteredProducts, storeCategories, brands, isUnlocked]);
+  }, [filteredProducts, catById, brandById, isUnlocked]);
 
   const exportProductExcel = useCallback(() => {
     const data = filteredProducts.map((p) => {
-      const cat = storeCategories.find((c) => c.id === p.category_id);
-      const brand = brands.find((b) => b.id === p.brandId);
+      const catName = p.category_id != null ? catById.get(p.category_id)?.name : undefined;
+      const brandName = p.brandId != null ? brandById.get(p.brandId) : undefined;
       return {
         codigo: p.barcode ?? "",
         nombre: p.name,
         precio: p.price,
         ...(isUnlocked ? { costo: p.costPrice } : {}),
         stock: p.stock,
-        marca: brand?.name ?? "",
-        categoria: cat?.name ?? "",
+        marca: brandName ?? "",
+        categoria: catName ?? "",
       };
     });
     exportToExcel(data, productExportColumns, "Productos");
-  }, [filteredProducts, storeCategories, brands, isUnlocked]);
+  }, [filteredProducts, catById, brandById, isUnlocked]);
 
   function handleProductSelect(id: number) {
     setSelectedProductId(id);
@@ -342,11 +393,9 @@ export default function ProductsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredProducts.map((p) => {
-                      const cat = storeCategories.find(
-                        (c) => c.id === p.category_id,
-                      );
-                      const brand = brands.find((b) => b.id === p.brandId);
+                    {filteredProducts.slice(0, renderCount).map((p) => {
+                      const catName = p.category_id != null ? catById.get(p.category_id)?.name : undefined;
+                      const brandName = p.brandId != null ? brandById.get(p.brandId) : undefined;
                       return (
                         <tr
                           key={p.id}
@@ -444,10 +493,10 @@ export default function ProductsPage() {
                             )}
                           </td>
                           <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
-                            {brand?.name ?? "—"}
+                            {brandName ?? "—"}
                           </td>
                           <td className="py-2 px-2 text-pos-muted text-xs truncate max-w-[100px]">
-                            {cat?.name ?? "—"}
+                            {catName ?? "—"}
                           </td>
                           <td className="py-2 pl-2 text-right">
                             <button
@@ -466,6 +515,18 @@ export default function ProductsPage() {
                     })}
                   </tbody>
                 </table>
+
+                {/* Sentinel for infinite scroll */}
+                <div
+                  ref={sentinelRef}
+                  className="flex items-center justify-center py-3 text-xs text-pos-muted/40"
+                >
+                  {renderCount < filteredProducts.length
+                    ? `${filteredProducts.length - renderCount} más… seguí scrolleando`
+                    : filteredProducts.length > RENDER_BATCH
+                      ? `Mostrando ${filteredProducts.length} productos`
+                      : ""}
+                </div>
               </div>
             )}
           </>
