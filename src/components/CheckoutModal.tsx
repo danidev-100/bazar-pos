@@ -358,8 +358,9 @@ export default function CheckoutModal({
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-pos-muted mb-1">Efectivo</label>
+                  <label htmlFor="mixed-cash-input" className="block text-xs text-pos-muted mb-1">Efectivo</label>
                   <input
+                    id="mixed-cash-input"
                     type="number"
                     inputMode="decimal"
                     value={cashAmount}
@@ -371,8 +372,9 @@ export default function CheckoutModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-pos-muted mb-1">Tarjeta</label>
+                  <label htmlFor="mixed-card-input" className="block text-xs text-pos-muted mb-1">Tarjeta</label>
                   <input
+                    id="mixed-card-input"
                     type="number"
                     inputMode="decimal"
                     value={cardAmount}

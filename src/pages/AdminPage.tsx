@@ -5,6 +5,7 @@ import CategoryList from "@/components/CategoryList";
 import BulkPriceModal from "@/components/BulkPriceModal";
 import PlantillasSection from "@/components/PlantillasSection";
 import CompanySettings from "@/components/CompanySettings";
+import ThemeToggle from "@/components/ThemeToggle";
 import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
 import { runSeeder } from "@/lib/seeder";
 
@@ -147,13 +148,13 @@ const SECTIONS: SectionDef[] = [
 // ──────────────────────────────────────────────
 
 const ACCENTS: Record<string, { bg: string; text: string; bar: string }> = {
-  categories:  { bg: "bg-rose-500/8",    text: "text-rose-600",    bar: "#e11d48" },
-  brands:      { bg: "bg-violet-500/8",  text: "text-violet-600",  bar: "#8b5cf6" },
-  "bulk-price": { bg: "bg-emerald-500/8", text: "text-emerald-600", bar: "#10b981" },
-  backup:      { bg: "bg-amber-500/8",   text: "text-amber-600",   bar: "#f59e0b" },
-  settings:    { bg: "bg-sky-500/8",     text: "text-sky-600",     bar: "#0ea5e9" },
-  plantillas:  { bg: "bg-indigo-500/8",   text: "text-indigo-600",  bar: "#6366f1" },
-  empresa:     { bg: "bg-teal-500/8",     text: "text-teal-600",    bar: "#14b8a6" },
+  categories:  { bg: "bg-rose-500/8 dark:bg-rose-500/15",    text: "text-rose-600 dark:text-rose-400",    bar: "#e11d48" },
+  brands:      { bg: "bg-violet-500/8 dark:bg-violet-500/15",  text: "text-violet-600 dark:text-violet-400",  bar: "#8b5cf6" },
+  "bulk-price": { bg: "bg-emerald-500/8 dark:bg-emerald-500/15", text: "text-emerald-600 dark:text-emerald-400", bar: "#10b981" },
+  backup:      { bg: "bg-amber-500/8 dark:bg-amber-500/15",   text: "text-amber-600 dark:text-amber-400",   bar: "#f59e0b" },
+  settings:    { bg: "bg-sky-500/8 dark:bg-sky-500/15",     text: "text-sky-600 dark:text-sky-400",     bar: "#0ea5e9" },
+  plantillas:  { bg: "bg-indigo-500/8 dark:bg-indigo-500/15",   text: "text-indigo-600 dark:text-indigo-400",  bar: "#6366f1" },
+  empresa:     { bg: "bg-teal-500/8 dark:bg-teal-500/15",     text: "text-teal-600 dark:text-teal-400",    bar: "#14b8a6" },
 };
 
 // ──────────────────────────────────────────────
@@ -191,7 +192,7 @@ export default function AdminPage() {
               <button
                 key={sec.id}
                 onClick={() => setActiveSection(sec.id)}
-                className="card-enter relative flex items-start gap-4 rounded-xl border border-pos-muted/10 bg-pos-surface p-4 md:p-5 shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-200 text-left cursor-pointer group overflow-hidden"
+                className="card-enter relative flex items-start gap-4 rounded-xl border border-pos-muted/10 bg-pos-surface p-4 md:p-5 shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-200 text-left cursor-pointer group overflow-hidden dark:border-gray-600/30 dark:bg-gray-800 dark:hover:bg-gray-750"
                 style={{ animationDelay: `${i * 0.06}s` }}
               >
                 {/* Accent bar */}
@@ -283,7 +284,7 @@ function BulkPriceSection() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="flex flex-col items-center justify-center py-12 text-center dark:text-gray-100">
       <svg
         className="w-16 h-16 text-pos-muted/40 mb-4"
         fill="none"
@@ -364,7 +365,7 @@ function BackupSection() {
         Exportá una copia de seguridad o restaurá datos desde un archivo .json.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-5">
+        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-5 dark:border-gray-600/30 dark:bg-gray-800">
           <h4 className="text-sm font-semibold text-pos-text mb-1">Exportar</h4>
           <p className="text-xs text-pos-muted mb-4">
             Descargá un .json con todos los datos.
@@ -378,7 +379,7 @@ function BackupSection() {
           </button>
         </div>
 
-        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-5">
+        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-5 dark:border-gray-600/30 dark:bg-gray-800">
           <h4 className="text-sm font-semibold text-pos-text mb-1">Restaurar</h4>
           <p className="text-xs text-pos-muted mb-4">
             Reemplazá todos los datos actuales.
@@ -404,8 +405,6 @@ function BackupSection() {
 }
 
 function SettingsSection() {
-  const theme = useAdminStore((s) => s.theme);
-  const toggleTheme = useAdminStore((s) => s.toggleTheme);
   const setPage = useAppStore((s) => s.setPage);
   const showNotification = useAppStore((s) => s.showNotification);
   const currentUser = useAuthStore((s) => s.currentUser);
@@ -435,7 +434,7 @@ function SettingsSection() {
       <h3 className="text-base font-semibold text-pos-text mb-4">Configuración</h3>
       <div className="max-w-md space-y-4">
         {/* User info */}
-        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-4">
+        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-4 dark:border-gray-600/30 dark:bg-gray-800">
           <h4 className="text-xs font-semibold text-pos-muted uppercase tracking-wider mb-3">
             Usuario
           </h4>
@@ -463,35 +462,16 @@ function SettingsSection() {
         </div>
 
         {/* Theme */}
-        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-4">
+        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-4 dark:border-gray-600/30 dark:bg-gray-800">
           <h4 className="text-xs font-semibold text-pos-muted uppercase tracking-wider mb-3">
             Tema
           </h4>
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center justify-between p-3 bg-pos-background/50 rounded-xl touch-target hover:bg-pos-background/80 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-lg">
-                {theme === "light" ? "☀️" : "🌙"}
-              </span>
-              <span className="text-sm font-medium text-pos-text">
-                {theme === "light" ? "Modo Claro" : "Modo Oscuro"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-pos-muted">Claro</span>
-              <div className={`w-10 h-6 rounded-full transition-colors ${theme === "dark" ? "bg-pos-secondary" : "bg-pos-muted/30"} relative`}>
-                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${theme === "dark" ? "translate-x-[18px]" : "translate-x-0.5"}`} />
-              </div>
-              <span className="text-xs text-pos-muted">Oscuro</span>
-            </div>
-          </button>
+          <ThemeToggle />
         </div>
 
         {/* Test data seeder */}
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1 dark:text-amber-400">
             Datos de prueba
           </h4>
           <p className="text-xs text-pos-muted mb-3">
@@ -500,7 +480,7 @@ function SettingsSection() {
           <button
             onClick={handleSeeder}
             disabled={seeding}
-            className="w-full px-4 py-2 text-sm font-medium rounded-lg border border-amber-500/30 text-amber-700 bg-amber-500/10 touch-target hover:bg-amber-500/20 disabled:opacity-50 transition-opacity"
+            className="w-full px-4 py-2 text-sm font-medium rounded-lg border border-amber-500/30 text-amber-700 bg-amber-500/10 touch-target hover:bg-amber-500/20 disabled:opacity-50 transition-opacity dark:text-amber-300 dark:border-amber-500/40 dark:bg-amber-500/15 dark:hover:bg-amber-500/25"
           >
             {seeding ? "Generando datos…" : "Generar datos de prueba"}
           </button>

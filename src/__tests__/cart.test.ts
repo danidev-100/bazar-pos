@@ -237,7 +237,7 @@ describe("Cash payment change calculation", () => {
 
     expect(() => {
       useAppStore.getState().checkout("cash", 500, "store_1");
-    }).toThrow(/insufficient payment/i);
+    }).toThrow(/pago insuficiente/i);
   });
 
   it("throws an error when payment is significantly less than total", () => {
@@ -245,7 +245,7 @@ describe("Cash payment change calculation", () => {
 
     expect(() => {
       useAppStore.getState().checkout("cash", 100, "store_1");
-    }).toThrow(/insufficient payment/i);
+    }).toThrow(/pago insuficiente/i);
   });
 
   it("has null change for card payments", () => {

@@ -75,13 +75,13 @@ export default function BrandList() {
             <>
               <button
                 onClick={exportBrandsExcel}
-                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Excel
               </button>
               <button
                 onClick={exportBrandsPdf}
-                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 PDF
               </button>
@@ -100,7 +100,7 @@ export default function BrandList() {
 
       {/* Create / Edit form inline */}
       {(isCreating || editingBrand) && (
-        <div className="mb-3 p-3 bg-pos-background/50 rounded-lg border border-pos-muted/10">
+        <div className="mb-3 p-3 bg-pos-background/50 rounded-lg border border-pos-muted/10 dark:bg-gray-800/50 dark:border-gray-600/30">
           <BrandForm
             editBrand={editingBrand}
             onSaved={handleSaved}
@@ -121,7 +121,7 @@ export default function BrandList() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-pos-muted border-b border-pos-muted/20">
+              <tr className="text-pos-muted border-b border-pos-muted/20 dark:text-gray-400 dark:border-gray-700">
                 <th className="text-left py-2 pr-2 font-medium">Nombre</th>
                 <th className="text-right py-2 pl-2 font-medium">Acciones</th>
               </tr>
@@ -130,7 +130,7 @@ export default function BrandList() {
               {storeBrands.map((brand) => (
                 <tr
                   key={brand.id}
-                  className="border-b border-pos-muted/10 transition-colors hover:bg-pos-background/50"
+                  className="border-b border-pos-muted/10 transition-colors hover:bg-pos-background/50 dark:border-gray-700 dark:hover:bg-gray-700/50"
                 >
                   <td className="py-2 pr-2 font-medium text-pos-text">
                     {brand.name}

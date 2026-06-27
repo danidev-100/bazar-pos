@@ -406,7 +406,7 @@ export default function POSPage() {
       {/* ── Cash Register Gate ── */}
       {!hasOpenShift ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-sm">
+          <div className="text-center max-w-sm dark:text-gray-100">
             <div className="text-6xl mb-4">🔒</div>
             <h2 className="text-lg font-semibold text-pos-text mb-2">
               No hay caja abierta
@@ -436,7 +436,7 @@ export default function POSPage() {
           <div className="shrink-0">
             <button
               onClick={() => setShowSearchModal(true)}
-              className="w-full flex items-center gap-3 bg-pos-surface border border-pos-muted/20 rounded-xl px-4 py-3.5 text-sm text-pos-muted hover:text-pos-text hover:border-pos-secondary/40 transition-all touch-target group"
+              className="w-full flex items-center gap-3 bg-pos-surface border border-pos-muted/20 rounded-xl px-4 py-3.5 text-sm text-pos-muted hover:text-pos-text hover:border-pos-secondary/40 transition-all touch-target group dark:bg-gray-800 dark:border-gray-600/30 dark:hover:border-pos-secondary/40"
             >
               <svg className="w-5 h-5 text-pos-muted/40 group-hover:text-pos-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <circle cx="11" cy="11" r="8" />
@@ -451,7 +451,7 @@ export default function POSPage() {
           </div>
 
           {/* ── Cart Panel (vertical — full height) ── */}
-          <aside className={`flex-1 min-h-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto ${scanFlash ? "scan-flash" : ""}`}>
+          <aside className={`flex-1 min-h-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto dark:bg-gray-800 dark:border-gray-600/30 ${scanFlash ? "scan-flash" : ""}`}>
             <CartPanel
               onCheckout={handleCheckout}
               onSelectCustomer={() => setShowCustomerSelect(true)}

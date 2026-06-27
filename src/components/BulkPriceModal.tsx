@@ -158,16 +158,16 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
   const canApply = hasPreview && !applying;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 bg-black/40">
-      <div className="bg-pos-surface rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 bg-black/40 dark:bg-black/60">
+      <div className="bg-pos-surface rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col dark:bg-gray-800">
         {/* ── Header ── */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-pos-muted/20 shrink-0">
-          <h2 className="text-lg font-bold text-pos-text">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-pos-muted/20 shrink-0 dark:border-gray-700">
+          <h2 className="text-lg font-bold text-pos-text dark:text-white">
             Aumento de Precio Masivo
           </h2>
           <button
             onClick={handleCancel}
-            className="text-pos-muted text-xl leading-none touch-target w-10 h-10 flex items-center justify-center rounded-lg hover:bg-pos-background transition-colors"
+            className="text-pos-muted text-xl leading-none touch-target w-10 h-10 flex items-center justify-center rounded-lg hover:bg-pos-background transition-colors dark:text-gray-400 dark:hover:bg-gray-700"
             aria-label="Cerrar aumento masivo"
           >
             ✕
@@ -178,16 +178,16 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Error */}
           {error && (
-            <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-sm rounded-xl px-4 py-3">
+            <div className="bg-pos-danger/10 border border-pos-danger/30 text-pos-danger text-sm rounded-xl px-4 py-3 dark:bg-red-900/20 dark:border-red-500/30 dark:text-red-400">
               {error}
             </div>
           )}
 
           {/* ── Filter section ── */}
           <section>
-            <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-3">
-              Filtrar Productos
-            </h3>
+              <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-3 dark:text-gray-400">
+                Filtrar Productos
+              </h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label
@@ -204,7 +204,7 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
                       e.target.value === "" ? "" : Number(e.target.value),
                     )
                   }
-                  className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target"
+                  className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                 >
                   <option value="">Todas las Categorías</option>
                   {flatCategories.map((cat) => (
@@ -230,7 +230,7 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
                       e.target.value === "" ? "" : Number(e.target.value),
                     )
                   }
-                  className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target"
+                  className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                 >
                   <option value="">Todas las Marcas</option>
                   {storeBrands.map((brand) => (
@@ -265,7 +265,7 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
                   step="0.1"
                   min="-100"
                   aria-label="Porcentaje de aumento"
-                  className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target"
+                  className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                 />
               </div>
 
@@ -299,7 +299,7 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
           <button
             onClick={handlePreview}
             disabled={parsedPercent === 0}
-            className="w-full px-4 py-2.5 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full px-4 py-2.5 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50 transition-opacity dark:bg-blue-700"
           >
             {preview === null ? "Vista Previa" : "Actualizar Vista Previa"}
           </button>
@@ -313,19 +313,19 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
               </h3>
 
               {preview.length === 0 ? (
-                <div className="bg-pos-background/50 rounded-lg p-6 text-center">
-                  <p className="text-sm text-pos-muted">
+                <div className="bg-pos-background/50 rounded-lg p-6 text-center dark:bg-gray-700/50">
+                  <p className="text-sm text-pos-muted dark:text-gray-400">
                     No hay productos que coincidan con los filtros.
                   </p>
-                  <p className="text-xs text-pos-muted/60 mt-1">
+                  <p className="text-xs text-pos-muted/60 mt-1 dark:text-gray-500">
                     Probá cambiando la categoría o marca seleccionada.
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-pos-muted/10">
+                <div className="overflow-x-auto rounded-lg border border-pos-muted/10 dark:border-gray-700">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-pos-background/50 text-pos-muted border-b border-pos-muted/10">
+                      <tr className="bg-pos-background/50 text-pos-muted border-b border-pos-muted/10 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-700">
                         <th className="text-left py-2 px-3 font-medium">
                           Producto
                         </th>
@@ -338,7 +338,7 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
                         <th className="text-right py-2 px-3 font-medium">
                           Nuevo
                         </th>
-                        <th className="text-right py-2 px-3 font-medium text-pos-success">
+                        <th className="text-right py-2 px-3 font-medium text-pos-success dark:text-green-400">
                           Cambio
                         </th>
                       </tr>
@@ -359,17 +359,17 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
         </div>
 
         {/* ── Footer actions ── */}
-        <div className="flex items-center gap-3 p-6 pt-4 border-t border-pos-muted/20 shrink-0">
+        <div className="flex items-center gap-3 p-6 pt-4 border-t border-pos-muted/20 shrink-0 dark:border-gray-700">
           <button
             onClick={handleCancel}
-            className="flex-1 px-4 py-3 border border-pos-muted/30 text-pos-text rounded-xl font-medium text-sm touch-target hover:bg-pos-background transition-colors"
+            className="flex-1 px-4 py-3 border border-pos-muted/30 text-pos-text rounded-xl font-medium text-sm touch-target hover:bg-pos-background transition-colors dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Cancelar
           </button>
           <button
             onClick={handleApply}
             disabled={!canApply}
-            className="flex-1 px-4 py-3 bg-pos-accent text-white rounded-xl font-bold text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-pos-accent text-white rounded-xl font-bold text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed dark:bg-amber-600"
           >
             {applying
               ? "Aplicando…"
@@ -399,26 +399,26 @@ function ProductPreviewRows({ group }: { group: ProductGroup }) {
       {rows.map((item, idx) => (
         <tr
           key={`${item.productId}-${item.field}`}
-          className="border-b border-pos-muted/5 hover:bg-pos-background/30 transition-colors"
+          className="border-b border-pos-muted/5 hover:bg-pos-background/30 transition-colors dark:border-gray-700 dark:hover:bg-gray-700/30"
         >
           {idx === 0 && (
             <td
-              className="py-2 px-3 font-medium text-pos-text"
+              className="py-2 px-3 font-medium text-pos-text dark:text-white"
               rowSpan={rowSpan}
             >
               {item.name}
             </td>
           )}
-          <td className="py-2 px-3 text-pos-muted capitalize">
+          <td className="py-2 px-3 text-pos-muted capitalize dark:text-gray-400">
             {item.field === "cost" ? "Costo" : "Venta"}
           </td>
-          <td className="py-2 px-3 text-right font-mono text-pos-muted">
+          <td className="py-2 px-3 num text-pos-muted">
             ${item.currentPrice.toFixed(2)}
           </td>
-          <td className="py-2 px-3 text-right font-mono text-pos-text font-semibold">
+          <td className="py-2 px-3 num text-pos-text font-semibold">
             ${item.newPrice.toFixed(2)}
           </td>
-          <td className="py-2 px-3 text-right font-mono text-pos-success">
+          <td className="py-2 px-3 num text-pos-success">
             +${(item.newPrice - item.currentPrice).toFixed(2)}
           </td>
         </tr>

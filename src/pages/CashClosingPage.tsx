@@ -104,7 +104,7 @@ export default function CashClosingPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Left panel: Shift list ── */}
-      <aside className="w-full lg:w-72 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-40 lg:max-h-full">
+      <aside className="w-full lg:w-72 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-40 lg:max-h-full dark:bg-gray-800 dark:border-gray-600/30">
         <ShiftList
           shifts={storeShifts}
           currentShift={currentShift}
@@ -114,14 +114,14 @@ export default function CashClosingPage() {
       </aside>
 
       {/* ── Center panel: ShiftPanel or Reconciliation or Report ── */}
-      <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto">
+      <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-4 overflow-y-auto dark:bg-gray-800 dark:border-gray-600/30">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-4">
           Cierre de Caja
         </h2>
 
         {/* ── Admin: Cashier Summary ── */}
         {isAdmin && storeShifts.length > 0 && (
-          <div className="mb-6 bg-pos-background/30 rounded-xl border border-pos-muted/10 p-4">
+          <div className="mb-6 bg-pos-background/30 rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800/50 dark:border-gray-600/30">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide">
                 Resumen de Cajeros
@@ -146,7 +146,7 @@ export default function CashClosingPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-pos-muted border-b border-pos-muted/20">
+                  <tr className="text-pos-muted border-b border-pos-muted/20 dark:text-gray-400 dark:border-gray-700">
                     <th className="text-left py-1.5 pr-2 font-medium">Cajero</th>
                     <th className="text-left py-1.5 px-2 font-medium">Turno</th>
                     <th className="text-right py-1.5 px-2 font-medium">Apertura</th>
@@ -176,18 +176,18 @@ export default function CashClosingPage() {
                     const total = Math.round((cashTotal + cardTotal) * 100) / 100;
 
                     return (
-                      <tr key={shift.id} className="border-b border-pos-muted/10 hover:bg-pos-background/50">
+                      <tr key={shift.id} className="border-b border-pos-muted/10 hover:bg-pos-background/50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                         <td className="py-2 pr-2 font-medium text-pos-text">{shift.employee}</td>
                         <td className="py-2 px-2 text-pos-muted">
                           {new Date(shift.openTime).toLocaleDateString()}
                         </td>
-                        <td className="py-2 px-2 text-right font-mono text-pos-muted">
+                        <td className="py-2 px-2 num text-pos-muted">
                           ${shift.openingBalance.toFixed(2)}
                         </td>
-                        <td className="py-2 px-2 text-right font-mono">{shiftSales.length}</td>
-                        <td className="py-2 px-2 text-right font-mono">${cashTotal.toFixed(2)}</td>
-                        <td className="py-2 px-2 text-right font-mono">${cardTotal.toFixed(2)}</td>
-                        <td className="py-2 px-2 text-right font-mono font-bold">${total.toFixed(2)}</td>
+                        <td className="py-2 px-2 num">{shiftSales.length}</td>
+                        <td className="py-2 px-2 num">${cashTotal.toFixed(2)}</td>
+                        <td className="py-2 px-2 num">${cardTotal.toFixed(2)}</td>
+                        <td className="py-2 px-2 num font-bold">${total.toFixed(2)}</td>
                         <td className="py-2 pl-2 text-center">
                           {shift.status === "open" ? (
                             <span className="text-pos-success font-medium">● Abierto</span>
@@ -253,7 +253,7 @@ export default function CashClosingPage() {
 
       {/* ── Right panel: Quick stats for selected shift ── */}
       {selectedShift && (
-        <aside className="w-full lg:w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-40 lg:max-h-full">
+        <aside className="w-full lg:w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-40 lg:max-h-full dark:bg-gray-800 dark:border-gray-600/30">
           <ShiftQuickStats
             shift={selectedShift}
             completedSales={completedSales}
@@ -309,7 +309,7 @@ function ShiftList({
             setEmployeeFilter(e.target.value);
             onSelect(null);
           }}
-          className="text-xs border border-pos-muted/20 rounded-lg px-2 py-1 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
+          className="text-xs border border-pos-muted/20 rounded-lg px-2 py-1 bg-pos-surface text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
         >
           <option value="all">Todos</option>
           {employees.map((emp) => (
@@ -328,8 +328,8 @@ function ShiftList({
             onClick={() => onSelect(s.id)}
             className={`w-full text-left px-3 py-2 rounded-lg border transition-colors ${
               isSelected
-                ? "border-pos-secondary bg-pos-secondary/10"
-                : "border-transparent hover:bg-pos-background/50"
+                ? "border-pos-secondary bg-pos-secondary/10 dark:border-blue-500 dark:bg-blue-900/20"
+                : "border-transparent hover:bg-pos-background/50 dark:hover:bg-gray-700/50"
             }`}
           >
             <div className="flex items-center justify-between mb-1">

@@ -248,7 +248,7 @@ export default function ProductsPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Product list / form ── */}
-      <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto">
+      <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto dark:bg-gray-800 dark:border-gray-600/30">
         {centerView.kind === "list" && (
           <>
             {/* Header */}
@@ -313,10 +313,10 @@ export default function ProductsPage() {
                 }}
                 className={`shrink-0 px-3 py-2 rounded-lg text-xs font-medium touch-target transition-all border ${
                   stockFilter === "critical"
-                    ? "bg-pos-danger/10 border-pos-danger/40 text-pos-danger ring-1 ring-pos-danger/20"
+                    ? "bg-pos-danger/10 border-pos-danger/40 text-pos-danger ring-1 ring-pos-danger/20 dark:bg-red-900/20 dark:border-red-500/40 dark:text-red-400"
                     : stockFilter === "medium"
-                      ? "bg-yellow-500/10 border-yellow-500/40 text-yellow-600 ring-1 ring-yellow-500/20"
-                      : "border-pos-muted/20 text-pos-muted hover:border-pos-muted/40 hover:text-pos-text"
+                      ? "bg-yellow-500/10 border-yellow-500/40 text-yellow-600 ring-1 ring-yellow-500/20 dark:bg-yellow-900/20 dark:border-yellow-500/40 dark:text-yellow-400"
+                      : "border-pos-muted/20 text-pos-muted hover:border-pos-muted/40 hover:text-pos-text dark:border-gray-600/30 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
               >
                 {stockFilter === "critical"
@@ -329,7 +329,7 @@ export default function ProductsPage() {
 
             {/* Bulk actions */}
             {selectedProductIds.length > 0 && (
-              <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-pos-secondary/10 border border-pos-secondary/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-pos-secondary/10 border border-pos-secondary/30 rounded-lg dark:bg-blue-900/20 dark:border-blue-500/30">
                 <span className="text-xs font-medium text-pos-text mr-1">
                   {selectedProductIds.length} seleccionado{selectedProductIds.length !== 1 ? "s" : ""}
                 </span>
@@ -377,7 +377,7 @@ export default function ProductsPage() {
                 <div className="overflow-x-auto">
                 <table className="w-full text-xm">
                     <thead>
-                    <tr className="text-pos-muted border-b border-pos-muted/20 ">
+                    <tr className="text-pos-muted border-b border-pos-muted/20 dark:text-gray-400 dark:border-gray-700">
                       <th className="w-8 py-2 pr-1">
                         <input
                           type="checkbox"
@@ -431,9 +431,9 @@ export default function ProductsPage() {
                         <tr
                           key={p.id}
                           onClick={() => handleProductSelect(p.id)}
-                          className={`border-b border-pos-muted/10 cursor-pointer transition-colors hover:bg-pos-background/50 ${
+                          className={`border-b border-pos-muted/10 cursor-pointer transition-colors hover:bg-pos-background/50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
                             selectedProductId === p.id
-                              ? "bg-pos-secondary/10"
+                              ? "bg-pos-secondary/10 dark:bg-blue-900/20"
                               : ""
                           }`}
                         >
@@ -457,21 +457,21 @@ export default function ProductsPage() {
                           <td className="py-2 px-2 font-medium text-pos-text">
                             {p.name}
                           </td>
-                          <td className="py-2 px-2 text-right font-mono">
+                          <td className="py-2 px-2 num">
                             ${p.price.toFixed(2)}
                           </td>
                           {canViewCost && (
-                            <td className="py-2 px-2 text-right font-mono text-pos-muted">
+                            <td className="py-2 px-2 num text-pos-muted">
                               ${p.costPrice.toFixed(2)}
                             </td>
                           )}
                           <td
-                            className={`py-2 px-2 text-right font-mono font-bold ${
+                            className={`py-2 px-2 num font-bold ${
                               p.stock <= p.minStock && p.minStock > 0
-                                ? "text-pos-danger"
+                                ? "text-pos-danger dark:text-red-400"
                                 : p.midStock > 0 && p.stock <= p.midStock
-                                  ? "text-yellow-500"
-                                  : "text-pos-success"
+                                  ? "text-yellow-500 dark:text-yellow-400"
+                                  : "text-pos-success dark:text-green-400"
                             }`}
                           >
                             {editingStockId === p.id ? (
@@ -502,7 +502,7 @@ export default function ProductsPage() {
                                     setEditingStockId(null);
                                   }
                                 }}
-                                className="w-16 text-right text-xs font-bold font-mono bg-pos-background border border-pos-secondary rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                className="w-16 text-right text-xs font-bold font-mono bg-pos-background border border-pos-secondary rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none dark:bg-gray-700 dark:text-white"
                               />
                             ) : (
                               <button
@@ -591,7 +591,7 @@ export default function ProductsPage() {
       </section>
 
       {/* ── Right panel: Stock movement log ── */}
-      <aside className="w-full lg:w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full">
+      <aside className="w-full lg:w-80 flex-shrink-0 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto max-h-48 lg:max-h-full dark:bg-gray-800 dark:border-gray-600/30">
         <StockMovementLog
           product={selectedProduct}
           emptyState={
@@ -648,11 +648,11 @@ export default function ProductsPage() {
       {/* ── Bulk Delete Confirmation ── */}
       {showBulkDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm dark:bg-black/70"
           onClick={() => setShowBulkDelete(false)}
         >
           <div
-            className="w-full max-w-sm bg-pos-surface rounded-2xl shadow-2xl border border-pos-muted/10 mx-4 p-5"
+            className="w-full max-w-sm bg-pos-surface rounded-2xl shadow-2xl border border-pos-muted/10 mx-4 p-5 dark:bg-gray-800 dark:border-gray-600/30"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center">

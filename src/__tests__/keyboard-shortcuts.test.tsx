@@ -59,6 +59,12 @@ beforeEach(() => {
 // ──────────────────────────────────────────────
 
 describe("Keyboard shortcuts — input gate", () => {
+  async function openSearchInput(user: ReturnType<typeof userEvent.setup>) {
+    // Open ProductSearchModal with F2 so the search input renders
+    await user.keyboard("{F2}");
+    return screen.getByPlaceholderText("Buscá por nombre o código de barras…");
+  }
+
   it("does not trigger shortcuts when typing in a text input", async () => {
     const user = userEvent.setup();
     render(
@@ -71,8 +77,8 @@ describe("Keyboard shortcuts — input gate", () => {
     const store = useAppStore.getState();
     store.addItem(1, "Coca-Cola 500ml", 150);
 
-    // Focus the search input inside ProductGrid
-    const searchInput = screen.getByPlaceholderText("Buscá por nombre o código…");
+    // Open search modal and focus the search input
+    const searchInput = await openSearchInput(user);
     await user.click(searchInput);
     expect(searchInput).toHaveFocus();
 
@@ -94,6 +100,9 @@ describe("Keyboard shortcuts — input gate", () => {
     const store = useAppStore.getState();
     store.addItem(1, "Coca-Cola 500ml", 150);
 
+    // Close the search modal first (if open from previous test cleanup)
+    await user.keyboard("{Escape}");
+
     // Click on a non-input element (the cart panel heading shows cashier name)
     const heading = screen.getByText(/Cajero:/);
     await user.click(heading);
@@ -105,7 +114,7 @@ describe("Keyboard shortcuts — input gate", () => {
     expect(screen.getByText("Efectivo")).toBeInTheDocument();
   });
 
-  it("does not trigger shortcuts while typing in textarea", async () => {
+  it("does not trigger shortcuts while typing in search input", async () => {
     const user = userEvent.setup();
     render(
       <StoreProvider initialStoreId="store_1">
@@ -116,9 +125,8 @@ describe("Keyboard shortcuts — input gate", () => {
     const store = useAppStore.getState();
     store.addItem(1, "Coca-Cola 500ml", 150);
 
-    // We can't add a textarea to the page from test easily, but we can test
-    // that clicking the search input first causes F1 to not fire
-    const searchInput = screen.getByPlaceholderText("Buscá por nombre o código…");
+    // Open search, focus input, press F1
+    const searchInput = await openSearchInput(user);
     await user.click(searchInput);
     await user.keyboard("{F1}");
 
@@ -319,5 +327,124 @@ describe("Selected cart item highlight", () => {
 
     store.clearSelectedCartItem();
     expect(useAppStore.getState().selectedCartItemId).toBeNull();
+  });
+});
+
+// ──────────────────────────────────────────────
+// 1.4 — F2 opens search modal, Escape closes
+// ──────────────────────────────────────────────
+
+describe("Keyboard shortcuts — F2 and Escape", () => {
+  it("F2 opens the product search modal", async () => {
+    const user = userEvent.setup();
+    render(
+      <StoreProvider initialStoreId="store_1">
+        <POSPage />
+      </StoreProvider>,
+    );
+
+    // Press F2 on the body (outside inputs)
+    await user.keyboard("{F2}");
+
+    // ProductSearchModal should appear — look for its search input placeholder
+    expect(screen.getByPlaceholderText("Buscá por nombre o código de barras…")).toBeInTheDocument();
+  });
+
+  it("Escape closes the checkout modal", async () => {
+    const user = userEvent.setup();
+    render(
+      <StoreProvider initialStoreId="store_1">
+        <POSPage />
+      </StoreProvider>,
+    );
+
+    const store = useAppStore.getState();
+    store.addItem(1, "Coca-Cola 500ml", 150);
+
+    // Open checkout with F1
+    await user.keyboard("{F1}");
+    expect(screen.getByText("Efectivo")).toBeInTheDocument();
+
+    // Press Escape to close
+    await user.keyboard("{Escape}");
+
+    // Checkout modal should close
+    expect(screen.queryByText("Efectivo")).toBeNull();
+  });
+});
+
+// ──────────────────────────────────────────────
+// 1.5 — +/- adjusts selected item quantity
+// ──────────────────────────────────────────────
+
+describe("Keyboard shortcuts — +/- quantity adjustment", () => {
+  it("+ (or =) increments selected item quantity", async () => {
+    const user = userEvent.setup();
+    render(
+      <StoreProvider initialStoreId="store_1">
+        <POSPage />
+      </StoreProvider>,
+    );
+
+    const store = useAppStore.getState();
+    store.addItem(1, "Coca-Cola 500ml", 150);
+    store.addItem(2, "Leche Entera 1L", 200);
+
+    // Select the first item
+    store.selectCartItem(1);
+    expect(useAppStore.getState().items[0].quantity).toBe(1);
+
+    // Press + (or =) to increment
+    await user.keyboard("+");
+
+    const item = useAppStore.getState().items[0];
+    expect(item.quantity).toBe(2);
+  });
+
+  it("- decrements selected item quantity", async () => {
+    const user = userEvent.setup();
+    render(
+      <StoreProvider initialStoreId="store_1">
+        <POSPage />
+      </StoreProvider>,
+    );
+
+    const store = useAppStore.getState();
+    store.addItem(1, "Coca-Cola 500ml", 150);
+    store.updateQuantity(1, 3);
+
+    // Select the first item
+    store.selectCartItem(1);
+    expect(useAppStore.getState().items[0].quantity).toBe(3);
+
+    // Press - to decrement
+    await user.keyboard("-");
+
+    const item = useAppStore.getState().items[0];
+    expect(item.quantity).toBe(2);
+  });
+
+  it("- at qty=1 removes selected item via keyboard shortcut", async () => {
+    const user = userEvent.setup();
+    render(
+      <StoreProvider initialStoreId="store_1">
+        <POSPage />
+      </StoreProvider>,
+    );
+
+    const store = useAppStore.getState();
+    store.addItem(1, "Coca-Cola 500ml", 150);
+    store.addItem(2, "Leche Entera 1L", 200);
+    expect(useAppStore.getState().items).toHaveLength(2);
+
+    // Select the first item (qty=1)
+    store.selectCartItem(1);
+
+    // Press - to decrement (should remove at qty=1)
+    await user.keyboard("-");
+
+    const items = useAppStore.getState().items;
+    expect(items).toHaveLength(1);
+    expect(items[0].productId).toBe(2);
   });
 });

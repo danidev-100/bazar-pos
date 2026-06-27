@@ -129,7 +129,7 @@ export default function ProductSearchModal({
     const selected = listRef.current.children[
       selectedIndex
     ] as HTMLElement | undefined;
-    selected?.scrollIntoView({ block: "nearest" });
+    selected?.scrollIntoView?.({ block: "nearest" });
   }, [selectedIndex]);
 
   function handleTap(product: (typeof storeProducts)[number]) {

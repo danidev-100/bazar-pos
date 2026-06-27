@@ -212,7 +212,7 @@ export default function StatsPage() {
       </div>
 
       {/* ── Chart ── */}
-      <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4">
+      <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
         <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
           Ingresos en el Tiempo
         </h2>
@@ -220,7 +220,7 @@ export default function StatsPage() {
       </section>
 
       {/* ── Top Sellers ── */}
-      <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4">
+      <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
             Más Vendidos
@@ -272,7 +272,7 @@ export default function StatsPage() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-3 text-center">
+    <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-3 text-center dark:bg-gray-800 dark:border-gray-600/30">
       <p className="text-xs text-pos-muted uppercase tracking-wide mb-1">
         {label}
       </p>

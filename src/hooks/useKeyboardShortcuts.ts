@@ -65,6 +65,11 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers): void {
           event.preventDefault();
           handlers.onDecreaseQty();
           break;
+
+        case "Escape":
+          event.preventDefault();
+          handlers.onEscape();
+          break;
       }
     }
 

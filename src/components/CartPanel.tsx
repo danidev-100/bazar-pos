@@ -75,12 +75,16 @@ export default function CartPanel({
   }
 
   function safeUpdateQuantity(productId: number, qty: number) {
+    if (qty <= 0) {
+      removeItem(productId);
+      return;
+    }
     const maxQty = getMaxQuantity(productId);
     if (qty > maxQty) {
       setStockError(productId);
       return;
     }
-    updateQuantity(productId, Math.max(1, qty));
+    updateQuantity(productId, qty);
   }
 
   const [stockError, setStockErrorState] = useState<number | null>(null);
@@ -261,8 +265,12 @@ export default function CartPanel({
                     const raw = editingQty[item.productId];
                     if (raw !== undefined) {
                       const val = parseInt(raw, 10);
-                      if (!isNaN(val) && val >= 1) {
-                        safeUpdateQuantity(item.productId, val);
+                      if (!isNaN(val)) {
+                        if (val <= 0) {
+                          removeItem(item.productId);
+                        } else {
+                          safeUpdateQuantity(item.productId, val);
+                        }
                       }
                       setEditingQty((prev) => {
                         const next = { ...prev };
@@ -274,6 +282,36 @@ export default function CartPanel({
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       (e.target as HTMLInputElement).blur();
+                    } else if (e.key === "Escape") {
+                      setEditingQty((prev) => {
+                        const next = { ...prev };
+                        delete next[item.productId];
+                        return next;
+                      });
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      const step = e.shiftKey ? 10 : 1;
+                      const newQty = item.quantity + step;
+                      safeUpdateQuantity(item.productId, newQty);
+                      setEditingQty((prev) => {
+                        const next = { ...prev };
+                        delete next[item.productId];
+                        return next;
+                      });
+                    } else if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      const step = e.shiftKey ? 10 : 1;
+                      const newQty = item.quantity - step;
+                      if (newQty <= 0) {
+                        removeItem(item.productId);
+                      } else {
+                        safeUpdateQuantity(item.productId, newQty);
+                      }
+                      setEditingQty((prev) => {
+                        const next = { ...prev };
+                        delete next[item.productId];
+                        return next;
+                      });
                     }
                   }}
                   className="w-10 text-center text-xs font-bold font-mono text-pos-text bg-pos-background border border-pos-muted/20 rounded-md px-0.5 py-1 focus:outline-none focus:ring-2 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"

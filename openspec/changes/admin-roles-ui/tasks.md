@@ -30,12 +30,12 @@ Chain strategy: stacked-to-main
 ## PR 1: Schema & Brands CRUD
 
 - [x] 1.1 Add `brands` table + `cost_price`/`brand_id` cols in `db/schema.ts`
-- [ ] 1.2 Generate Drizzle migration for new table + columns
+- [x] 1.2 Drizzle migration already exists (drizzle/local/0000_aberrant_hemingway.sql + drizzle/cloud/0000_young_firedrake.sql)
 - [x] 1.3 Create `src/store/brands.ts` (CRUD, store-scoped, alphabetical sort)
 - [x] 1.4 Create `src/components/BrandList.tsx` (table + empty state)
 - [x] 1.5 Create `src/components/BrandForm.tsx` (create/edit, duplicate validation)
 - [x] 1.6 Store tests: CRUD, duplicate rejection, store scoping
-- [ ] 1.7 Component tests: BrandList empty state, BrandForm submit validation
+- [x] 1.7 Component tests: BrandList empty state + BrandForm submit validation (7 tests in brand-components.test.tsx)
 
 ## PR 2: Admin Auth & Route Guard
 
@@ -63,10 +63,10 @@ Chain strategy: stacked-to-main
 
 ## PR 5: Dark Theme & Number Styling
 
-- [ ] 5.1 Set `darkMode: "class"` + dark palette in `tailwind.config.js`
-- [ ] 5.2 Add dark CSS custom properties in `src/styles.css`
-- [ ] 5.3 Create `src/components/ThemeToggle.tsx` (sun/moon, in header + settings)
-- [ ] 5.4 Add `dark:` classes to all pages: POSPage, ProductsPage, CashClosingPage, BillingPage, StatsPage
-- [ ] 5.5 Add `dark:` classes to admin components: AdminPage, BrandForm, BrandList, BulkPriceModal
-- [ ] 5.6 Apply monospace right-aligned number styling globally
-- [ ] 5.7 Tests: toggle persists, flicker-free reload, all pages render dark
+- [x] 5.1 Set `darkMode: "class"` + dark palette in `tailwind.config.js` — CSS vars approach via styles.css is sufficient; no dark palette needed in tailwind.config
+- [x] 5.2 Add dark CSS custom properties in `src/styles.css`
+- [x] 5.3 Create `src/components/ThemeToggle.tsx` (sun/moon, in header + settings)
+- [x] 5.4 Add `dark:` classes to all pages: POSPage, ProductsPage, CashClosingPage, BillingPage, StatsPage
+- [x] 5.5 Add `dark:` classes to admin components: AdminPage, BrandForm, BrandList, BulkPriceModal
+- [x] 5.6 Apply monospace right-aligned number styling globally (`.num` CSS class in styles.css)
+- [x] 5.7 Tests: toggle persists, flicker-free reload, all pages render dark
