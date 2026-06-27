@@ -52,6 +52,7 @@ export type CompletedSale = {
   amountPaid: number | null;
   cashAmount: number | null;
   cardAmount: number | null;
+  mercadopagoAmount: number | null;
   change: number | null;
   date: string;
   storeId: string;
@@ -133,6 +134,7 @@ export type AppStore = {
     customerName?: string,
     cashAmount?: number,
     cardAmount?: number,
+    mercadopagoAmount?: number,
   ) => CompletedSale;
   refundSale: (saleId: number) => void;
   dismissReceipt: () => void;
@@ -268,7 +270,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   // ── Sales / Checkout ──
 
-  checkout: (paymentMethod, amountPaid, storeId, customerName, cashAmount, cardAmount) => {
+  checkout: (paymentMethod, amountPaid, storeId, customerName, cashAmount, cardAmount, mercadopagoAmount) => {
     const { items, cartTotal, globalDiscountPercent } = get();
     if (items.length === 0) {
       throw new Error("Cannot checkout with an empty cart");
@@ -288,11 +290,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (paymentMethod === "mixed") {
       const cash = cashAmount ?? 0;
       const card = cardAmount ?? 0;
-      const paid = cash + card;
+      const mp = mercadopagoAmount ?? 0;
+      const paid = cash + card + mp;
       if (paid < total) {
         throw new Error(`Total ingresado: $${paid.toFixed(2)} — faltan $${(total - paid).toFixed(2)}`);
       }
-      change = Math.round((cash - (total - card)) * 100) / 100;
+      // Cash handles the change: cash portion covers what card + mp don't
+      change = Math.round((cash - (total - card - mp)) * 100) / 100;
     }
     if (paymentMethod === "credit") {
       // Sale goes through — customer balance will be increased
@@ -304,7 +308,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const resolvedStoreId = storeId ?? "store_1";
 
     const resolvedPayment = paymentMethod;
-    const paidAmount = paymentMethod === "mixed" ? (cashAmount ?? 0) + (cardAmount ?? 0) : paymentMethod === "mercadopago" ? total : (amountPaid ?? null);
+    const paidAmount = paymentMethod === "mixed" ? (cashAmount ?? 0) + (cardAmount ?? 0) + (mercadopagoAmount ?? 0) : paymentMethod === "mercadopago" ? total : (amountPaid ?? null);
 
     const sale: CompletedSale = {
       id: nextSaleId++,
@@ -316,7 +320,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       paymentMethod: resolvedPayment,
       amountPaid: paidAmount,
       cashAmount: paymentMethod === "mixed" ? (cashAmount ?? 0) : (paymentMethod === "cash" ? amountPaid ?? null : null),
-      cardAmount: paymentMethod === "mixed" ? (cardAmount ?? 0) : (paymentMethod === "card" || paymentMethod === "mercadopago" ? total : null),
+      cardAmount: paymentMethod === "mixed" ? (cardAmount ?? 0) : (paymentMethod === "card" ? total : null),
+      mercadopagoAmount: paymentMethod === "mixed" ? (mercadopagoAmount ?? 0) : paymentMethod === "mercadopago" ? total : null,
       change,
       date: new Date().toISOString(),
       storeId: resolvedStoreId,
@@ -378,7 +383,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     // ── Persist sale + items in a single transaction ──
     const now = new Date().toISOString();
     const dbCash = paymentMethod === "mixed" ? (cashAmount ?? 0) : paymentMethod === "cash" ? (amountPaid ?? null) : null;
-    const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) : paymentMethod === "card" || paymentMethod === "mercadopago" ? total : null;
+    const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) + (mercadopagoAmount ?? 0) : paymentMethod === "card" || paymentMethod === "mercadopago" ? total : null;
 
     const stmts = [
       {

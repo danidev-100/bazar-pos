@@ -31,23 +31,26 @@ export default function CheckoutModal({
   const [discountDraft, setDiscountDraft] = useState(String(globalDiscountPercent));
   const [cashAmount, setCashAmount] = useState<string>("");
   const [cardAmount, setCardAmount] = useState<string>("");
+  const [mercadopagoAmount, setMercadopagoAmount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const parsedCash = parseFloat(cashAmount) || 0;
   const parsedCard = parseFloat(cardAmount) || 0;
-  const enteredTotal = paymentMethod === "mixed" ? parsedCash + parsedCard : parsedCash;
+  const parsedMercadopago = parseFloat(mercadopagoAmount) || 0;
+  const enteredTotal = paymentMethod === "mixed" ? parsedCash + parsedCard + parsedMercadopago : parsedCash;
   const change =
     paymentMethod === "cash" && parsedCash >= total
       ? Math.round((parsedCash - total) * 100) / 100
       : paymentMethod === "mixed" && enteredTotal >= total
-        ? Math.round((parsedCash - (total - parsedCard)) * 100) / 100
+        ? Math.round((parsedCash - (total - parsedCard - parsedMercadopago)) * 100) / 100
         : 0;
 
   function resetState() {
     setPaymentMethod(null);
     setCashAmount("");
     setCardAmount("");
+    setMercadopagoAmount("");
     setError(null);
     setBusy(false);
   }
@@ -65,6 +68,7 @@ export default function CheckoutModal({
     if (method === "mixed") {
       setCashAmount("");
       setCardAmount("");
+      setMercadopagoAmount("");
     }
   }
 
@@ -84,8 +88,8 @@ export default function CheckoutModal({
     }
 
     if (paymentMethod === "mixed") {
-      if (parsedCard <= 0 && parsedCash <= 0) {
-        setError("Ingresá al menos un monto en efectivo o tarjeta");
+      if (parsedCard <= 0 && parsedCash <= 0 && parsedMercadopago <= 0) {
+        setError("Ingresá al menos un monto en efectivo, tarjeta o Mercado Pago");
         return;
       }
       if (enteredTotal < total) {
@@ -99,7 +103,7 @@ export default function CheckoutModal({
 
     try {
       if (paymentMethod === "mixed") {
-        checkout("mixed", total, storeId, selectedCustomer?.name, parsedCash, parsedCard);
+        checkout("mixed", total, storeId, selectedCustomer?.name, parsedCash, parsedCard, parsedMercadopago);
       } else if (paymentMethod === "credit") {
         checkout("credit", total, storeId, selectedCustomer?.name);
       } else if (paymentMethod === "mercadopago") {
@@ -288,10 +292,12 @@ export default function CheckoutModal({
                 </button>
                 <button
                   onClick={() => handlePaymentSelect("mercadopago")}
-                  className="flex flex-col items-center justify-center py-4 px-1 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                  className="flex flex-col items-center justify-center py-4 px-1 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-[#00a1e0] hover:bg-[#e5f6ff] transition-all"
                 >
-                  <span className="text-2xl mb-1">🧾</span>
-                  <span className="text-xs font-semibold text-pos-text">
+                  <svg className="w-7 h-7 mb-1" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.9 6.5c.2 0 .4.08.55.22.15.15.22.34.22.55v4.46c0 .22-.08.4-.22.55-.15.15-.34.22-.55.22h-1.1c-.22 0-.4-.08-.55-.22-.15-.15-.22-.34-.22-.55v-1.8L12.9 14.5c-.15.15-.34.22-.55.22h-.7c-.22 0-.4-.08-.55-.22L9.2 12.38v1.8c0 .22-.08.4-.22.55-.15.15-.34.22-.55.22h-1.1c-.22 0-.4-.08-.55-.22-.15-.15-.22-.34-.22-.55V9.27c0-.22.08-.4.22-.55.15-.15.34-.22.55-.22h.92c.22 0 .4.08.55.22L12 12.15l2.22-2.88c.15-.15.34-.22.55-.22h1.13z" fill="#00a1e0"/>
+                  </svg>
+                  <span className="text-xs font-semibold text-[#00a1e0]">
                     Mercado Pago
                   </span>
                 </button>
@@ -367,9 +373,9 @@ export default function CheckoutModal({
               <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
                 Pago Mixto
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label htmlFor="mixed-cash-input" className="block text-xs text-pos-muted mb-1">Efectivo</label>
+                  <label htmlFor="mixed-cash-input" className="block text-[10px] text-pos-muted mb-1">💵 Efectivo</label>
                   <input
                     id="mixed-cash-input"
                     type="number"
@@ -379,11 +385,11 @@ export default function CheckoutModal({
                     placeholder="0.00"
                     min="0"
                     step="0.01"
-                    className="w-full border border-pos-muted/30 rounded-xl px-3 py-2 text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
-                  <label htmlFor="mixed-card-input" className="block text-xs text-pos-muted mb-1">Tarjeta</label>
+                  <label htmlFor="mixed-card-input" className="block text-[10px] text-pos-muted mb-1">💳 Tarjeta</label>
                   <input
                     id="mixed-card-input"
                     type="number"
@@ -393,7 +399,21 @@ export default function CheckoutModal({
                     placeholder="0.00"
                     min="0"
                     step="0.01"
-                    className="w-full border border-pos-muted/30 rounded-xl px-3 py-2 text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="mixed-mp-input" className="block text-[10px] text-pos-muted mb-1">🧾 M. Pago</label>
+                  <input
+                    id="mixed-mp-input"
+                    type="number"
+                    inputMode="decimal"
+                    value={mercadopagoAmount}
+                    onChange={(e) => setMercadopagoAmount(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -405,7 +425,7 @@ export default function CheckoutModal({
                   </span>
                 </div>
               )}
-              {enteredTotal > total && parsedCard > 0 && (
+              {enteredTotal > total && (parsedCard > 0 || parsedMercadopago > 0) && (
                 <div className="flex items-center justify-between bg-pos-success/10 border border-pos-success/20 rounded-xl px-4 py-3">
                   <span className="text-sm font-semibold text-pos-success">Vuelto (efectivo)</span>
                   <span className="text-lg font-bold font-mono text-pos-success">
@@ -446,12 +466,17 @@ export default function CheckoutModal({
 
           {/* Mercado Pago indicator */}
           {paymentMethod === "mercadopago" && (
-            <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-center">
-              <p className="text-sm text-sky-700 font-medium">
-                🧾 Pago con Mercado Pago
-              </p>
-              <p className="text-xs text-sky-600 mt-1">
-                Mostrá el código QR al cliente para que escanee con la app de Mercado Pago
+            <div className="bg-[#e5f6ff] border border-[#00a1e0]/30 rounded-xl px-4 py-3 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.9 6.5c.2 0 .4.08.55.22.15.15.22.34.22.55v4.46c0 .22-.08.4-.22.55-.15.15-.34.22-.55.22h-1.1c-.22 0-.4-.08-.55-.22-.15-.15-.22-.34-.22-.55v-1.8L12.9 14.5c-.15.15-.34.22-.55.22h-.7c-.22 0-.4-.08-.55-.22L9.2 12.38v1.8c0 .22-.08.4-.22.55-.15.15-.34.22-.55.22h-1.1c-.22 0-.4-.08-.55-.22-.15-.15-.22-.34-.22-.55V9.27c0-.22.08-.4.22-.55.15-.15.34-.22.55-.22h.92c.22 0 .4.08.55.22L12 12.15l2.22-2.88c.15-.15.34-.22.55-.22h1.13z" fill="#00a1e0"/>
+                </svg>
+                <p className="text-sm font-semibold text-[#00a1e0]">
+                  Mercado Pago
+                </p>
+              </div>
+              <p className="text-xs text-[#0090c8]">
+                Mostrá el código QR al cliente para que escanee con la app
               </p>
             </div>
           )}

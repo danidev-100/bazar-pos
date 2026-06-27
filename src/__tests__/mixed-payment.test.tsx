@@ -177,9 +177,10 @@ describe("Mixed payment — integration", () => {
     // Click the Mixto button
     await user.click(screen.getByText("Mixto"));
 
-    // Cash and card inputs should appear
-    expect(screen.getByLabelText("Efectivo")).toBeInTheDocument();
-    expect(screen.getByLabelText("Tarjeta")).toBeInTheDocument();
+    // Cash, card, and Mercado Pago inputs should appear
+    expect(screen.getByLabelText("💵 Efectivo")).toBeInTheDocument();
+    expect(screen.getByLabelText("💳 Tarjeta")).toBeInTheDocument();
+    expect(screen.getByLabelText("🧾 M. Pago")).toBeInTheDocument();
   });
 
   it("3.4 shows entered total and calculates change for mixed payment", async () => {
@@ -188,8 +189,8 @@ describe("Mixed payment — integration", () => {
     // Total is 350 (150 + 200)
     await user.click(screen.getByText("Mixto"));
 
-    const cashInput = screen.getByLabelText("Efectivo");
-    const cardInput = screen.getByLabelText("Tarjeta");
+    const cashInput = screen.getByLabelText("💵 Efectivo");
+    const cardInput = screen.getByLabelText("💳 Tarjeta");
 
     // Enter cash = 200, card = 150
     await user.clear(cashInput);
