@@ -80,7 +80,7 @@ export default function ProductForm({
   const addProduct = useProductsStore((s) => s.addProduct);
   const updateProduct = useProductsStore((s) => s.updateProduct);
   const brands = useBrandsStore((s) => s.brands);
-  const isUnlocked = useAuthStore((s) => s.hasPermission("productos"));
+  const canViewCost = useAuthStore((s) => s.hasPermission("productos"));
 
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [error, setError] = useState<string | null>(null);
@@ -263,7 +263,7 @@ export default function ProductForm({
       </div>
 
       {/* Cost Price (admin only) */}
-      {isUnlocked && (
+      {canViewCost && (
         <div>
           <label
             htmlFor="product-cost-price"
@@ -285,7 +285,7 @@ export default function ProductForm({
       )}
 
       {/* Brand (admin only) */}
-      {isUnlocked && (
+      {canViewCost && (
         <div>
           <label
             htmlFor="product-brand"

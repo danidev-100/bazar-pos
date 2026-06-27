@@ -44,12 +44,12 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: Migration & Cleanup
 
-- [ ] 4.1 Modify `src/store/admin.ts` — remove `isUnlocked`, `pinHash`, `setPin`, `unlock`, `lock`, `changePin`, `hashPin` helper, and localStorage PIN helpers; keep theme + bulk pricing logic intact
-- [ ] 4.2 Grep codebase for remaining `isUnlocked` references; replace with `hasPermission("configuracion")` or `currentUser !== null` as appropriate
+- [x] 4.1 Modify `src/store/admin.ts` — remove `isUnlocked`, `pinHash`, `setPin`, `unlock`, `lock`, `changePin`, `hashPin` helper, and localStorage PIN helpers; keep theme + bulk pricing logic intact
+- [x] 4.2 Grep codebase for remaining `isUnlocked` references; replace with `hasPermission("configuracion")` or `currentUser !== null` as appropriate
 
 ## Phase 5: Tests
 
 - [x] 5.1 Auth store tests: login success/fail, logout clears session, first-run bootstraps admin with all permissions, old PIN migration, `hasPermission()` checks, user CRUD validation
 - [x] 5.2 LoginPage tests: renders full screen when unauthenticated, form submit calls login, error display on wrong credentials, redirect on success
-- [ ] 5.3 UserManagementPage tests: user table render, add/edit modal CRUD, permission checkbox toggling, admin protection on delete/deactivate
+- [x] 5.3 UserManagementPage tests: user table render, add/edit modal CRUD, permission checkbox toggling, admin protection on delete/deactivate
 - [x] 5.4 Integration tests: route guard redirects unpermitted pages to dashboard, navigation bar hides items without permission, full login → navigate flow, migration from old PIN to user account

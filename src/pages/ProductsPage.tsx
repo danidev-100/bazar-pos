@@ -32,7 +32,7 @@ export default function ProductsPage() {
   const products = useProductsStore((s) => s.products);
   const categories = useProductsStore((s) => s.categories);
   const brandsList = useBrandsStore((s) => s.brands);
-  const isUnlocked = useAuthStore((s) => s.hasPermission("productos"));
+  const canViewCost = useAuthStore((s) => s.hasPermission("productos"));
   const adjustStock = useProductsStore((s) => s.adjustStock);
   const deleteProduct = useProductsStore((s) => s.deleteProduct);
   const updateProduct = useProductsStore((s) => s.updateProduct);
@@ -192,7 +192,7 @@ export default function ProductsPage() {
     { header: "Código", key: "codigo" },
     { header: "Nombre", key: "nombre" },
     { header: "Precio", key: "precio" },
-    ...(isUnlocked ? [{ header: "Costo", key: "costo" }] : []),
+    ...(canViewCost ? [{ header: "Costo", key: "costo" }] : []),
     { header: "Stock", key: "stock" },
     { header: "Marca", key: "marca" },
     { header: "Categoría", key: "categoria" },
@@ -206,14 +206,14 @@ export default function ProductsPage() {
         codigo: p.barcode ?? "—",
         nombre: p.name,
         precio: `$${p.price.toFixed(2)}`,
-        ...(isUnlocked ? { costo: `$${p.costPrice.toFixed(2)}` } : {}),
+        ...(canViewCost ? { costo: `$${p.costPrice.toFixed(2)}` } : {}),
         stock: p.stock,
         marca: brandName ?? "—",
         categoria: catName ?? "—",
       };
     });
     exportTableToPdf(data, productExportColumns, "Productos");
-  }, [filteredProducts, catById, brandById, isUnlocked]);
+  }, [filteredProducts, catById, brandById, canViewCost]);
 
   const exportProductExcel = useCallback(() => {
     const data = filteredProducts.map((p) => {
@@ -223,14 +223,14 @@ export default function ProductsPage() {
         codigo: p.barcode ?? "",
         nombre: p.name,
         precio: p.price,
-        ...(isUnlocked ? { costo: p.costPrice } : {}),
+        ...(canViewCost ? { costo: p.costPrice } : {}),
         stock: p.stock,
         marca: brandName ?? "",
         categoria: catName ?? "",
       };
     });
     exportToExcel(data, productExportColumns, "Productos");
-  }, [filteredProducts, catById, brandById, isUnlocked]);
+  }, [filteredProducts, catById, brandById, canViewCost]);
 
   function handleProductSelect(id: number) {
     setSelectedProductId(id);
@@ -404,7 +404,7 @@ export default function ProductsPage() {
                       <th className="text-right py-2 px-2 font-medium">
                         Precio
                       </th>
-                      {isUnlocked && (
+                      {canViewCost && (
                         <th className="text-right py-2 px-2 font-medium">
                           Costo
                         </th>
@@ -460,7 +460,7 @@ export default function ProductsPage() {
                           <td className="py-2 px-2 text-right font-mono">
                             ${p.price.toFixed(2)}
                           </td>
-                          {isUnlocked && (
+                          {canViewCost && (
                             <td className="py-2 px-2 text-right font-mono text-pos-muted">
                               ${p.costPrice.toFixed(2)}
                             </td>
