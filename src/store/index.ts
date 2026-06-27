@@ -48,7 +48,7 @@ export type CompletedSale = {
   subtotal: number;
   discountPercent: number;
   discountAmount: number;
-  paymentMethod: "cash" | "card" | "mixed" | "credit";
+  paymentMethod: "cash" | "card" | "mixed" | "credit" | "mercadopago";
   amountPaid: number | null;
   cashAmount: number | null;
   cardAmount: number | null;
@@ -127,7 +127,7 @@ export type AppStore = {
   lastCompletedSale: CompletedSale | null;
   completedSales: CompletedSale[];
   checkout: (
-    paymentMethod: "cash" | "card" | "mixed" | "credit",
+    paymentMethod: "cash" | "card" | "mixed" | "credit" | "mercadopago",
     amountPaid?: number,
     storeId?: string,
     customerName?: string,
@@ -297,11 +297,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (paymentMethod === "credit") {
       // Sale goes through — customer balance will be increased
     }
+    if (paymentMethod === "mercadopago") {
+      // Electronic payment — no cash handling needed
+    }
 
     const resolvedStoreId = storeId ?? "store_1";
 
     const resolvedPayment = paymentMethod;
-    const paidAmount = paymentMethod === "mixed" ? (cashAmount ?? 0) + (cardAmount ?? 0) : (amountPaid ?? null);
+    const paidAmount = paymentMethod === "mixed" ? (cashAmount ?? 0) + (cardAmount ?? 0) : paymentMethod === "mercadopago" ? total : (amountPaid ?? null);
 
     const sale: CompletedSale = {
       id: nextSaleId++,
@@ -313,7 +316,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       paymentMethod: resolvedPayment,
       amountPaid: paidAmount,
       cashAmount: paymentMethod === "mixed" ? (cashAmount ?? 0) : (paymentMethod === "cash" ? amountPaid ?? null : null),
-      cardAmount: paymentMethod === "mixed" ? (cardAmount ?? 0) : (paymentMethod === "card" ? total : null),
+      cardAmount: paymentMethod === "mixed" ? (cardAmount ?? 0) : (paymentMethod === "card" || paymentMethod === "mercadopago" ? total : null),
       change,
       date: new Date().toISOString(),
       storeId: resolvedStoreId,
@@ -375,7 +378,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     // ── Persist sale + items in a single transaction ──
     const now = new Date().toISOString();
     const dbCash = paymentMethod === "mixed" ? (cashAmount ?? 0) : paymentMethod === "cash" ? (amountPaid ?? null) : null;
-    const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) : paymentMethod === "card" ? total : null;
+    const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) : paymentMethod === "card" || paymentMethod === "mercadopago" ? total : null;
 
     const stmts = [
       {

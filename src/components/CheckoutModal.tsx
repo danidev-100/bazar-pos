@@ -27,7 +27,7 @@ export default function CheckoutModal({
   const discountAmount = Math.round((subtotal - total) * 100) / 100;
   const isEmpty = items.length === 0;
 
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "mixed" | "credit" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "mixed" | "credit" | "mercadopago" | null>(null);
   const [discountDraft, setDiscountDraft] = useState(String(globalDiscountPercent));
   const [cashAmount, setCashAmount] = useState<string>("");
   const [cardAmount, setCardAmount] = useState<string>("");
@@ -52,7 +52,7 @@ export default function CheckoutModal({
     setBusy(false);
   }
 
-  function handlePaymentSelect(method: "cash" | "card" | "mixed" | "credit") {
+  function handlePaymentSelect(method: "cash" | "card" | "mixed" | "credit" | "mercadopago") {
     setPaymentMethod(method);
     setError(null);
     if (method === "card") {
@@ -102,6 +102,8 @@ export default function CheckoutModal({
         checkout("mixed", total, storeId, selectedCustomer?.name, parsedCash, parsedCard);
       } else if (paymentMethod === "credit") {
         checkout("credit", total, storeId, selectedCustomer?.name);
+      } else if (paymentMethod === "mercadopago") {
+        checkout("mercadopago", total, storeId, selectedCustomer?.name);
       } else {
         checkout(
           paymentMethod,
@@ -265,46 +267,55 @@ export default function CheckoutModal({
               <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
                 Método de pago
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => handlePaymentSelect("cash")}
-                  className="flex flex-col items-center justify-center py-4 px-2 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                  className="flex flex-col items-center justify-center py-4 px-1 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
                 >
-                  <span className="text-3xl mb-1">💵</span>
-                  <span className="text-sm font-semibold text-pos-text">
+                  <span className="text-2xl mb-1">💵</span>
+                  <span className="text-xs font-semibold text-pos-text">
                     Efectivo
                   </span>
                 </button>
                 <button
                   onClick={() => handlePaymentSelect("card")}
-                  className="flex flex-col items-center justify-center py-4 px-2 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                  className="flex flex-col items-center justify-center py-4 px-1 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
                 >
-                  <span className="text-3xl mb-1">💳</span>
-                  <span className="text-sm font-semibold text-pos-text">
+                  <span className="text-2xl mb-1">💳</span>
+                  <span className="text-xs font-semibold text-pos-text">
                     Tarjeta
                   </span>
                 </button>
                 <button
-                  onClick={() => handlePaymentSelect("mixed")}
-                  className="flex flex-col items-center justify-center py-4 px-2 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                  onClick={() => handlePaymentSelect("mercadopago")}
+                  className="flex flex-col items-center justify-center py-4 px-1 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
                 >
-                  <span className="text-3xl mb-1">🔀</span>
-                  <span className="text-sm font-semibold text-pos-text">
+                  <span className="text-2xl mb-1">🧾</span>
+                  <span className="text-xs font-semibold text-pos-text">
+                    Mercado Pago
+                  </span>
+                </button>
+                <button
+                  onClick={() => handlePaymentSelect("mixed")}
+                  className="flex flex-col items-center justify-center py-4 px-1 border-2 border-pos-muted/20 rounded-xl touch-target hover:border-pos-secondary hover:bg-pos-secondary/5 transition-all"
+                >
+                  <span className="text-2xl mb-1">🔀</span>
+                  <span className="text-xs font-semibold text-pos-text">
                     Mixto
                   </span>
                 </button>
                 <button
                   onClick={() => handlePaymentSelect("credit")}
                   disabled={!selectedCustomer}
-                  className={`flex flex-col items-center justify-center py-4 px-2 border-2 rounded-xl touch-target transition-all ${
+                  className={`flex flex-col items-center justify-center py-4 px-1 border-2 rounded-xl touch-target transition-all ${
                     !selectedCustomer
                       ? "border-pos-muted/10 opacity-40 cursor-not-allowed"
                       : "border-pos-muted/20 hover:border-pos-secondary hover:bg-pos-secondary/5"
                   }`}
                 >
-                  <span className="text-3xl mb-1">📒</span>
-                  <span className="text-sm font-semibold text-pos-text">
-                    Cuenta Corriente
+                  <span className="text-2xl mb-1">📒</span>
+                  <span className="text-xs font-semibold text-pos-text">
+                    Cta. Corriente
                   </span>
                 </button>
               </div>
@@ -429,6 +440,18 @@ export default function CheckoutModal({
               </p>
               <p className="text-xs text-pos-muted mt-1">
                 Tocá "Confirmar" para completar la venta
+              </p>
+            </div>
+          )}
+
+          {/* Mercado Pago indicator */}
+          {paymentMethod === "mercadopago" && (
+            <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-center">
+              <p className="text-sm text-sky-700 font-medium">
+                🧾 Pago con Mercado Pago
+              </p>
+              <p className="text-xs text-sky-600 mt-1">
+                Mostrá el código QR al cliente para que escanee con la app de Mercado Pago
               </p>
             </div>
           )}

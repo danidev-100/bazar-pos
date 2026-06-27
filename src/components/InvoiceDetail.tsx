@@ -87,7 +87,7 @@ export default function InvoiceDetail({
           <div>
             <span className="text-pos-muted text-xs">Pago</span>
             <p className="text-pos-text capitalize">
-              {invoice.paymentMethod === "cash" ? "Efectivo" : invoice.paymentMethod === "mixed" ? "Mixto" : "Tarjeta"}
+              {invoice.paymentMethod === "cash" ? "Efectivo" : invoice.paymentMethod === "mixed" ? "Mixto" : invoice.paymentMethod === "mercadopago" ? "Mercado Pago" : "Tarjeta"}
             </p>
           </div>
           <div>
