@@ -145,6 +145,7 @@ function makeSale(
     change: 0,
     cashAmount: subtotal,
     cardAmount: null,
+    mercadopagoAmount: null,
     date,
     storeId,
     customerName: null,
