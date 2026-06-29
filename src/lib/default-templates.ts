@@ -378,6 +378,33 @@ const NOTA_DEBITO_TEMPLATE = wrapPage("Nota de Débito", `
   ${FOOTER}
 `);
 
+// ── Cuenta Corriente ──
+
+const CC_TEMPLATE = wrapPage("Cuenta Corriente", `
+  <div class="info">
+    <table>
+      <tr><td style="text-align:right;">Fecha</td><td>{{fecha}}</td></tr>
+      <tr><td style="text-align:right;">Cliente</td><td>{{cliente}}</td></tr>
+    </table>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Producto</th><th class="right">Total</th></tr>
+    </thead>
+    <tbody>
+      {{#items}}
+      <tr><td>{{product_name}} x{{quantity}}</td><td class="right">{{subtotal}}</td></tr>
+      {{/items}}
+    </tbody>
+  </table>
+  <div class="totals">
+    <table>
+      <tr class="grand-total"><td style="text-align:right;">TOTAL A CUENTA</td><td>{{total}}</td></tr>
+    </table>
+  </div>
+  {{notes}}${NOTES_BLOCK}
+`);
+
 // ═══════════════════════════════════════════
 // Public API
 // ═══════════════════════════════════════════
@@ -388,6 +415,7 @@ export const DEFAULT_TEMPLATES: Record<string, string> = {
   ticket: TICKET_TEMPLATE,
   nota_credito: NOTA_CREDITO_TEMPLATE,
   nota_debito: NOTA_DEBITO_TEMPLATE,
+  cuenta_corriente: CC_TEMPLATE,
 };
 
 export function getDefaultTemplate(tipo: string): string {

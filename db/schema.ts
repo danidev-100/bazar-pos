@@ -406,14 +406,14 @@ export const pedidoItems = sqliteTable(
 // Comprobantes (syncable)
 // ──────────────────────────────────────────────
 
-export type ComprobanteTipo = "factura" | "boleta" | "nota_credito" | "nota_debito" | "ticket";
+export type ComprobanteTipo = "factura" | "boleta" | "nota_credito" | "nota_debito" | "ticket" | "cuenta_corriente";
 
 export const comprobantes = sqliteTable(
   "comprobantes",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     tipo: text("tipo", {
-      enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket"],
+      enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket", "cuenta_corriente"],
     }).notNull(),
     numero: text("numero").notNull(),
     cliente_nombre: text("cliente_nombre").notNull().default("Consumidor Final"),
@@ -500,7 +500,7 @@ export const plantillas = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     tipo: text("tipo", {
-      enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket"],
+      enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket", "cuenta_corriente"],
     }).notNull(),
     template_html: text("template_html").notNull(),
     ...syncColumns,

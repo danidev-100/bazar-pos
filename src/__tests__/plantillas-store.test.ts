@@ -33,7 +33,7 @@ beforeEach(() => {
 // ──────────────────────────────────────────────
 
 const STORE_ID = "store_1";
-const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito"] as const;
+const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito", "cuenta_corriente"] as const;
 
 describe("usePlantillasStore — getPlantilla", () => {
   it("returns null for a tipo that was never saved", async () => {
@@ -90,12 +90,12 @@ describe("usePlantillasStore — upsertPlantilla", () => {
 });
 
 describe("usePlantillasStore — getAllPlantillas", () => {
-  it("returns 5 entries (custom or default)", async () => {
+  it("returns 6 entries (custom or default)", async () => {
     vi.mocked(db.select).mockResolvedValue([
       { id: 1, store_id: STORE_ID, tipo: "factura", template_html: "<h1>Custom</h1>" },
     ]);
     const all = await usePlantillasStore.getState().getAllPlantillas(STORE_ID);
-    expect(all).toHaveLength(5);
+    expect(all).toHaveLength(6);
     // The saved one has html
     const factura = all.find((e) => e.tipo === "factura")!;
     expect(factura.template_html).toBe("<h1>Custom</h1>");

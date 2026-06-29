@@ -466,7 +466,7 @@ export const comprobantes = pgTable(
   "comprobantes",
   {
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    tipo: text("tipo", { enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket"] }).notNull(),
+    tipo: text("tipo", { enum: ["factura", "boleta", "nota_credito", "nota_debito", "ticket", "cuenta_corriente"] }).notNull(),
     numero: text("numero").notNull(),
     cliente_nombre: text("cliente_nombre").notNull().default("Consumidor Final"),
     cliente_cuit: text("cliente_cuit"),

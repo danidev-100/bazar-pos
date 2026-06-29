@@ -8,7 +8,7 @@ import { printComprobante } from "@/lib/pdf-export";
 import { useAppStore } from "@/store";
 import { useKeyboardListNavigation } from "@/hooks/useKeyboardListNavigation";
 
-const TIPOS: ComprobanteTipo[] = ["factura", "boleta", "nota_credito", "nota_debito", "ticket"];
+const TIPOS: ComprobanteTipo[] = ["factura", "boleta", "nota_credito", "nota_debito", "ticket", "cuenta_corriente"];
 
 // ──────────────────────────────────────────────
 // Types
@@ -34,6 +34,7 @@ const TIPO_OPTIONS: { id: ComprobanteTipo; label: string; desc: string }[] = [
   { id: "nota_credito", label: "Nota de Crédito", desc: "Anula parcial/total una factura" },
   { id: "nota_debito", label: "Nota de Débito", desc: "Incrementa el monto de una factura" },
   { id: "ticket", label: "Ticket", desc: "Comprobante térmico" },
+  { id: "cuenta_corriente", label: "Cuenta Corriente", desc: "Registro de crédito del cliente" },
 ];
 
 const TIPO_COLORS: Record<ComprobanteTipo, string> = {
@@ -42,6 +43,7 @@ const TIPO_COLORS: Record<ComprobanteTipo, string> = {
   nota_credito: "text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30",
   nota_debito: "text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30",
   ticket: "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30",
+  cuenta_corriente: "text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30",
 };
 
 let nextItemKey = 1;
@@ -616,6 +618,7 @@ function ComprobanteDetail({ comprobante, onBack }: { comprobante: Comprobante; 
     nota_credito: "bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800",
     nota_debito: "bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800",
     ticket: "bg-gray-50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800",
+    cuenta_corriente: "bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800",
   };
 
   async function handlePrint() {
