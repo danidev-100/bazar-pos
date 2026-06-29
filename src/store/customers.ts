@@ -19,6 +19,7 @@ export type CreditPayment = {
   date: string;
   notes: string;
   sale_id: number | null;
+  comprobante_id: number | null;
   store_id: string;
 };
 
@@ -35,7 +36,7 @@ export type CustomersStore = {
   searchCustomers: (storeId: string, query: string) => Customer[];
   getCustomerById: (id: number) => Customer | null;
   /** Update a customer's credit balance (positive = debe, negative = haber). */
-  updateCreditBalance: (customerId: number, delta: number, storeId: string, notes?: string, saleId?: number) => void;
+  updateCreditBalance: (customerId: number, delta: number, storeId: string, notes?: string, saleId?: number, comprobanteId?: number) => void;
   /** Get all credit payments for a customer, newest first. */
   getCreditPaymentsByCustomer: (customerId: number) => CreditPayment[];
   /** Get customers with non-zero balance. */
@@ -149,7 +150,7 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
   getCustomerById: (id) =>
     get().customers.find((c) => c.id === id) ?? null,
 
-  updateCreditBalance: (customerId, delta, storeId, notes, saleId) => {
+  updateCreditBalance: (customerId, delta, storeId, notes, saleId, comprobanteId) => {
     const customer = get().customers.find((c) => c.id === customerId);
     if (!customer) return;
 
@@ -171,6 +172,7 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
       date: now,
       notes: notes ?? "",
       sale_id: saleId ?? null,
+      comprobante_id: comprobanteId ?? null,
       store_id: storeId,
     };
 
@@ -178,8 +180,8 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
 
     // Persist payment
     execute(
-      `INSERT INTO credit_payments (id, customer_id, amount, date, notes, sale_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')`,
-      [payment.id, payment.customer_id, payment.amount, payment.date, payment.notes, payment.sale_id, payment.store_id, now, now],
+      `INSERT INTO credit_payments (id, customer_id, amount, date, notes, sale_id, comprobante_id, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
+      [payment.id, payment.customer_id, payment.amount, payment.date, payment.notes, payment.sale_id, payment.comprobante_id, payment.store_id, now, now],
     )
       .then(() => enqueueSync("credit_payment", payment.id, "insert", storeId))
       .catch(() => {});

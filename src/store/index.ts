@@ -351,10 +351,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     // ── Generate comprobante if selected ──
     const comprobanteTipo = get().selectedComprobanteTipo;
+    let comprobanteId: number | null = null;
     if (comprobanteTipo) {
       const { createComprobante } = useComprobantesStore.getState();
-      createComprobante({
+      const comp = createComprobante({
         tipo: comprobanteTipo,
+        payment_method: paymentMethod,
         cliente_nombre: sale.customerName ?? "Consumidor Final",
         store_id: resolvedStoreId,
         sale_id: sale.id,
@@ -365,6 +367,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           subtotal: i.subtotal,
         })),
       });
+      comprobanteId = comp.id;
       // Reset after generation
       set({ selectedComprobanteTipo: null });
     }
@@ -376,7 +379,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         (c) => c.name === customerName && c.store_id === resolvedStoreId,
       );
       if (customer) {
-        updateCreditBalance(customer.id, total, resolvedStoreId, `Venta #${sale.id}`, sale.id);
+        updateCreditBalance(customer.id, total, resolvedStoreId, `Venta #${sale.id}`, sale.id, comprobanteId ?? undefined);
       }
     }
 

@@ -322,6 +322,7 @@ export const creditPayments = sqliteTable(
       .default(sql`(datetime('now'))`),
     notes: text("notes"),
     sale_id: integer("sale_id"),
+    comprobante_id: integer("comprobante_id"),
     ...syncColumns,
   },
   (table) => ({
@@ -421,6 +422,9 @@ export const comprobantes = sqliteTable(
     fecha: text("fecha")
       .notNull()
       .default(sql`(datetime('now'))`),
+    payment_method: text("payment_method", {
+      enum: ["cash", "card", "mixed", "credit", "mercadopago"],
+    }),
     subtotal: real("subtotal").notNull().default(0),
     iva: real("iva").notNull().default(0),
     total: real("total").notNull().default(0),

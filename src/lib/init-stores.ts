@@ -115,6 +115,7 @@ async function initCustomers(): Promise<void> {
       date: r.date,
       notes: r.notes ?? "",
       sale_id: r.sale_id,
+      comprobante_id: r.comprobante_id ?? null,
       store_id: r.store_id,
     }));
     const maxId = customers.reduce((m: number, c: any) => Math.max(m, c.id), 0);

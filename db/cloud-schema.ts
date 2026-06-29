@@ -364,6 +364,7 @@ export const creditPayments = pgTable(
     date: timestamp("date").notNull().defaultNow(),
     notes: text("notes"),
     sale_id: integer("sale_id"),
+    comprobante_id: integer("comprobante_id"),
     store_id: text("store_id").notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
@@ -471,6 +472,9 @@ export const comprobantes = pgTable(
     cliente_cuit: text("cliente_cuit"),
     cliente_direccion: text("cliente_direccion"),
     fecha: timestamp("fecha").notNull().defaultNow(),
+    payment_method: text("payment_method", {
+      enum: ["cash", "card", "mixed", "credit", "mercadopago"],
+    }),
     subtotal: doublePrecision("subtotal").notNull().default(0),
     iva: doublePrecision("iva").notNull().default(0),
     total: doublePrecision("total").notNull().default(0),

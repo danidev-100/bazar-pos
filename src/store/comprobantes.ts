@@ -26,6 +26,7 @@ export type Comprobante = {
   cliente_cuit: string;
   cliente_direccion: string;
   fecha: string;
+  payment_method: "cash" | "card" | "mixed" | "credit" | "mercadopago" | null;
   subtotal: number;
   iva: number;
   total: number;
@@ -81,6 +82,7 @@ export type ComprobantesStore = {
     cliente_nombre: string;
     cliente_cuit?: string;
     cliente_direccion?: string;
+    payment_method?: "cash" | "card" | "mixed" | "credit" | "mercadopago";
     notes?: string;
     sale_id?: number;
     store_id: string;
@@ -138,6 +140,7 @@ export const useComprobantesStore = create<ComprobantesStore>((set, get) => ({
       cliente_cuit: data.cliente_cuit ?? "",
       cliente_direccion: data.cliente_direccion ?? "",
       fecha: now,
+      payment_method: data.payment_method ?? null,
       subtotal: roundedSubtotal,
       iva,
       total,
@@ -158,8 +161,8 @@ export const useComprobantesStore = create<ComprobantesStore>((set, get) => ({
     // Persist header + items in a single transaction
     const stmts = [
       {
-        sql: `INSERT INTO comprobantes (id, tipo, numero, cliente_nombre, cliente_cuit, cliente_direccion, fecha, subtotal, iva, total, sale_id, notes, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending')`,
-        bind: [comprobante.id, comprobante.tipo, comprobante.numero, comprobante.cliente_nombre, comprobante.cliente_cuit, comprobante.cliente_direccion, comprobante.fecha, comprobante.subtotal, comprobante.iva, comprobante.total, comprobante.sale_id, comprobante.notes, comprobante.store_id, now, now],
+        sql: `INSERT INTO comprobantes (id, tipo, numero, cliente_nombre, cliente_cuit, cliente_direccion, fecha, payment_method, subtotal, iva, total, sale_id, notes, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')`,
+        bind: [comprobante.id, comprobante.tipo, comprobante.numero, comprobante.cliente_nombre, comprobante.cliente_cuit, comprobante.cliente_direccion, comprobante.fecha, comprobante.payment_method, comprobante.subtotal, comprobante.iva, comprobante.total, comprobante.sale_id, comprobante.notes, comprobante.store_id, now, now],
       },
       {
         sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,

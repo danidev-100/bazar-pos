@@ -178,6 +178,7 @@ async function ensureTables(db: Database): Promise<void> {
       date TEXT NOT NULL DEFAULT (datetime('now')),
       notes TEXT,
       sale_id INTEGER,
+      comprobante_id INTEGER,
       store_id TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -253,6 +254,7 @@ async function ensureTables(db: Database): Promise<void> {
       cliente_cuit TEXT,
       cliente_direccion TEXT,
       fecha TEXT NOT NULL DEFAULT (datetime('now')),
+      payment_method TEXT,
       subtotal REAL NOT NULL DEFAULT 0,
       iva REAL NOT NULL DEFAULT 0,
       total REAL NOT NULL DEFAULT 0,
@@ -427,6 +429,19 @@ async function ensureTables(db: Database): Promise<void> {
       await db.execute(sql);
     } catch (err) {
       console.warn("Failed to create index (non-fatal):", sql, err);
+    }
+  }
+
+  // ── Schema migrations for existing DBs ──
+  const migrations = [
+    `ALTER TABLE comprobantes ADD COLUMN payment_method TEXT`,
+    `ALTER TABLE credit_payments ADD COLUMN comprobante_id INTEGER`,
+  ];
+  for (const sql of migrations) {
+    try {
+      await db.execute(sql);
+    } catch (_err) {
+      // column already exists — safe to ignore
     }
   }
 }
