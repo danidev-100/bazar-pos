@@ -132,7 +132,7 @@ describe("renderTemplate — edge cases", () => {
 // ──────────────────────────────────────────────
 
 describe("getDefaultTemplate", () => {
-  const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito", "cuenta_corriente"] as const;
+  const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito"] as const;
 
   for (const tipo of TIPOS) {
     it(`returns a non-empty string for "${tipo}"`, () => {

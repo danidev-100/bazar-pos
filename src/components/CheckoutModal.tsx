@@ -190,7 +190,7 @@ export default function CheckoutModal({
           <div>
             <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">Comprobante</h3>
             <div className="flex items-center gap-1.5 flex-wrap">
-              {(["ticket", "boleta", "factura", "cuenta_corriente"] as ComprobanteTipo[]).map((t) => (
+              {(["ticket", "boleta", "factura"] as ComprobanteTipo[]).map((t) => (
                 <button
                   key={t}
                   type="button"

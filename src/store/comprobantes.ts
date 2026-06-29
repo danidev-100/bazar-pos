@@ -5,7 +5,7 @@ import { execute, enqueueSync, transaction } from "@/lib/db";
 // Types
 // ──────────────────────────────────────────────
 
-export type ComprobanteTipo = "factura" | "boleta" | "nota_credito" | "nota_debito" | "ticket" | "cuenta_corriente";
+export type ComprobanteTipo = "factura" | "boleta" | "nota_credito" | "nota_debito" | "ticket";
 
 export type ComprobanteItem = {
   id: number;
@@ -46,7 +46,6 @@ const TIPO_PREFIX: Record<ComprobanteTipo, string> = {
   nota_credito: "NCR",
   nota_debito: "NDB",
   ticket: "TKT",
-  cuenta_corriente: "CC",
 };
 
 const TIPO_LABELS: Record<ComprobanteTipo, string> = {
@@ -55,7 +54,6 @@ const TIPO_LABELS: Record<ComprobanteTipo, string> = {
   nota_credito: "Nota de Crédito",
   nota_debito: "Nota de Débito",
   ticket: "Ticket",
-  cuenta_corriente: "Cuenta Corriente",
 };
 
 export function getTipoLabel(tipo: ComprobanteTipo): string {

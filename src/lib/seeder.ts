@@ -390,12 +390,12 @@ async function seedComprobantes(
 ): Promise<void> {
   log(`Insertando ${TARGETS.comprobantes} comprobantes…`);
 
-  const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito", "cuenta_corriente"] as const;
+  const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito"] as const;
   const TIPO_COUNTERS: Record<string, number> = {
-    factura: 0, boleta: 0, ticket: 0, nota_credito: 0, nota_debito: 0, cuenta_corriente: 0,
+    factura: 0, boleta: 0, ticket: 0, nota_credito: 0, nota_debito: 0,
   };
   const TIPO_PREFIX: Record<string, string> = {
-    factura: "FAC", boleta: "BOL", ticket: "TKT", nota_credito: "NCR", nota_debito: "NDB", cuenta_corriente: "CC",
+    factura: "FAC", boleta: "BOL", ticket: "TKT", nota_credito: "NCR", nota_debito: "NDB",
   };
 
   for (let i = 0; i < TARGETS.comprobantes; i++) {

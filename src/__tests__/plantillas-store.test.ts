@@ -33,7 +33,7 @@ beforeEach(() => {
 // ──────────────────────────────────────────────
 
 const STORE_ID = "store_1";
-const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito", "cuenta_corriente"] as const;
+const TIPOS = ["factura", "boleta", "ticket", "nota_credito", "nota_debito"] as const;
 
 describe("usePlantillasStore — getPlantilla", () => {
   it("returns null for a tipo that was never saved", async () => {
@@ -95,7 +95,7 @@ describe("usePlantillasStore — getAllPlantillas", () => {
       { id: 1, store_id: STORE_ID, tipo: "factura", template_html: "<h1>Custom</h1>" },
     ]);
     const all = await usePlantillasStore.getState().getAllPlantillas(STORE_ID);
-    expect(all).toHaveLength(6);
+    expect(all).toHaveLength(5);
     // The saved one has html
     const factura = all.find((e) => e.tipo === "factura")!;
     expect(factura.template_html).toBe("<h1>Custom</h1>");

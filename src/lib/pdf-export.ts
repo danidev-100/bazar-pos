@@ -1,5 +1,6 @@
 import type { Invoice } from "@/store/invoices";
 import type { Comprobante } from "@/store/comprobantes";
+import type { CreditPayment } from "@/store/customers";
 import { renderTemplate, comprobanteToTemplateData, type ComprobanteLike, type TemplateData } from "@/lib/render-template";
 import { getDefaultTemplate } from "@/lib/default-templates";
 import { usePlantillasStore } from "@/store/plantillas";
@@ -159,5 +160,59 @@ export async function exportInvoicePdf(invoice: Invoice, tipo = "factura"): Prom
   }
 
   const html = await buildInvoiceHtml(invoice, tipo);
+  exportHtmlAsPdf(html);
+}
+
+/**
+ * Print a credit payment receipt — either a sale (positive) or collection (negative).
+ */
+export async function printCreditPayment(payment: CreditPayment, customerName: string): Promise<void> {
+  const isCollection = payment.amount < 0;
+  const label = isCollection ? "RECIBO DE COBRO" : "VENTA A CUENTA";
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${label}</title>
+<style>
+  body { font-family: 'Courier New', monospace; font-size: 13px; margin: 0; padding: 20px; }
+  .header { text-align: center; margin-bottom: 20px; }
+  .header h1 { font-size: 18px; margin: 0 0 4px; }
+  .header .sub { color: #666; font-size: 11px; }
+  .info { margin-bottom: 16px; }
+  .info div { margin-bottom: 4px; }
+  .label { color: #666; }
+  .amount { font-size: 28px; font-weight: bold; text-align: center; margin: 24px 0; }
+  .amount.positive { color: #dc2626; }
+  .amount.negative { color: #16a34a; }
+  .footer { text-align: center; color: #999; font-size: 10px; margin-top: 32px; border-top: 1px dashed #ccc; padding-top: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 2px 0; }
+  td.r { text-align: right; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>${label}</h1>
+    <div class="sub">${new Date(payment.date).toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+  </div>
+  <div class="info">
+    <table>
+      <tr><td class="label">Cliente</td><td class="r">${customerName}</td></tr>
+      ${payment.notes ? `<tr><td class="label">Concepto</td><td class="r">${payment.notes}</td></tr>` : ""}
+      ${payment.sale_id ? `<tr><td class="label">Venta N°</td><td class="r">#${payment.sale_id}</td></tr>` : ""}
+    </table>
+  </div>
+  <hr>
+  <div class="amount ${isCollection ? "negative" : "positive"}">
+    ${isCollection ? "" : "+"}$${Math.abs(payment.amount).toFixed(2)}
+  </div>
+  <hr>
+  <div class="footer">
+    Recibo generado por Sistema de Ventas<br>
+    ID: #${payment.id}
+  </div>
+</body>
+</html>`;
+
   exportHtmlAsPdf(html);
 }
