@@ -485,6 +485,40 @@ function SettingsSection() {
             {seeding ? "Generando datos…" : "Generar datos de prueba"}
           </button>
         </div>
+
+        {/* Release info */}
+        <ReleaseInfo />
+      </div>
+    </div>
+  );
+}
+
+function ReleaseInfo() {
+  const buildDate = new Date(__BUILD_TIME__);
+  const formattedDate = buildDate.toLocaleDateString("es-AR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-4 dark:border-gray-600/30 dark:bg-gray-800">
+      <h4 className="text-xs font-semibold text-pos-muted uppercase tracking-wider mb-3">
+        Release
+      </h4>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-pos-muted">Versión</span>
+          <span className="text-sm font-semibold text-pos-text font-mono">
+            v{__APP_VERSION__}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-pos-muted">Actualizado</span>
+          <span className="text-sm text-pos-text">{formattedDate}</span>
+        </div>
       </div>
     </div>
   );
