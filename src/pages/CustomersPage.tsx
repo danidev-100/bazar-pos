@@ -4,7 +4,7 @@ import { useCustomersStore, type Customer, type CreditPayment } from "@/store/cu
 import CustomerForm from "@/components/CustomerForm";
 import CollectPaymentModal from "@/components/CollectPaymentModal";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
-import { printCreditPayment } from "@/lib/pdf-export";
+import { printCreditPayment, printCreditStatement } from "@/lib/pdf-export";
 
 // ──────────────────────────────────────────────
 // Views
@@ -277,14 +277,16 @@ export default function CustomersPage() {
 
 function CustomerDetail({ customer, onBack }: { customer: Customer; onBack: () => void }) {
   const creditPayments = useCustomersStore((s) => s.getCreditPaymentsByCustomer(customer.id));
+  const liveCustomer = useCustomersStore((s) => s.customers.find((c) => c.id === customer.id));
+  const displayCustomer = liveCustomer ?? customer;
   const [collectOpen, setCollectOpen] = useState(false);
 
-  // Reverse chronological, compute running balance
-  const sorted = [...creditPayments].sort((a, b) => b.date.localeCompare(a.date));
-  let runningBalance = customer.creditBalance;
+  // Chronological (oldest first), compute running balance
+  const sorted = [...creditPayments].sort((a, b) => a.date.localeCompare(b.date));
+  let runningBalance = 0;
   const rows = sorted.map((p) => {
-    runningBalance -= p.amount; // walk backwards from current balance
-    return { ...p, balanceAfter: Math.round((runningBalance + p.amount) * 100) / 100 };
+    runningBalance = Math.round((runningBalance + p.amount) * 100) / 100;
+    return { ...p, balanceAfter: runningBalance };
   });
 
   function formatDate(iso: string) {
@@ -316,10 +318,10 @@ function CustomerDetail({ customer, onBack }: { customer: Customer; onBack: () =
           </div>
           <div className="text-right">
             <div className="text-xs text-pos-muted">Saldo</div>
-            <div className={`text-2xl font-bold font-mono ${customer.creditBalance > 0 ? "text-pos-danger" : "text-pos-success"}`}>
-              ${customer.creditBalance.toFixed(2)}
+            <div className={`text-2xl font-bold font-mono ${displayCustomer.creditBalance > 0 ? "text-pos-danger" : "text-pos-success"}`}>
+              ${displayCustomer.creditBalance.toFixed(2)}
             </div>
-            {customer.creditBalance > 0 && (
+            {displayCustomer.creditBalance > 0 && (
               <button
                 onClick={() => setCollectOpen(true)}
                 className="mt-2 px-4 py-1.5 bg-pos-success text-white text-sm font-medium rounded-lg touch-target hover:opacity-90"
@@ -333,7 +335,17 @@ function CustomerDetail({ customer, onBack }: { customer: Customer; onBack: () =
 
       {/* History */}
       <div className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto dark:border-gray-600/30 dark:bg-gray-800">
-        <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wider mb-3">Movimientos</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-pos-muted uppercase tracking-wider">Movimientos</h3>
+          {rows.length > 0 && (
+            <button
+              onClick={() => printCreditStatement(creditPayments, displayCustomer.name, displayCustomer.creditBalance)}
+              className="text-xs px-2.5 py-1.5 border border-pos-muted/20 text-pos-muted rounded-lg touch-target hover:border-pos-secondary hover:text-pos-text transition-all"
+            >
+              Imprimir Todo
+            </button>
+          )}
+        </div>
 
         {rows.length === 0 ? (
           <p className="text-sm text-pos-muted italic text-center py-8">No hay movimientos registrados</p>
@@ -363,7 +375,7 @@ function CustomerDetail({ customer, onBack }: { customer: Customer; onBack: () =
                   </td>
                   <td className="py-2 pl-2 text-right">
                     <button
-                      onClick={() => printCreditPayment(p, customer.name)}
+                      onClick={() => printCreditPayment(p, displayCustomer.name)}
                       title="Imprimir"
                       className="text-xs px-1.5 py-1 text-pos-muted hover:text-pos-secondary touch-target"
                     >
@@ -379,7 +391,7 @@ function CustomerDetail({ customer, onBack }: { customer: Customer; onBack: () =
 
       {collectOpen && (
         <CollectPaymentModal
-          customer={customer}
+          customer={displayCustomer}
           onClose={() => setCollectOpen(false)}
           onCollected={() => {}}
         />

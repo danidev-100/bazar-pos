@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAppStore } from "@/store";
+import { useAppStore, useCustomersStore } from "@/store";
 import { useActiveStore } from "@/store/context";
 import { type ComprobanteTipo, getTipoLabel } from "@/store/comprobantes";
 
@@ -17,6 +17,10 @@ export default function CheckoutModal({
   const cartTotal = useAppStore((s) => s.cartTotal);
   const checkout = useAppStore((s) => s.checkout);
   const selectedCustomer = useAppStore((s) => s.selectedCustomer);
+  // Live customer data from store (balance updates after collections)
+  const liveCustomer = useCustomersStore((s) =>
+    selectedCustomer ? s.customers.find((c) => c.id === selectedCustomer.id) ?? selectedCustomer : null,
+  );
   const globalDiscountPercent = useAppStore((s) => s.globalDiscountPercent);
   const setGlobalDiscount = useAppStore((s) => s.setGlobalDiscount);
   const selectedComprobanteTipo = useAppStore((s) => s.selectedComprobanteTipo);
@@ -444,10 +448,10 @@ export default function CheckoutModal({
                 <span className="text-sm font-mono font-bold">${total.toFixed(2)}</span>
               </div>
               <p className="text-xs text-pos-muted">
-                Se suma a la cuenta de <span className="font-semibold text-pos-text">{selectedCustomer.name}</span>
+                Se suma a la cuenta de <span className="font-semibold text-pos-text">{liveCustomer!.name}</span>
               </p>
               <p className="text-xs text-pos-danger mt-1">
-                Saldo actual: ${(selectedCustomer.creditBalance ?? 0).toFixed(2)}
+                Saldo actual: ${(liveCustomer?.creditBalance ?? 0).toFixed(2)}
               </p>
             </div>
           )}

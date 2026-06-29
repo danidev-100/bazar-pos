@@ -164,6 +164,73 @@ export async function exportInvoicePdf(invoice: Invoice, tipo = "factura"): Prom
 }
 
 /**
+ * Print a full credit statement for a customer — all payments in chronological order.
+ */
+export function printCreditStatement(rows: CreditPayment[], customerName: string, currentBalance: number): void {
+  const sorted = [...rows].sort((a, b) => a.date.localeCompare(b.date));
+  let running = 0;
+  const items = sorted.map((p) => {
+    running += p.amount;
+    return { ...p, balanceAfter: Math.round(running * 100) / 100 };
+  });
+
+  const rowsHtml = items.map((p) => {
+    const isCollection = p.amount < 0;
+    const label = p.notes || (p.amount > 0 ? "Venta a cuenta" : "Cobro");
+    const dateStr = new Date(p.date).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const amountStr = isCollection ? `-$${Math.abs(p.amount).toFixed(2)}` : `+$${p.amount.toFixed(2)}`;
+    return `<tr><td style="padding:6px 8px;font-size:11px;font-family:monospace">${dateStr}</td><td style="padding:6px 8px">${label}</td><td style="padding:6px 8px;text-align:right;font-family:monospace;font-weight:bold;color:${isCollection ? "#16a34a" : "#dc2626"}">${amountStr}</td><td style="padding:6px 8px;text-align:right;font-family:monospace;color:${p.balanceAfter > 0 ? "#dc2626" : "#666"}">$${p.balanceAfter.toFixed(2)}</td></tr>`;
+  }).join("\n");
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Estado de Cuenta</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 13px; margin: 0; padding: 20px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header .sub { color: #666; font-size: 11px; }
+  .balance-box { text-align: center; margin: 16px 0; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+  .balance-box .amount { font-size: 28px; font-weight: bold; }
+  .balance-box .amount.debt { color: #dc2626; }
+  .balance-box .amount.clear { color: #16a34a; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { border-bottom: 2px solid #333; padding: 8px; text-align: left; font-size: 11px; text-transform: uppercase; color: #666; }
+  thead th.right { text-align: right; }
+  tbody tr:nth-child(even) { background: #f8f9fa; }
+  tbody tr:hover { background: #e8f4fd; }
+  .footer { text-align: center; color: #999; font-size: 10px; margin-top: 24px; border-top: 1px dashed #ccc; padding-top: 12px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Estado de Cuenta</h1>
+    <div class="sub">${customerName}</div>
+    <div class="sub">Emitido el ${new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+  </div>
+  <div class="balance-box">
+    <div style="color:#666;font-size:12px;margin-bottom:4px">SALDO ACTUAL</div>
+    <div class="amount ${currentBalance > 0 ? "debt" : "clear"}">$${currentBalance.toFixed(2)}</div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Fecha</th><th>Concepto</th><th class="right">Monto</th><th class="right">Saldo</th></tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+  <div class="footer">
+    Documento generado por Sistema de Ventas<br>
+    ${items.length} movimiento(s)
+  </div>
+</body>
+</html>`;
+
+  exportHtmlAsPdf(html);
+}
+
+/**
  * Print a credit payment receipt — either a sale (positive) or collection (negative).
  */
 export async function printCreditPayment(payment: CreditPayment, customerName: string): Promise<void> {
