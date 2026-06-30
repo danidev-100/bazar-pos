@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useActiveStore } from "@/store/context";
 import { useProveedoresStore, type Proveedor } from "@/store/proveedores";
 import ProveedorForm from "@/components/ProveedorForm";
@@ -16,6 +16,8 @@ export default function ProveedoresPage() {
 
   const [view, setView] = useState<View>({ kind: "list" });
   const [search, setSearch] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const tableRef = useRef<HTMLTableSectionElement>(null);
 
   const storeProveedores = useMemo(
     () =>
@@ -67,6 +69,18 @@ export default function ProveedoresPage() {
     exportToExcel(data, columns, "Proveedores");
   }, [filteredProveedores]);
 
+  // Reset selectedIndex when results change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [filteredProveedores.length]);
+
+  // Scroll selected row into view
+  useEffect(() => {
+    if (!tableRef.current) return;
+    const row = tableRef.current.children[selectedIndex] as HTMLElement | undefined;
+    row?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedIndex]);
+
   function handleCancel() { setView({ kind: "list" }); }
   function handleSaved() { setView({ kind: "list" }); }
 
@@ -112,7 +126,21 @@ export default function ProveedoresPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
+            onKeyDown={(e) => {
+              if (filteredProveedores.length === 0) return;
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSelectedIndex((prev) => Math.min(prev + 1, filteredProveedores.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSelectedIndex((prev) => Math.max(prev - 1, 0));
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                const prov = filteredProveedores[selectedIndex];
+                if (prov) setView({ kind: "edit", proveedor: prov });
+              }
+            }}
             placeholder="Buscar por nombre, teléfono, email o CUIT…"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />
@@ -138,11 +166,18 @@ export default function ProveedoresPage() {
                       <th className="text-right py-2 pl-2 font-medium">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredProveedores.map((p) => (
+                  <tbody ref={tableRef}>
+                    {filteredProveedores.map((p, idx) => {
+                      const isSelected = idx === selectedIndex;
+                      return (
                       <tr
                         key={p.id}
-                        className="border-b border-pos-muted/10 transition-colors hover:bg-pos-background/50"
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                        className={`border-b border-pos-muted/10 transition-colors ${
+                          isSelected
+                            ? "bg-pos-secondary/10 ring-1 ring-pos-secondary/30"
+                            : "hover:bg-pos-background/50"
+                        }`}
                       >
                         <td className="py-2 pr-2 font-medium text-pos-text">{p.name}</td>
                         <td className="py-2 px-2 text-pos-muted">{p.phone || "—"}</td>
@@ -163,7 +198,8 @@ export default function ProveedoresPage() {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>

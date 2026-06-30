@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useActiveStore } from "@/store/context";
 import { useCustomersStore, type Customer, type CreditPayment } from "@/store/customers";
 import CustomerForm from "@/components/CustomerForm";
@@ -27,6 +27,8 @@ export default function CustomersPage() {
 
   const [view, setView] = useState<View>({ kind: "list" });
   const [search, setSearch] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const tableRef = useRef<HTMLTableSectionElement>(null);
   const [collectCustomer, setCollectCustomer] = useState<Customer | null>(null);
 
   const storeCustomers = useMemo(
@@ -81,6 +83,18 @@ export default function CustomersPage() {
     }));
     exportToExcel(data, customerColumns, "Clientes");
   }, [filteredCustomers]);
+
+  // Reset selectedIndex when results change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [filteredCustomers.length]);
+
+  // Scroll selected row into view
+  useEffect(() => {
+    if (!tableRef.current) return;
+    const row = tableRef.current.children[selectedIndex] as HTMLElement | undefined;
+    row?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedIndex]);
 
   function handleCancel() {
     setView({ kind: "list" });
@@ -137,7 +151,21 @@ export default function CustomersPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
+            onKeyDown={(e) => {
+              if (filteredCustomers.length === 0) return;
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSelectedIndex((prev) => Math.min(prev + 1, filteredCustomers.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSelectedIndex((prev) => Math.max(prev - 1, 0));
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                const customer = filteredCustomers[selectedIndex];
+                if (customer) setView({ kind: "detail", customer });
+              }
+            }}
             placeholder="Buscar por nombre, teléfono, email o CUIT…"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />
@@ -175,11 +203,18 @@ export default function CustomersPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredCustomers.map((c) => (
+                  <tbody ref={tableRef}>
+                    {filteredCustomers.map((c, idx) => {
+                      const isSelected = idx === selectedIndex;
+                      return (
                       <tr
                         key={c.id}
-                        className="border-b border-pos-muted/10 transition-colors hover:bg-pos-background/50"
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                        className={`border-b border-pos-muted/10 transition-colors ${
+                          isSelected
+                            ? "bg-pos-secondary/10 ring-1 ring-pos-secondary/30"
+                            : "hover:bg-pos-background/50"
+                        }`}
                       >
                         <td className="py-2 pr-2 font-medium text-pos-text">
                           {c.name}
@@ -229,7 +264,8 @@ export default function CustomersPage() {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>

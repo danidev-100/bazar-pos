@@ -43,6 +43,8 @@ export default function ProductsPage() {
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
 
   const [search, setSearch] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const tableRef = useRef<HTMLTableSectionElement>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
@@ -165,6 +167,18 @@ export default function ProductsPage() {
   useEffect(() => {
     setRenderCount(RENDER_BATCH);
   }, [search, selectedCategoryId, selectedBrandId, stockFilter]);
+
+  // Reset selectedIndex when results change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [filteredProducts.length]);
+
+  // Scroll selected row into view
+  useEffect(() => {
+    if (!tableRef.current) return;
+    const row = tableRef.current.children[selectedIndex] as HTMLElement | undefined;
+    row?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedIndex]);
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -301,7 +315,24 @@ export default function ProductsPage() {
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
+                onKeyDown={(e) => {
+                  if (filteredProducts.length === 0) return;
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setSelectedIndex((prev) => Math.min(prev + 1, filteredProducts.length - 1));
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setSelectedIndex((prev) => Math.max(prev - 1, 0));
+                  } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    const product = filteredProducts[selectedIndex];
+                    if (product) {
+                      setSelectedProductId(product.id);
+                      setCenterView({ kind: "edit", product });
+                    }
+                  }
+                }}
                 placeholder="Buscar por nombre o código de barras…"
                 className="flex-1 border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
               />
@@ -423,15 +454,21 @@ export default function ProductsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredProducts.slice(0, renderCount).map((p) => {
+                  <tbody ref={tableRef}>
+                    {filteredProducts.slice(0, renderCount).map((p, idx) => {
                       const catName = p.category_id != null ? catById.get(p.category_id)?.name : undefined;
                       const brandName = p.brandId != null ? brandById.get(p.brandId) : undefined;
+                      const isSelected = idx === selectedIndex;
                       return (
                         <tr
                           key={p.id}
                           onClick={() => handleProductSelect(p.id)}
-                          className={`border-b border-pos-muted/10 cursor-pointer transition-colors hover:bg-pos-background/50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          className={`border-b border-pos-muted/10 cursor-pointer transition-colors dark:border-gray-700 ${
+                            isSelected
+                              ? "bg-pos-secondary/10 dark:bg-blue-900/20 ring-1 ring-pos-secondary/30"
+                              : "hover:bg-pos-background/50 dark:hover:bg-gray-700/50"
+                          } ${
                             selectedProductId === p.id
                               ? "bg-pos-secondary/10 dark:bg-blue-900/20"
                               : ""
