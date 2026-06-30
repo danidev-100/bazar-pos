@@ -32,7 +32,7 @@ function resetStores() {
 function loginAndOpenShift() {
   useAuthStore.setState({
     currentUser: {
-      id: "test-user",
+      id: 999,
       name: "Test Cajero",
       passwordHash: "hash",
       role: "admin",

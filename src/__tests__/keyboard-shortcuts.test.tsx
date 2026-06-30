@@ -33,7 +33,7 @@ function loginAndOpenShift() {
   // Set logged-in user
   useAuthStore.setState({
     currentUser: {
-      id: "test-user",
+      id: 999,
       name: "Test Cajero",
       passwordHash: "hash",
       role: "admin",

@@ -459,6 +459,31 @@ export const comprobanteItems = sqliteTable(
 );
 
 // ──────────────────────────────────────────────
+// Users (local-only, no sync)
+// ──────────────────────────────────────────────
+
+export const users = sqliteTable(
+  "users",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    password_hash: text("password_hash").notNull(),
+    role: text("role", { enum: ["admin", "custom"] }).notNull().default("custom"),
+    permissions: text("permissions").notNull().default("[]"),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updated_at: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => ({
+    nameIdx: uniqueIndex("idx_users_name").on(table.name),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Sync Queue (infrastructure — tracks row-level ops)
 // ──────────────────────────────────────────────
 

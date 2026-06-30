@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { execute, select } from "@/lib/db";
 
 // ──────────────────────────────────────────────
 // Types
@@ -21,7 +22,7 @@ export type Permission =
 export type Role = "admin" | "custom";
 
 export type AuthUser = {
-  id: string;
+  id: number;
   name: string;
   passwordHash: string;
   role: Role;
@@ -70,7 +71,7 @@ export type AuthStore = {
     active: boolean;
   }) => Promise<void>;
   updateUser: (
-    id: string,
+    id: number,
     data: {
       name?: string;
       password?: string;
@@ -79,13 +80,13 @@ export type AuthStore = {
       active?: boolean;
     },
   ) => Promise<void>;
-  deleteUser: (id: string) => void;
+  deleteUser: (id: number) => void;
 
   hasPermission: (permission: Permission) => boolean;
 };
 
 // ──────────────────────────────────────────────
-// Storage keys
+// LocalStorage migration key
 // ──────────────────────────────────────────────
 
 const USERS_KEY = "auth_users";
@@ -119,7 +120,6 @@ const OLD_TO_NEW: Record<string, Permission[]> = {
 };
 
 function migratePermissions(oldPerms: string[]): Permission[] {
-  // Detect old format: contains "configuracion"
   if (oldPerms.includes("configuracion")) {
     const expanded = new Set<Permission>();
     for (const p of oldPerms) {
@@ -133,41 +133,14 @@ function migratePermissions(oldPerms: string[]): Permission[] {
   );
 }
 
-function loadUsers(): AuthUser[] {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    if (raw) {
-      const users = JSON.parse(raw) as AuthUser[];
-      return users.map((u) => {
-        let user = { ...u };
-        // Migrate existing users without a role field
-        if (!user.role) {
-          user.role = "custom" as Role;
-        }
-        // Migrate old permission format (pre-module split)
-        if (
-          user.permissions &&
-          (user.permissions as string[]).includes("configuracion")
-        ) {
-          user.permissions = migratePermissions(
-            user.permissions as string[],
-          );
-        }
-        return user;
-      });
-    }
-  } catch {
-    // localStorage unavailable
-  }
-  return [];
-}
+// ──────────────────────────────────────────────
+// ID counter — follows pattern from customers/products
+// ──────────────────────────────────────────────
 
-function saveUsers(users: AuthUser[]): void {
-  try {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  } catch {
-    // localStorage unavailable — skip
-  }
+let nextUserId = 1;
+
+export function setNextUserId(id: number) {
+  nextUserId = id;
 }
 
 // ──────────────────────────────────────────────
@@ -175,19 +148,56 @@ function saveUsers(users: AuthUser[]): void {
 // ──────────────────────────────────────────────
 
 const ALL_PERMISSIONS: Permission[] = [
-  "ventas",
-  "caja",
-  "productos",
-  "clientes",
-  "proveedores",
-  "pedidos",
-  "facturacion",
-  "comprobantes",
-  "gastos",
-  "estadisticas",
-  "admin",
-  "usuarios",
+  "ventas", "caja", "productos", "clientes", "proveedores",
+  "pedidos", "facturacion", "comprobantes", "gastos",
+  "estadisticas", "admin", "usuarios",
 ];
+
+// ──────────────────────────────────────────────
+// localStorage migration
+// ──────────────────────────────────────────────
+
+function hasLocalStorageUsers(): boolean {
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    return !!raw;
+  } catch {
+    return false;
+  }
+}
+
+function readLocalStorageUsers(): { name: string; passwordHash: string; role: Role; permissions: Permission[]; active: boolean; createdAt: string }[] {
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    if (!raw) return [];
+    const users = JSON.parse(raw);
+    return users.map((u: any) => {
+      let role: Role = u.role || "custom";
+      let perms = u.permissions ?? [];
+      if (perms.includes("configuracion")) {
+        perms = migratePermissions(perms);
+      }
+      return {
+        name: u.name,
+        passwordHash: u.passwordHash,
+        role,
+        permissions: perms,
+        active: u.active ?? true,
+        createdAt: u.createdAt ?? new Date().toISOString(),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function clearLocalStorageUsers(): void {
+  try {
+    localStorage.removeItem(USERS_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 // ──────────────────────────────────────────────
 // Store
@@ -199,33 +209,102 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   currentUser: null,
   _hydrated: false,
 
-  // ── Init (load from localStorage, first-run bootstrap) ──
+  // ── Init (load from SQLite, migrate from localStorage) ──
 
   init: async () => {
     if (get()._hydrated) return;
 
-    const users = loadUsers();
+    try {
+      // 1. Try to load max ID from SQLite
+      const rows = await select<any>("SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM users");
+      if (rows.length > 0) {
+        nextUserId = rows[0].next_id;
+      }
 
-    // First-run bootstrap: create default admin user
-    if (users.length === 0) {
+      // 2. Check if SQLite has users
+      const dbUsers = await select<any>("SELECT id, name, password_hash, role, permissions, active, created_at FROM users ORDER BY id");
+
+      if (dbUsers.length > 0) {
+        // SQLite has users — load them
+        const users: AuthUser[] = dbUsers.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          passwordHash: r.password_hash,
+          role: r.role as Role,
+          permissions: JSON.parse(r.permissions || "[]"),
+          active: !!r.active,
+          createdAt: r.created_at,
+        }));
+        set({ users, _hydrated: true });
+        return;
+      }
+    } catch {
+      // DB not available (test environment) — fall through to state-only mode
+    }
+
+    // 3. Check localStorage for migration
+    if (hasLocalStorageUsers()) {
+      const legacyUsers = readLocalStorageUsers();
+      if (legacyUsers.length > 0) {
+        const migrated: AuthUser[] = [];
+        for (const lu of legacyUsers) {
+          const id = nextUserId++;
+          migrated.push({
+            id,
+            name: lu.name,
+            passwordHash: lu.passwordHash,
+            role: lu.role,
+            permissions: lu.permissions,
+            active: lu.active,
+            createdAt: lu.createdAt,
+          });
+
+          // Try to persist to SQLite
+          try {
+            await execute(
+              `INSERT INTO users (id, name, password_hash, role, permissions, active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              [id, lu.name, lu.passwordHash, lu.role, JSON.stringify(lu.permissions), lu.active ? 1 : 0, lu.createdAt, lu.createdAt],
+            );
+          } catch {
+            // DB not available
+          }
+        }
+
+        clearLocalStorageUsers();
+        set({ users: migrated, _hydrated: true });
+        return;
+      }
+    }
+
+    // 4. First-run bootstrap: create default admin user
+    try {
       const adminHash = await hashPassword("admin");
+      const id = nextUserId++;
+      const now = new Date().toISOString();
       const adminUser: AuthUser = {
-        id: crypto.randomUUID(),
+        id,
         name: "admin",
         passwordHash: adminHash,
         role: "admin",
         permissions: [...ALL_PERMISSIONS],
         active: true,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       };
 
-      set({ users: [adminUser], _hydrated: true });
-      saveUsers([adminUser]);
-      return;
-    }
+      try {
+        await execute(
+          `INSERT INTO users (id, name, password_hash, role, permissions, active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [id, "admin", adminHash, "admin", JSON.stringify(ALL_PERMISSIONS), 1, now, now],
+        );
+      } catch {
+        // DB not available
+      }
 
-    set({ users, _hydrated: true });
-    // Not restoring currentUser from localStorage — login required on every app start
+      set({ users: [adminUser], _hydrated: true });
+      return;
+    } catch {
+      set({ users: [], _hydrated: true });
+    }
   },
 
   // ── Login ──
@@ -268,19 +347,32 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       throw new Error("El nombre de usuario ya existe");
     }
 
+    const id = nextUserId++;
+    const now = new Date().toISOString();
+    const passwordHash = await hashPassword(data.password);
+    const permissions = data.permissions ?? ROLE_PERMISSIONS[data.role];
+
     const newUser: AuthUser = {
-      id: crypto.randomUUID(),
+      id,
       name: data.name,
-      passwordHash: await hashPassword(data.password),
+      passwordHash,
       role: data.role,
-      permissions: data.permissions ?? ROLE_PERMISSIONS[data.role],
+      permissions,
       active: data.active,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
     };
 
     const updated = [...users, newUser];
     set({ users: updated });
-    saveUsers(updated);
+
+    try {
+      await execute(
+        `INSERT INTO users (id, name, password_hash, role, permissions, active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [id, data.name, passwordHash, data.role, JSON.stringify(permissions), data.active ? 1 : 0, now, now],
+      );
+    } catch {
+      // DB not available
+    }
   },
 
   // ── Update User ──
@@ -321,7 +413,31 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const updatedUsers = [...users];
     updatedUsers[index] = updated;
     set({ users: updatedUsers });
-    saveUsers(updatedUsers);
+
+    const now = new Date().toISOString();
+
+    try {
+      const sets: string[] = [];
+      const binds: any[] = [];
+
+      if (data.name) { sets.push("name = $" + (binds.length + 1)); binds.push(data.name); }
+      if (data.password) { sets.push("password_hash = $" + (binds.length + 1)); binds.push(updated.passwordHash); }
+      if (data.role) { sets.push("role = $" + (binds.length + 1)); binds.push(data.role); }
+      if (data.permissions) { sets.push("permissions = $" + (binds.length + 1)); binds.push(JSON.stringify(data.permissions)); }
+      if (data.active !== undefined) { sets.push("active = $" + (binds.length + 1)); binds.push(data.active ? 1 : 0); }
+
+      if (sets.length > 0) {
+        sets.push("updated_at = $" + (binds.length + 1));
+        binds.push(now);
+        binds.push(id);
+        await execute(
+          `UPDATE users SET ${sets.join(", ")} WHERE id = $${binds.length}`,
+          binds,
+        );
+      }
+    } catch {
+      // DB not available
+    }
 
     // Update currentUser if it's the one being edited
     const { currentUser } = get();
@@ -340,7 +456,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     const updated = users.filter((u) => u.id !== id);
     set({ users: updated });
-    saveUsers(updated);
+
+    try {
+      execute("DELETE FROM users WHERE id = $1", [id]).catch(() => {});
+    } catch {
+      // DB not available
+    }
 
     // If the deleted user was currentUser, log out
     const { currentUser } = get();
@@ -354,7 +475,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   hasPermission: (permission: Permission): boolean => {
     const { currentUser } = get();
     if (!currentUser) return false;
-    // Admin role gets all permissions automatically
     if (currentUser.role === "admin") return true;
     return currentUser.permissions.includes(permission);
   },

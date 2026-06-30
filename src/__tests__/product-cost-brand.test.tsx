@@ -31,7 +31,7 @@ function resetStores() {
 function loginAsAdmin() {
   useAuthStore.setState({
     currentUser: {
-      id: "test-admin",
+      id: 999,
       name: "admin",
       passwordHash: "hash",
       role: "admin",

@@ -6,6 +6,7 @@ import { useProveedoresStore, setNextProveedorId } from "@/store/proveedores";
 import { usePedidosStore, setNextPedidoId, setNextPedidoItemId } from "@/store/pedidos";
 import { useInvoicesStore, setNextInvoiceId, setNextInvoiceItemId } from "@/store/invoices";
 import { useCashClosingStore } from "@/store/cash-closing";
+import { useAuthStore, setNextUserId } from "@/store/auth";
 
 let initialized = false;
 

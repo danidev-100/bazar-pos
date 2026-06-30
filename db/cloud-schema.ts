@@ -517,6 +517,27 @@ export const comprobanteItems = pgTable(
 );
 
 // ──────────────────────────────────────────────
+// Users (local-only, no sync in cloud)
+// ──────────────────────────────────────────────
+
+export const users = pgTable(
+  "users",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    name: text("name").notNull(),
+    password_hash: text("password_hash").notNull(),
+    role: text("role", { enum: ["admin", "custom"] }).notNull().default("custom"),
+    permissions: text("permissions").notNull().default("[]"),
+    active: integer("active").notNull().default(1),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    nameIdx: uniqueIndex("idx_users_name").on(table.name),
+  }),
+);
+
+// ──────────────────────────────────────────────
 // Sync support tables
 // ──────────────────────────────────────────────
 
