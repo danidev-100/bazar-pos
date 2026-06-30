@@ -183,6 +183,7 @@ export const sales = sqliteTable(
       .default("completed"),
     customer_name: text("customer_name"),
     shift_id: integer("shift_id").references((): any => shifts.id),
+    created_by: text("created_by").notNull().default("—"),
     ...syncColumns,
   },
   (table) => ({
@@ -430,6 +431,7 @@ export const comprobantes = sqliteTable(
     total: real("total").notNull().default(0),
     sale_id: integer("sale_id"),
     notes: text("notes"),
+    created_by: text("created_by").notNull().default("—"),
     ...syncColumns,
   },
   (table) => ({

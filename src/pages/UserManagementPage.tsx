@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useAppStore } from "@/store";
 import {
   useAuthStore,
@@ -75,6 +75,9 @@ export default function UserManagementPage() {
   const deleteUser = useAuthStore((s) => s.deleteUser);
 
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [search, setSearch] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const tableRef = useRef<HTMLTableSectionElement>(null);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
   const [form, setForm] = useState<FormData>({
     name: "",
@@ -199,9 +202,30 @@ export default function UserManagementPage() {
     return user.role === "admin";
   }
 
-  // ── Sorted users ──
+  // ── Sorted + filtered users ──
 
-  const sortedUsers = [...users].sort((a, b) => a.name.localeCompare(b.name));
+  const filteredUsers = useMemo(() => {
+    const sorted = [...users].sort((a, b) => a.name.localeCompare(b.name));
+    if (!search.trim()) return sorted;
+    const q = search.toLowerCase();
+    return sorted.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q),
+    );
+  }, [users, search]);
+
+  // Reset selectedIndex when results change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [filteredUsers.length]);
+
+  // Scroll selected row into view
+  useEffect(() => {
+    if (!tableRef.current) return;
+    const row = tableRef.current.children[selectedIndex] as HTMLElement | undefined;
+    row?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedIndex]);
 
   // ── Export ──
 
@@ -213,7 +237,7 @@ export default function UserManagementPage() {
   ];
 
   const exportUsersPdf = useCallback(() => {
-    const data = sortedUsers.map((u) => ({
+    const data = filteredUsers.map((u) => ({
       nombre: u.name,
       rol: ROLE_LABELS[u.role],
       permisos:
@@ -223,17 +247,17 @@ export default function UserManagementPage() {
       estado: u.active ? "Activo" : "Inactivo",
     }));
     exportTableToPdf(data, userColumns, "Usuarios");
-  }, [sortedUsers]);
+  }, [filteredUsers]);
 
   const exportUsersExcel = useCallback(() => {
-    const data = sortedUsers.map((u) => ({
+    const data = filteredUsers.map((u) => ({
       nombre: u.name,
       rol: ROLE_LABELS[u.role],
       permisos: u.permissions.map((p) => PERMISSION_LABELS[p]).join(", "),
       estado: u.active ? "Activo" : "Inactivo",
     }));
     exportToExcel(data, userColumns, "Usuarios");
-  }, [sortedUsers]);
+  }, [filteredUsers]);
 
   return (
     <div>
@@ -441,8 +465,31 @@ export default function UserManagementPage() {
         </div>
       )}
 
+      {/* Search */}
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
+        onKeyDown={(e) => {
+          if (filteredUsers.length === 0) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setSelectedIndex((prev) => Math.min(prev + 1, filteredUsers.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setSelectedIndex((prev) => Math.max(prev - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const user = filteredUsers[selectedIndex];
+            if (user) openEditModal(user);
+          }
+        }}
+        placeholder="Buscar usuario por nombre…"
+        className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target mb-3"
+      />
+
       {/* User table (desktop) + Cards (mobile) */}
-      {sortedUsers.length > 0 && (
+      {filteredUsers.length > 0 && (
         <>
           {/* Desktop table */}
           <div className="hidden sm:block overflow-x-auto">
@@ -456,11 +503,18 @@ export default function UserManagementPage() {
                   <th className="text-right py-2 pl-2 font-medium">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
-                {sortedUsers.map((user) => (
+              <tbody ref={tableRef}>
+                {filteredUsers.map((user, idx) => {
+                  const isSelected = idx === selectedIndex;
+                  return (
                   <tr
                     key={user.id}
-                    className="border-b border-pos-muted/10 transition-colors hover:bg-pos-background/50"
+                    onMouseEnter={() => setSelectedIndex(idx)}
+                    className={`border-b border-pos-muted/10 transition-colors ${
+                      isSelected
+                        ? "bg-pos-secondary/10 ring-1 ring-pos-secondary/30"
+                        : "hover:bg-pos-background/50"
+                    }`}
                   >
                     <td className="py-3 pr-2 font-medium text-pos-text">
                       <div className="flex items-center gap-1.5">
@@ -505,14 +559,15 @@ export default function UserManagementPage() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Mobile cards */}
           <div className="sm:hidden space-y-2.5">
-            {sortedUsers.map((user, i) => (
+            {filteredUsers.map((user, i) => (
               <div
                 key={user.id}
                 className="card-enter relative bg-pos-surface rounded-xl shadow-sm border border-pos-muted/10 overflow-hidden active:scale-[0.99] transition-transform"
@@ -618,9 +673,11 @@ export default function UserManagementPage() {
       )}
 
       {/* Empty state */}
-      {sortedUsers.length === 0 && modalMode === null && (
+      {filteredUsers.length === 0 && modalMode === null && (
         <p className="text-xs text-pos-muted italic py-3 text-center">
-          No hay usuarios. Hacé clic en "+ Agregar Usuario" para crear uno.
+          {search
+            ? "No se encontraron usuarios con ese criterio de búsqueda"
+            : 'No hay usuarios. Hacé clic en "+ Agregar Usuario" para crear uno.'}
         </p>
       )}
     </div>

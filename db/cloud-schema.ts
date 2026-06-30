@@ -158,6 +158,7 @@ export const sales = pgTable(
     change: doublePrecision("change"),
     shift_id: integer("shift_id"),
     invoice_id: integer("invoice_id"),
+    created_by: text("created_by").notNull().default("—"),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
     sync_status: text("sync_status", { enum: ["pending", "synced", "conflict"] })
@@ -480,6 +481,7 @@ export const comprobantes = pgTable(
     total: doublePrecision("total").notNull().default(0),
     sale_id: integer("sale_id"),
     notes: text("notes"),
+    created_by: text("created_by").notNull().default("—"),
     store_id: text("store_id").notNull(),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),

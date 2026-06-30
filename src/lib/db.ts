@@ -32,6 +32,7 @@ async function ensureTables(db: Database): Promise<void> {
       status TEXT NOT NULL DEFAULT 'completed',
       customer_name TEXT,
       shift_id INTEGER,
+      created_by TEXT NOT NULL DEFAULT '—',
       store_id TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -260,6 +261,7 @@ async function ensureTables(db: Database): Promise<void> {
       total REAL NOT NULL DEFAULT 0,
       sale_id INTEGER,
       notes TEXT,
+      created_by TEXT NOT NULL DEFAULT '—',
       store_id TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -447,6 +449,8 @@ async function ensureTables(db: Database): Promise<void> {
   // ── Schema migrations for existing DBs ──
   const migrations = [
     `ALTER TABLE comprobantes ADD COLUMN payment_method TEXT`,
+    `ALTER TABLE comprobantes ADD COLUMN created_by TEXT NOT NULL DEFAULT '—'`,
+    `ALTER TABLE sales ADD COLUMN created_by TEXT NOT NULL DEFAULT '—'`,
     `ALTER TABLE credit_payments ADD COLUMN comprobante_id INTEGER`,
   ];
   for (const sql of migrations) {

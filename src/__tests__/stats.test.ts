@@ -136,6 +136,7 @@ function makeSale(
   return {
     id,
     items: cartItems,
+    createdBy: "admin",
     total: subtotal,
     subtotal,
     discountPercent: 0,

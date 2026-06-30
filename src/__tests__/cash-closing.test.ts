@@ -45,6 +45,7 @@ function makeSale(
       subtotal: i.subtotal,
       discountPercent: 0,
     })),
+    createdBy: "admin",
     total,
     subtotal: total,
     discountPercent: 0,

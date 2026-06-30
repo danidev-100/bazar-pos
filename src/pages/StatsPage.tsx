@@ -1,12 +1,18 @@
 import { useState, useMemo, useCallback } from "react";
 import { useAppStore } from "@/store";
 import { useActiveStore } from "@/store/context";
+import { useProductsStore } from "@/store/products";
+import { useExpensesStore } from "@/store/expenses";
 import DateRangeFilter, {
   type DateRange,
   type Preset,
 } from "@/components/DateRangeFilter";
 import SalesChart, { type Granularity } from "@/components/SalesChart";
 import TopSellers from "@/components/TopSellers";
+import PaymentMethodChart from "@/components/PaymentMethodChart";
+import HourlySalesChart from "@/components/HourlySalesChart";
+import CategoryBreakdown from "@/components/CategoryBreakdown";
+import CashierBreakdown from "@/components/CashierBreakdown";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
@@ -26,6 +32,31 @@ function isSaleInRange(
   return true;
 }
 
+function deltaPercent(current: number, previous: number): number | null {
+  if (previous === 0) return current > 0 ? 100 : null;
+  return Math.round(((current - previous) / previous) * 100 * 10) / 10;
+}
+
+function computeMetrics(sales: { total: number; items: { quantity: number; subtotal: number; productId: number; unitPrice: number }[] }[], products: Map<number, number>) {
+  const totalRevenue = sales.reduce((s, sale) => s + sale.total, 0);
+  const totalTransactions = sales.length;
+  const totalItems = sales.reduce((s, sale) => s + sale.items.reduce((si, i) => si + i.quantity, 0), 0);
+  const avgPerSale = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
+  // Profit margin
+  let totalCost = 0;
+  for (const sale of sales) {
+    for (const item of sale.items) {
+      const costPrice = products.get(item.productId) ?? 0;
+      totalCost += costPrice * item.quantity;
+    }
+  }
+  const grossProfit = totalRevenue - totalCost;
+  const marginPercent = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 1000) / 10 : 0;
+
+  return { totalRevenue, totalTransactions, totalItems, avgPerSale, grossProfit, marginPercent };
+}
+
 // ──────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────
@@ -33,6 +64,18 @@ function isSaleInRange(
 export default function StatsPage() {
   const { storeId } = useActiveStore();
   const completedSales = useAppStore((s) => s.completedSales);
+  const products = useProductsStore((s) => s.products);
+  const categories = useProductsStore((s) => s.categories);
+  const expenses = useExpensesStore((s) => s.expenses);
+
+  // Build product cost map once
+  const productCostMap = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const p of products) {
+      map.set(p.id, p.costPrice);
+    }
+    return map;
+  }, [products]);
 
   // ── Date filter state ──
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -48,16 +91,46 @@ export default function StatsPage() {
     [],
   );
 
-  // ── Filtered sales ──
+  // ── Filtered sales (current period) ──
   const filteredSales = useMemo(() => {
     return completedSales.filter((sale) => {
-      // Filter by store
       if (sale.storeId !== storeId) return false;
-
-      // Filter by date range
       return isSaleInRange(sale.date, dateRange.from, dateRange.to);
     });
   }, [completedSales, storeId, dateRange]);
+
+  // ── Previous period sales (for comparison) ──
+  const previousSales = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return [];
+
+    const periodMs = dateRange.to.getTime() - dateRange.from.getTime();
+    const prevFrom = new Date(dateRange.from.getTime() - periodMs);
+    const prevTo = new Date(dateRange.from.getTime());
+
+    return completedSales.filter((sale) => {
+      if (sale.storeId !== storeId) return false;
+      return isSaleInRange(sale.date, prevFrom, prevTo);
+    });
+  }, [completedSales, storeId, dateRange]);
+
+  // ── Metrics ──
+  const metrics = useMemo(() => computeMetrics(filteredSales, productCostMap), [filteredSales, productCostMap]);
+  const prevMetrics = useMemo(() => computeMetrics(previousSales, productCostMap), [previousSales, productCostMap]);
+
+  // ── Expenses in current period ──
+  const periodExpenses = useMemo(() => {
+    return expenses.filter((e) => {
+      if (e.storeId !== storeId) return false;
+      return isSaleInRange(e.date, dateRange.from, dateRange.to);
+    });
+  }, [expenses, storeId, dateRange]);
+
+  const totalExpenses = useMemo(
+    () => periodExpenses.reduce((s, e) => s + e.amount, 0),
+    [periodExpenses],
+  );
+
+  const netIncome = metrics.totalRevenue - totalExpenses;
 
   // ── Export handlers ──
 
@@ -112,44 +185,55 @@ export default function StatsPage() {
   }, [topSellersData]);
 
   const exportSummaryPdf = useCallback(() => {
-    const totalRevenue = filteredSales.reduce(
-      (s, sale) => s + sale.total, 0,
-    );
-    const totalItems = filteredSales.reduce(
-      (s, sale) => s + sale.items.reduce((si, i) => si + i.quantity, 0), 0,
-    );
-    const avgPerSale =
-      filteredSales.length > 0
-        ? totalRevenue / filteredSales.length
-        : 0;
     const data = [
-      { metrica: "Ingresos Totales", valor: `$${totalRevenue.toFixed(2)}` },
-      { metrica: "Transacciones", valor: String(filteredSales.length) },
-      { metrica: "Productos Vendidos", valor: String(totalItems) },
-      { metrica: "Promedio/Venta", valor: `$${avgPerSale.toFixed(2)}` },
+      { metrica: "Ingresos Totales", valor: `$${metrics.totalRevenue.toFixed(2)}` },
+      { metrica: "Transacciones", valor: String(metrics.totalTransactions) },
+      { metrica: "Productos Vendidos", valor: String(metrics.totalItems) },
+      { metrica: "Promedio/Venta", valor: `$${metrics.avgPerSale.toFixed(2)}` },
+      { metrica: "Margen Bruto", valor: `$${metrics.grossProfit.toFixed(2)} (${metrics.marginPercent}%)` },
+      { metrica: "Gastos", valor: `$${totalExpenses.toFixed(2)}` },
+      { metrica: "Ingreso Neto", valor: `$${netIncome.toFixed(2)}` },
     ];
     exportTableToPdf(data, salesSummaryColumns, "Resumen de Ventas");
-  }, [filteredSales]);
+  }, [metrics, totalExpenses, netIncome]);
 
   const exportSummaryExcel = useCallback(() => {
-    const totalRevenue = filteredSales.reduce(
-      (s, sale) => s + sale.total, 0,
-    );
-    const totalItems = filteredSales.reduce(
-      (s, sale) => s + sale.items.reduce((si, i) => si + i.quantity, 0), 0,
-    );
-    const avgPerSale =
-      filteredSales.length > 0
-        ? totalRevenue / filteredSales.length
-        : 0;
     const data = [
-      { metrica: "Ingresos Totales", valor: totalRevenue },
-      { metrica: "Transacciones", valor: filteredSales.length },
-      { metrica: "Productos Vendidos", valor: totalItems },
-      { metrica: "Promedio/Venta", valor: avgPerSale },
+      { metrica: "Ingresos Totales", valor: metrics.totalRevenue },
+      { metrica: "Transacciones", valor: metrics.totalTransactions },
+      { metrica: "Productos Vendidos", valor: metrics.totalItems },
+      { metrica: "Promedio/Venta", valor: metrics.avgPerSale },
+      { metrica: "Margen Bruto %", valor: metrics.marginPercent },
+      { metrica: "Gastos", valor: totalExpenses },
+      { metrica: "Ingreso Neto", valor: netIncome },
     ];
     exportToExcel(data, salesSummaryColumns, "Resumen-Ventas");
-  }, [filteredSales]);
+  }, [metrics, totalExpenses, netIncome]);
+
+  // ── Render helpers ──
+
+  function DeltaBadge({ current, previous }: { current: number; previous: number }) {
+    const delta = deltaPercent(current, previous);
+    if (delta == null) return null;
+
+    const isUp = delta > 0;
+    const isNeutral = delta === 0;
+
+    return (
+      <span
+        className={`inline-flex items-center gap-0.5 text-[10px] font-semibold ml-1.5 ${
+          isNeutral
+            ? "text-pos-muted"
+            : isUp
+              ? "text-green-600"
+              : "text-red-500"
+        }`}
+      >
+        {isNeutral ? "―" : isUp ? "↑" : "↓"}
+        {!isNeutral && `${Math.abs(delta)}%`}
+      </span>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5 h-full">
@@ -183,67 +267,109 @@ export default function StatsPage() {
       <DateRangeFilter value={dateRange} onChange={handleDateRangeChange} />
 
       {/* ── Summary cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <SummaryCard
-          label="Ingresos Totales"
-          value={`$${filteredSales.reduce((s, sale) => s + sale.total, 0).toFixed(2)}`}
+          label="Ingresos"
+          value={`$${metrics.totalRevenue.toFixed(2)}`}
+          delta={<DeltaBadge current={metrics.totalRevenue} previous={prevMetrics.totalRevenue} />}
         />
         <SummaryCard
           label="Transacciones"
-          value={String(filteredSales.length)}
+          value={String(metrics.totalTransactions)}
+          delta={<DeltaBadge current={metrics.totalTransactions} previous={prevMetrics.totalTransactions} />}
         />
         <SummaryCard
-          label="Productos Vendidos"
-          value={String(
-            filteredSales.reduce((s, sale) => s + sale.items.reduce((si, i) => si + i.quantity, 0), 0),
-          )}
+          label="Productos Vend."
+          value={String(metrics.totalItems)}
+          delta={<DeltaBadge current={metrics.totalItems} previous={prevMetrics.totalItems} />}
         />
         <SummaryCard
           label="Prom./Venta"
-          value={
-            filteredSales.length > 0
-              ? `$${(
-                  filteredSales.reduce((s, sale) => s + sale.total, 0) /
-                  filteredSales.length
-                ).toFixed(2)}`
-              : "$0.00"
-          }
+          value={`$${metrics.avgPerSale.toFixed(2)}`}
+          delta={<DeltaBadge current={metrics.avgPerSale} previous={prevMetrics.avgPerSale} />}
+        />
+        <SummaryCard
+          label="Margen Bruto"
+          value={`${metrics.marginPercent}%`}
+          subtitle={`$${metrics.grossProfit.toFixed(2)}`}
+          delta={<DeltaBadge current={metrics.grossProfit} previous={prevMetrics.grossProfit} />}
+        />
+        <SummaryCard
+          label="Ingreso Neto"
+          value={`$${netIncome.toFixed(2)}`}
+          subtitle={`Gastos: $${totalExpenses.toFixed(2)}`}
+          negative={netIncome < 0}
         />
       </div>
 
-      {/* ── Chart ── */}
-      <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
-        <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
-          Ingresos en el Tiempo
-        </h2>
-        <SalesChart sales={filteredSales} granularity={granularity} />
-      </section>
-
-      {/* ── Top Sellers ── */}
-      <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
-            Más Vendidos
+      {/* ── Charts Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Ingresos en el Tiempo */}
+        <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
+          <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
+            Ingresos en el Tiempo
           </h2>
-          {topSellersData.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={exportTopSellersExcel}
-                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
-              >
-                Excel
-              </button>
-              <button
-                onClick={exportTopSellersPdf}
-                className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
-              >
-                PDF
-              </button>
-            </div>
-          )}
-        </div>
-        <TopSellers sales={filteredSales} limit={10} />
-      </section>
+          <SalesChart sales={filteredSales} granularity={granularity} />
+        </section>
+
+        {/* Desglose por Pago */}
+        <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
+          <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
+            Desglose por Método de Pago
+          </h2>
+          <PaymentMethodChart sales={filteredSales} />
+        </section>
+
+        {/* Ventas por Hora */}
+        <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
+          <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
+            Ventas por Hora
+          </h2>
+          <HourlySalesChart sales={filteredSales} />
+        </section>
+
+        {/* Más Vendidos */}
+        <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide">
+              Más Vendidos
+            </h2>
+            {topSellersData.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={exportTopSellersExcel}
+                  className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+                >
+                  Excel
+                </button>
+                <button
+                  onClick={exportTopSellersPdf}
+                  className="text-xs px-2 py-1 border border-pos-muted/30 text-pos-text rounded hover:bg-pos-background/50 transition-colors"
+                >
+                  PDF
+                </button>
+              </div>
+            )}
+          </div>
+          <TopSellers sales={filteredSales} limit={10} />
+        </section>
+
+        {/* Por Categoría */}
+        <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
+          <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
+            Ventas por Categoría
+          </h2>
+          <CategoryBreakdown sales={filteredSales} products={products} categories={categories} />
+        </section>
+
+        {/* Por Cajero */}
+        <section className="bg-pos-surface rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800 dark:border-gray-600/30">
+          <h2 className="text-sm font-semibold text-pos-text uppercase tracking-wide mb-3">
+            Ventas por Cajero
+          </h2>
+          <CashierBreakdown sales={filteredSales} />
+        </section>
+      </div>
 
       {/* ── Export Summary ── */}
       {filteredSales.length > 0 && (
@@ -270,13 +396,31 @@ export default function StatsPage() {
 // Summary card sub-component
 // ──────────────────────────────────────────────
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+function SummaryCard({
+  label,
+  value,
+  subtitle,
+  delta,
+  negative,
+}: {
+  label: string;
+  value: string;
+  subtitle?: string;
+  delta?: React.ReactNode;
+  negative?: boolean;
+}) {
   return (
-    <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-3 text-center dark:bg-gray-800 dark:border-gray-600/30">
-      <p className="text-xs text-pos-muted uppercase tracking-wide mb-1">
+    <div className="bg-pos-surface rounded-xl border border-pos-muted/10 p-3 dark:bg-gray-800 dark:border-gray-600/30">
+      <p className="text-xs text-pos-muted uppercase tracking-wide mb-1 flex items-center gap-1">
         {label}
+        {delta}
       </p>
-      <p className="text-lg font-bold text-pos-text font-mono">{value}</p>
+      <p className={`text-lg font-bold font-mono ${negative ? "text-red-500" : "text-pos-text"}`}>
+        {value}
+      </p>
+      {subtitle && (
+        <p className="text-[10px] text-pos-muted mt-0.5">{subtitle}</p>
+      )}
     </div>
   );
 }

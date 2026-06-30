@@ -7,6 +7,7 @@ import { usePedidosStore, setNextPedidoId, setNextPedidoItemId } from "@/store/p
 import { useInvoicesStore, setNextInvoiceId, setNextInvoiceItemId } from "@/store/invoices";
 import { useCashClosingStore } from "@/store/cash-closing";
 import { useAuthStore, setNextUserId } from "@/store/auth";
+import { useAppStore } from "@/store";
 
 let initialized = false;
 
@@ -22,6 +23,7 @@ export async function initAllStores(force = false): Promise<void> {
     initPedidos(),
     initInvoices(),
     initShifts(),
+    initSales(),
   ]);
 }
 
@@ -279,5 +281,69 @@ async function initShifts(): Promise<void> {
     }));
 
     useCashClosingStore.setState({ shifts });
+  } catch { /* table may not exist yet */ }
+}
+
+// ── Sales (for stats) ──
+
+async function initSales(): Promise<void> {
+  try {
+    const [saleRows, itemRows] = await Promise.all([
+      select<any>("SELECT id, total, payment_method, cash_amount, card_amount, mercadopago_amount, change, status, customer_name, created_by, store_id, created_at FROM sales WHERE status = 'completed' ORDER BY id ASC"),
+      select<any>("SELECT id, sale_id, product_id, product_name, quantity, unit_price, subtotal FROM sale_items"),
+    ]);
+
+    // Group items by sale_id
+    const itemsBySale = new Map<number, any[]>();
+    for (const item of itemRows) {
+      const list = itemsBySale.get(item.sale_id) ?? [];
+      list.push(item);
+      itemsBySale.set(item.sale_id, list);
+    }
+
+    let maxSaleId = 0;
+    let maxSaleItemId = 0;
+
+    const completedSales = saleRows.map((r: any) => {
+      maxSaleId = Math.max(maxSaleId, r.id);
+
+      const items = (itemsBySale.get(r.id) ?? []).map((i: any) => {
+        maxSaleItemId = Math.max(maxSaleItemId, i.id);
+        return {
+          productId: i.product_id,
+          productName: i.product_name,
+          quantity: i.quantity,
+          unitPrice: i.unit_price,
+          subtotal: i.subtotal,
+          discountPercent: 0,
+        };
+      });
+
+      return {
+        id: r.id,
+        items,
+        total: r.total,
+        subtotal: items.reduce((s: number, i: any) => s + i.subtotal, 0),
+        discountPercent: 0,
+        discountAmount: 0,
+        paymentMethod: r.payment_method,
+        amountPaid: r.total,
+        cashAmount: r.cash_amount,
+        cardAmount: r.card_amount,
+        mercadopagoAmount: r.mercadopago_amount,
+        change: r.change,
+        date: r.created_at,
+        storeId: r.store_id,
+        customerName: r.customer_name,
+        createdBy: r.created_by ?? "—",
+        status: r.status,
+      };
+    });
+
+    // Merge with any existing in-memory sales and sort by id desc
+    const existing = useAppStore.getState().completedSales;
+    const merged = [...existing, ...completedSales].sort((a, b) => b.id - a.id);
+
+    useAppStore.setState({ completedSales: merged });
   } catch { /* table may not exist yet */ }
 }

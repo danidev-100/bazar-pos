@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { useProductsStore } from "./products";
 import { useCustomersStore, type Customer } from "./customers";
+import { useAuthStore } from "./auth";
 import { useComprobantesStore, type ComprobanteTipo } from "./comprobantes";
 import { execute, enqueueSync, transaction as dbTransaction } from "@/lib/db";
 
@@ -57,6 +58,7 @@ export type CompletedSale = {
   date: string;
   storeId: string;
   customerName: string | null;
+  createdBy: string;
   status: "completed" | "refunded";
 };
 
@@ -307,12 +309,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const resolvedStoreId = storeId ?? "store_1";
 
+    const currentUserName = useAuthStore.getState().currentUser?.name ?? "—";
     const resolvedPayment = paymentMethod;
     const paidAmount = paymentMethod === "mixed" ? (cashAmount ?? 0) + (cardAmount ?? 0) + (mercadopagoAmount ?? 0) : paymentMethod === "mercadopago" ? total : (amountPaid ?? null);
 
     const sale: CompletedSale = {
       id: nextSaleId++,
       items: items.map((i) => ({ ...i })),
+      createdBy: currentUserName,
       total,
       subtotal,
       discountPercent: globalDiscountPercent,
@@ -358,6 +362,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         tipo: comprobanteTipo,
         payment_method: paymentMethod,
         cliente_nombre: sale.customerName ?? "Consumidor Final",
+        created_by: currentUserName,
         store_id: resolvedStoreId,
         sale_id: sale.id,
         items: sale.items.map((i) => ({
@@ -390,8 +395,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const stmts = [
       {
-        sql: `INSERT INTO sales (id, total, payment_method, cash_amount, card_amount, change, status, customer_name, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')`,
-        bind: [sale.id, total, paymentMethod, dbCash, dbCard, change, "completed", sale.customerName, resolvedStoreId, now, now],
+        sql: `INSERT INTO sales (id, total, payment_method, cash_amount, card_amount, change, status, customer_name, shift_id, created_by, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending')`,
+        bind: [sale.id, total, paymentMethod, dbCash, dbCard, change, "completed", sale.customerName, null, sale.createdBy, resolvedStoreId, now, now],
       },
       {
         sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,

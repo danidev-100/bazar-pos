@@ -5,6 +5,7 @@ import { useProductsStore } from "@/store/products";
 import { useComprobantesStore, type Comprobante, type ComprobanteTipo, getTipoLabel } from "@/store/comprobantes";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 import { printComprobante } from "@/lib/pdf-export";
+import { useAuthStore } from "@/store/auth";
 import { useAppStore } from "@/store";
 import { useKeyboardListNavigation } from "@/hooks/useKeyboardListNavigation";
 
@@ -58,11 +59,17 @@ export default function ComprobantesPage() {
   const [filterTipo, setFilterTipo] = useState<ComprobanteTipo[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [filterCreatedBy, setFilterCreatedBy] = useState("");
 
   const storeComprobantes = useMemo(
     () => comprobantes.filter((c) => c.store_id === storeId).sort((a, b) => b.id - a.id),
     [comprobantes, storeId],
   );
+
+  const createdByUsers = useMemo(() => {
+    const set = new Set(storeComprobantes.map((c) => c.createdBy));
+    return [...set].filter(Boolean).sort();
+  }, [storeComprobantes]);
 
   const filtered = useMemo(() => {
     let result = storeComprobantes;
@@ -83,6 +90,11 @@ export default function ComprobantesPage() {
       result = result.filter((c) => new Date(c.fecha) <= to);
     }
 
+    // Filter by createdBy (cajero)
+    if (filterCreatedBy) {
+      result = result.filter((c) => c.createdBy === filterCreatedBy);
+    }
+
     // Filter by search (número + cliente)
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -94,7 +106,7 @@ export default function ComprobantesPage() {
     }
 
     return result;
-  }, [storeComprobantes, search, filterTipo, dateFrom, dateTo]);
+  }, [storeComprobantes, search, filterTipo, dateFrom, dateTo, filterCreatedBy]);
 
   function toggleTipo(tipo: ComprobanteTipo) {
     setFilterTipo((prev) =>
@@ -159,6 +171,21 @@ export default function ComprobantesPage() {
             {/* Search */}
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por número o cliente…" className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target" />
 
+            {/* Cashier filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-pos-muted font-medium">Cajero:</span>
+              <select value={filterCreatedBy} onChange={(e) => setFilterCreatedBy(e.target.value)}
+                className="text-xs border border-pos-muted/30 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-background touch-target">
+                <option value="">Todos</option>
+                {createdByUsers.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+              {filterCreatedBy && (
+                <button onClick={() => setFilterCreatedBy("")} className="text-xs text-pos-muted hover:text-pos-danger touch-target">✕</button>
+              )}
+            </div>
+
             {/* Tipo filter */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs text-pos-muted font-medium mr-1">Tipo:</span>
@@ -216,6 +243,7 @@ export default function ComprobantesPage() {
                       <th className="text-left py-2 pr-2 font-medium">N°</th>
                       <th className="text-left py-2 px-2 font-medium">Tipo</th>
                       <th className="text-left py-2 px-2 font-medium">Cliente</th>
+                      <th className="text-left py-2 px-2 font-medium">Cajero</th>
                       <th className="text-left py-2 px-2 font-medium">Fecha</th>
                       <th className="text-right py-2 px-2 font-medium">Total</th>
                       <th className="text-right py-2 pl-2 font-medium">Acciones</th>
@@ -231,6 +259,7 @@ export default function ComprobantesPage() {
                           </span>
                         </td>
                         <td className="py-2 px-2 text-pos-text">{c.cliente_nombre}</td>
+                        <td className="py-2 px-2 text-pos-muted text-xs">{c.createdBy}</td>
                         <td className="py-2 px-2 text-pos-muted">{new Date(c.fecha).toLocaleDateString("es-AR")}</td>
                         <td className="py-2 px-2 text-right font-mono text-pos-text">${c.total.toFixed(2)}</td>
                         <td className="py-2 pl-2 text-right">
@@ -270,6 +299,7 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
   const customers = useCustomersStore((s) => s.customers);
   const products = useProductsStore((s) => s.products);
   const createComprobante = useComprobantesStore((s) => s.createComprobante);
+  const currentUserName = useAuthStore((s) => s.currentUser?.name);
   const showNotification = useAppStore((s) => s.showNotification);
 
   const storeCustomers = useMemo(() => customers.filter((c) => c.store_id === storeId), [customers, storeId]);
@@ -354,6 +384,7 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
         cliente_cuit: clienteCuit.trim(),
         cliente_direccion: clienteDireccion.trim(),
         notes,
+        created_by: currentUserName,
         store_id: storeId,
         items: validItems.map((r) => ({
           product_id: r.product_id ?? undefined,
@@ -642,6 +673,7 @@ function ComprobanteDetail({ comprobante, onBack }: { comprobante: Comprobante; 
 
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div><span className="text-pos-muted">Fecha:</span> {new Date(comprobante.fecha).toLocaleDateString("es-AR")}</div>
+          <div><span className="text-pos-muted">Cajero:</span> {comprobante.createdBy}</div>
           <div><span className="text-pos-muted">Cliente:</span> {comprobante.cliente_nombre}</div>
           {comprobante.cliente_cuit && <div><span className="text-pos-muted">CUIT:</span> {comprobante.cliente_cuit}</div>}
           {comprobante.cliente_direccion && <div className="col-span-2"><span className="text-pos-muted">Dirección:</span> {comprobante.cliente_direccion}</div>}

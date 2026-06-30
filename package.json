@@ -1,7 +1,7 @@
 {
   "name": "sistema-ventas",
   "private": true,
-  "version": "1.7.6",
+  "version": "1.7.7",
   "type": "module",
   "description": "Multi-store POS desktop application — offline-first with sync",
   "scripts": {

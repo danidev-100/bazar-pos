@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -25,6 +26,7 @@ type ChartDataPoint = {
   label: string;
   revenue: number;
   transactions: number;
+  avgTicket: number;
 };
 
 // ──────────────────────────────────────────────
@@ -114,6 +116,7 @@ export default function SalesChart({
       label: getPeriodLabel(v.date, granularity),
       revenue: Math.round(v.revenue * 100) / 100,
       transactions: v.transactions,
+      avgTicket: v.transactions > 0 ? Math.round((v.revenue / v.transactions) * 100) / 100 : 0,
     }));
   }, [sales, granularity]);
 
@@ -126,10 +129,14 @@ export default function SalesChart({
     );
   }
 
+  const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
+  const totalTransactions = data.reduce((s, d) => s + d.transactions, 0);
+  const overallAvg = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
   return (
     <div className="w-full">
       <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 4 }}>
+        <ComposedChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" />
           <XAxis
             dataKey="label"
@@ -139,10 +146,20 @@ export default function SalesChart({
             interval="preserveStartEnd"
           />
           <YAxis
+            yAxisId="left"
             tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: number) => `$${v}`}
+          />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => `$${v}`}
+            width={60}
           />
           <Tooltip
             contentStyle={{
@@ -155,28 +172,45 @@ export default function SalesChart({
             formatter={(value: number, name: string) => {
               if (name === "revenue")
                 return [`$${value.toFixed(2)}`, "Ingresos"];
+              if (name === "avgTicket")
+                return [`$${value.toFixed(2)}`, "Ticket Prom."];
               return [value, "Transacciones"];
             }}
           />
           <Bar
+            yAxisId="left"
             dataKey="revenue"
             fill="var(--color-chart-bar)"
             radius={[4, 4, 0, 0]}
             maxBarSize={48}
           />
-        </BarChart>
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="avgTicket"
+            stroke="#f59e0b"
+            strokeWidth={2}
+            dot={{ r: 3, fill: "#f59e0b" }}
+            name="avgTicket"
+          />
+        </ComposedChart>
       </ResponsiveContainer>
 
       {/* ── Summary stats below chart ── */}
       <div className="flex gap-6 mt-2 text-xs text-pos-muted">
         <span>
           Total: <strong className="text-pos-text">
-            ${data.reduce((s, d) => s + d.revenue, 0).toFixed(2)}
+            ${totalRevenue.toFixed(2)}
           </strong>
         </span>
         <span>
           Transacciones: <strong className="text-pos-text">
-            {data.reduce((s, d) => s + d.transactions, 0)}
+            {totalTransactions}
+          </strong>
+        </span>
+        <span>
+          Ticket Prom.: <strong className="text-pos-text">
+            ${overallAvg.toFixed(2)}
           </strong>
         </span>
         <span>
