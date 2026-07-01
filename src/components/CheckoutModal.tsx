@@ -86,6 +86,11 @@ export default function CheckoutModal({
       return;
     }
 
+    if (!selectedComprobanteTipo) {
+      setError("Seleccioná un tipo de comprobante antes de cobrar");
+      return;
+    }
+
     if (paymentMethod === "cash" && parsedCash < total) {
       setError(`Pago insuficiente: $${parsedCash.toFixed(2)} es menor al total de $${total.toFixed(2)}`);
       return;

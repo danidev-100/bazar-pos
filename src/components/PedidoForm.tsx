@@ -17,15 +17,17 @@ interface ItemRow {
 interface PedidoFormProps {
   onSaved: () => void;
   onCancel: () => void;
+  editPedido?: Pedido;
 }
 
 let nextItemKey = 1;
 
-export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
+export default function PedidoForm({ onSaved, onCancel, editPedido }: PedidoFormProps) {
   const { storeId } = useActiveStore();
   const proveedores = useProveedoresStore((s) => s.proveedores);
   const products = useProductsStore((s) => s.products);
   const addPedido = usePedidosStore((s) => s.addPedido);
+  const updatePedido = usePedidosStore((s) => s.updatePedido);
 
   const [proveedorId, setProveedorId] = useState<number | null>(null);
   const [proveedorSearch, setProveedorSearch] = useState("");
@@ -35,6 +37,25 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
   const [items, setItems] = useState<ItemRow[]>([
     { key: nextItemKey++, product_id: null, product_name: "", quantity: 1, unit_price: 0, subtotal: 0 },
   ]);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (!editPedido) return;
+    setProveedorId(editPedido.proveedor_id);
+    setProveedorSearch(editPedido.proveedor_name);
+    setDate(editPedido.date);
+    setNotes(editPedido.notes);
+    setItems(
+      editPedido.items.map((item) => ({
+        key: nextItemKey++,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal: item.subtotal,
+      })),
+    );
+  }, [editPedido]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -93,7 +114,7 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
           const prod = storeProducts.find((p) => p.id === value);
           if (prod) {
             updated.product_name = prod.name;
-            updated.unit_price = prod.costPrice;
+            updated.unit_price = prod.price;
           }
         }
 
@@ -116,8 +137,8 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
           ...r,
           product_id: productId,
           product_name: prod.name,
-          unit_price: prod.costPrice,
-          subtotal: Math.round(r.quantity * prod.costPrice * 100) / 100,
+          unit_price: prod.price,
+          subtotal: Math.round(r.quantity * prod.price * 100) / 100,
         };
       }),
     );
@@ -146,20 +167,34 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
 
     setSaving(true);
     try {
-      addPedido({
-        proveedor_id: proveedor.id,
-        proveedor_name: proveedor.name,
-        date,
-        notes,
-        store_id: storeId,
-        items: validItems.map((r) => ({
-          product_id: r.product_id,
-          product_name: r.product_name,
-          quantity: r.quantity,
-          unit_price: r.unit_price,
-          subtotal: r.subtotal,
-        })),
-      });
+      if (editPedido) {
+        updatePedido(editPedido.id, {
+          date,
+          notes,
+          items: validItems.map((r) => ({
+            product_id: r.product_id,
+            product_name: r.product_name,
+            quantity: r.quantity,
+            unit_price: r.unit_price,
+            subtotal: r.subtotal,
+          })),
+        });
+      } else {
+        addPedido({
+          proveedor_id: proveedor.id,
+          proveedor_name: proveedor.name,
+          date,
+          notes,
+          store_id: storeId,
+          items: validItems.map((r) => ({
+            product_id: r.product_id,
+            product_name: r.product_name,
+            quantity: r.quantity,
+            unit_price: r.unit_price,
+            subtotal: r.subtotal,
+          })),
+        });
+      }
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear el pedido");
@@ -279,7 +314,7 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="min-w-0">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-pos-muted border-b border-pos-muted/20">
@@ -314,13 +349,20 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
       {/* Hidden input to make form work with Enter */}
       <input type="submit" className="hidden" />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 border border-pos-muted/30 text-pos-text rounded-lg font-medium text-sm touch-target hover:bg-pos-background"
+        >
+          Cancelar
+        </button>
         <button
           type="submit"
           disabled={saving}
           className="px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? "Guardando…" : "Crear Pedido"}
+          {saving ? "Guardando…" : editPedido ? "Actualizar Pedido" : "Crear Pedido"}
         </button>
       </div>
     </form>
@@ -333,7 +375,7 @@ export default function PedidoForm({ onSaved, onCancel }: PedidoFormProps) {
 
 type ProductRowProps = {
   row: ItemRow;
-  allProducts: { id: number; name: string; costPrice: number }[];
+  allProducts: { id: number; name: string; barcode: string | null; price: number }[];
   onSelect: (rowKey: number, productId: number) => void;
   onChange: (key: number, field: keyof ItemRow, value: string | number | null) => void;
   onRemove: (key: number) => void;
@@ -344,6 +386,8 @@ function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove 
   const [search, setSearch] = useState(row.product_name);
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
 
   const filtered = useMemo(
     () => allProducts.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())),
@@ -362,6 +406,19 @@ function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove 
     if (prod) setSearch(prod.name);
     setShowDropdown(false);
   }
+
+  // Position dropdown relative to input so it's always visible
+  useEffect(() => {
+    if (!showDropdown || !inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      position: "fixed",
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: Math.max(rect.width, 420),
+      zIndex: 9999,
+    });
+  }, [showDropdown, search]);
 
   return (
     <tr className="border-b border-pos-muted/10">
@@ -385,22 +442,38 @@ function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove 
           className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-pos-secondary"
         />
         {showDropdown && !row.product_id && filtered.length > 0 && (
-          <div className="absolute z-10 top-full left-0 right-0 bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-            {filtered.map((p, i) => (
-              <button
-                key={p.id}
-                type="button"
-                onMouseDown={() => handleSelect(p.id)}
-                onMouseEnter={() => setSelectedIndex(i)}
-                className={`w-full text-left px-3 py-1.5 text-sm touch-target transition-colors ${
-                  i === selectedIndex
-                    ? "bg-pos-secondary/10 text-pos-secondary font-medium"
-                    : "text-pos-text hover:bg-pos-background/50"
-                }`}
-              >
-                {p.name}
-              </button>
-            ))}
+          <div
+            ref={dropdownRef}
+            style={dropdownStyle}
+            className="bg-pos-surface border border-pos-muted/20 rounded-lg shadow-xl overflow-y-auto max-h-56"
+          >
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-pos-muted border-b border-pos-muted/20">
+                  <th className="text-left px-3 py-1.5 font-medium w-24">Código</th>
+                  <th className="text-left px-2 py-1.5 font-medium">Producto</th>
+                  <th className="text-right px-3 py-1.5 font-medium w-20">Precio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p, i) => (
+                  <tr
+                    key={p.id}
+                    onMouseDown={() => handleSelect(p.id)}
+                    onMouseEnter={() => setSelectedIndex(i)}
+                    className={`cursor-pointer transition-colors ${
+                      i === selectedIndex
+                        ? "bg-pos-secondary/10 text-pos-secondary"
+                        : "hover:bg-pos-background/50 text-pos-text"
+                    }`}
+                  >
+                    <td className="px-3 py-1.5 font-mono text-pos-muted">{p.barcode ?? "—"}</td>
+                    <td className="px-2 py-1.5 font-medium">{p.name}</td>
+                    <td className="px-3 py-1.5 text-right font-mono">${p.price.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </td>

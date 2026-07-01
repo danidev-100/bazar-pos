@@ -179,6 +179,7 @@ async function initPedidos(): Promise<void> {
           product_id: i.product_id,
           product_name: i.product_name,
           quantity: i.quantity,
+          received_qty: i.received_qty ?? 0,
           unit_price: i.unit_price,
           subtotal: i.subtotal,
         };

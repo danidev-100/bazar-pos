@@ -27,12 +27,12 @@ type FormData = {
 const INITIAL_FORM: FormData = {
   name: "",
   barcode: "",
-  price: "0",
-  costPrice: "0",
+  price: "",
+  costPrice: "",
   brandId: "",
   category_id: "",
-  minStock: "0",
-  midStock: "0",
+  minStock: "",
+  midStock: "",
 };
 
 // ──────────────────────────────────────────────

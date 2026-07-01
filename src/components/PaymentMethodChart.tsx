@@ -17,6 +17,8 @@ type Props = {
   sales: CompletedSale[];
 };
 
+type BucketKey = "cash" | "card" | "mercadopago" | "credit";
+
 type ChartDataPoint = {
   name: string;
   value: number;
@@ -28,23 +30,21 @@ type ChartDataPoint = {
 // Constants
 // ──────────────────────────────────────────────
 
-const PAYMENT_LABELS: Record<string, string> = {
+const BUCKET_KEYS: BucketKey[] = ["cash", "card", "mercadopago", "credit"];
+
+const PAYMENT_LABELS: Record<BucketKey, string> = {
   cash: "Efectivo",
-  card: "Tarjeta",
-  mixed: "Mixto",
-  credit: "Cuenta Corriente",
+  card: "Tarjeta de Crédito/Débito",
   mercadopago: "Mercado Pago",
+  credit: "Cuenta Corriente",
 };
 
-const PAYMENT_COLORS: Record<string, string> = {
-  cash: "#14b8a6",
-  card: "#3b82f6",
-  mixed: "#f59e0b",
-  credit: "#8b5cf6",
-  mercadopago: "#6b7280",
+const PAYMENT_COLORS: Record<BucketKey, string> = {
+  cash: "#eab308",     // amarillo
+  card: "#ef4444",     // rojo
+  mercadopago: "#3b82f6", // azul
+  credit: "#8b5cf6",   // violeta (se mantiene)
 };
-
-const ORDER = ["cash", "card", "mixed", "credit", "mercadopago"];
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -55,6 +55,45 @@ const tooltipFormatter = (value: number, _name: string, entry: any) => {
   const pct = ((value / total) * 100).toFixed(1);
   return [`$${value.toFixed(2)} (${pct}%)`, entry?.payload?.name ?? ""];
 };
+
+/**
+ * Desglosa las ventas en los 3 métodos reales + cuenta corriente.
+ * Los pagos mixtos se separan en sus componentes (cash, card, mp)
+ * en vez de aparecer como una categoría "Mixto".
+ */
+function computeBuckets(sales: CompletedSale[]): Record<BucketKey, number> {
+  const buckets: Record<BucketKey, number> = {
+    cash: 0,
+    card: 0,
+    mercadopago: 0,
+    credit: 0,
+  };
+
+  for (const sale of sales) {
+    switch (sale.paymentMethod) {
+      case "cash":
+        buckets.cash += sale.total;
+        break;
+      case "card":
+        buckets.card += sale.total;
+        break;
+      case "mercadopago":
+        buckets.mercadopago += sale.total;
+        break;
+      case "credit":
+        buckets.credit += sale.total;
+        break;
+      case "mixed":
+        // Desglosar mixto en sus componentes reales
+        buckets.cash += sale.cashAmount ?? 0;
+        buckets.card += sale.cardAmount ?? 0;
+        buckets.mercadopago += sale.mercadopagoAmount ?? 0;
+        break;
+    }
+  }
+
+  return buckets;
+}
 
 const renderCustomLabel = ({
   cx,
@@ -94,19 +133,16 @@ export default function PaymentMethodChart({ sales }: Props) {
   const data: ChartDataPoint[] = useMemo(() => {
     if (sales.length === 0) return [];
 
-    const buckets = new Map<string, number>();
+    const buckets = computeBuckets(sales);
 
-    for (const sale of sales) {
-      const key = sale.paymentMethod;
-      buckets.set(key, (buckets.get(key) ?? 0) + sale.total);
-    }
+    const total = BUCKET_KEYS.reduce((s, k) => s + buckets[k], 0);
+    // Solo mostrar buckets con valor > 0
+    const activeKeys = BUCKET_KEYS.filter((k) => buckets[k] > 0);
 
-    const total = Array.from(buckets.values()).reduce((s, v) => s + v, 0);
-
-    return ORDER.filter((key) => buckets.has(key)).map((key) => ({
-      name: PAYMENT_LABELS[key] ?? key,
-      value: Math.round(buckets.get(key)! * 100) / 100,
-      color: PAYMENT_COLORS[key] ?? "#6b7280",
+    return activeKeys.map((key) => ({
+      name: PAYMENT_LABELS[key],
+      value: Math.round(buckets[key] * 100) / 100,
+      color: PAYMENT_COLORS[key],
       total,
     }));
   }, [sales]);

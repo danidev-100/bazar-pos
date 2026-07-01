@@ -45,6 +45,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const tableRef = useRef<HTMLTableSectionElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
@@ -168,6 +169,12 @@ export default function ProductsPage() {
     setRenderCount(RENDER_BATCH);
   }, [search, selectedCategoryId, selectedBrandId, stockFilter]);
 
+  // Auto-scroll to top when search changes so results are immediately visible
+  useEffect(() => {
+    if (!search.trim()) return;
+    sectionRef.current?.scrollTo?.({ top: 0, behavior: "smooth" });
+  }, [search]);
+
   // Reset selectedIndex when results change
   useEffect(() => {
     setSelectedIndex(0);
@@ -262,7 +269,7 @@ export default function ProductsPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Product list / form ── */}
-      <section className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto dark:bg-gray-800 dark:border-gray-600/30">
+      <section ref={sectionRef} className="flex-1 bg-pos-surface rounded-xl border border-pos-muted/10 p-3 overflow-y-auto dark:bg-gray-800 dark:border-gray-600/30">
         {centerView.kind === "list" && (
           <>
             {/* Header */}
@@ -312,30 +319,37 @@ export default function ProductsPage() {
 
             {/* Search + stock filter */}
             <div className="flex items-center gap-2 mb-3">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
-                onKeyDown={(e) => {
-                  if (filteredProducts.length === 0) return;
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setSelectedIndex((prev) => Math.min(prev + 1, filteredProducts.length - 1));
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setSelectedIndex((prev) => Math.max(prev - 1, 0));
-                  } else if (e.key === "Enter") {
-                    e.preventDefault();
-                    const product = filteredProducts[selectedIndex];
-                    if (product) {
-                      setSelectedProductId(product.id);
-                      setCenterView({ kind: "edit", product });
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
+                  onKeyDown={(e) => {
+                    if (filteredProducts.length === 0) return;
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setSelectedIndex((prev) => Math.min(prev + 1, filteredProducts.length - 1));
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+                    } else if (e.key === "Enter") {
+                      e.preventDefault();
+                      const product = filteredProducts[selectedIndex];
+                      if (product) {
+                        setSelectedProductId(product.id);
+                        setCenterView({ kind: "edit", product });
+                      }
                     }
-                  }
-                }}
-                placeholder="Buscar por nombre o código de barras…"
-                className="flex-1 border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
-              />
+                  }}
+                  placeholder="Buscar por nombre o código de barras…"
+                  className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
+                />
+                {search.trim() && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white bg-pos-secondary px-2 py-0.5 rounded-full pointer-events-none">
+                    {filteredProducts.length}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => {
                   if (stockFilter === "all") setStockFilter("critical");
