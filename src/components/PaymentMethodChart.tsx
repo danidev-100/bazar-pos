@@ -147,7 +147,10 @@ export default function PaymentMethodChart({ sales }: Props) {
               border: "1px solid var(--color-chart-tooltip-border)",
               backgroundColor: "var(--color-chart-tooltip-bg)",
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              color: "rgb(var(--color-pos-text))",
             }}
+            itemStyle={{ color: "rgb(var(--color-pos-text))" }}
+            labelStyle={{ color: "rgb(var(--color-pos-text))" }}
             formatter={tooltipFormatter}
           />
           <Legend

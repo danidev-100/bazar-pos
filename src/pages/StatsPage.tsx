@@ -41,7 +41,6 @@ function computeMetrics(sales: { total: number; items: { quantity: number; subto
   const totalRevenue = sales.reduce((s, sale) => s + sale.total, 0);
   const totalTransactions = sales.length;
   const totalItems = sales.reduce((s, sale) => s + sale.items.reduce((si, i) => si + i.quantity, 0), 0);
-  const avgPerSale = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
   // Profit margin
   let totalCost = 0;
@@ -54,7 +53,7 @@ function computeMetrics(sales: { total: number; items: { quantity: number; subto
   const grossProfit = totalRevenue - totalCost;
   const marginPercent = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 1000) / 10 : 0;
 
-  return { totalRevenue, totalTransactions, totalItems, avgPerSale, grossProfit, marginPercent };
+  return { totalRevenue, totalTransactions, totalItems, grossProfit, marginPercent };
 }
 
 // ──────────────────────────────────────────────
@@ -189,7 +188,6 @@ export default function StatsPage() {
       { metrica: "Ingresos Totales", valor: `$${metrics.totalRevenue.toFixed(2)}` },
       { metrica: "Transacciones", valor: String(metrics.totalTransactions) },
       { metrica: "Productos Vendidos", valor: String(metrics.totalItems) },
-      { metrica: "Promedio/Venta", valor: `$${metrics.avgPerSale.toFixed(2)}` },
       { metrica: "Margen Bruto", valor: `$${metrics.grossProfit.toFixed(2)} (${metrics.marginPercent}%)` },
       { metrica: "Gastos", valor: `$${totalExpenses.toFixed(2)}` },
       { metrica: "Ingreso Neto", valor: `$${netIncome.toFixed(2)}` },
@@ -202,7 +200,7 @@ export default function StatsPage() {
       { metrica: "Ingresos Totales", valor: metrics.totalRevenue },
       { metrica: "Transacciones", valor: metrics.totalTransactions },
       { metrica: "Productos Vendidos", valor: metrics.totalItems },
-      { metrica: "Promedio/Venta", valor: metrics.avgPerSale },
+
       { metrica: "Margen Bruto %", valor: metrics.marginPercent },
       { metrica: "Gastos", valor: totalExpenses },
       { metrica: "Ingreso Neto", valor: netIncome },
@@ -269,7 +267,7 @@ export default function StatsPage() {
       {/* ── Summary cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <SummaryCard
-          label="Ingresos"
+          label="Ingreso Bruto"
           value={`$${metrics.totalRevenue.toFixed(2)}`}
           delta={<DeltaBadge current={metrics.totalRevenue} previous={prevMetrics.totalRevenue} />}
         />
@@ -284,9 +282,9 @@ export default function StatsPage() {
           delta={<DeltaBadge current={metrics.totalItems} previous={prevMetrics.totalItems} />}
         />
         <SummaryCard
-          label="Prom./Venta"
-          value={`$${metrics.avgPerSale.toFixed(2)}`}
-          delta={<DeltaBadge current={metrics.avgPerSale} previous={prevMetrics.avgPerSale} />}
+          label="Ingreso Neto"
+          value={`$${metrics.grossProfit.toFixed(2)}`}
+          delta={<DeltaBadge current={metrics.grossProfit} previous={prevMetrics.grossProfit} />}
         />
         <SummaryCard
           label="Margen Bruto"
@@ -295,7 +293,7 @@ export default function StatsPage() {
           delta={<DeltaBadge current={metrics.grossProfit} previous={prevMetrics.grossProfit} />}
         />
         <SummaryCard
-          label="Ingreso Neto"
+          label="Resultado Neto"
           value={`$${netIncome.toFixed(2)}`}
           subtitle={`Gastos: $${totalExpenses.toFixed(2)}`}
           negative={netIncome < 0}
