@@ -20,7 +20,6 @@ export default function CashClosingPage() {
   const getShiftsByStore = useCashClosingStore((s) => s.getShiftsByStore);
 
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const currentUser = useAuthStore((s) => s.currentUser);
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -29,12 +28,11 @@ export default function CashClosingPage() {
   const currentShift = getOpenShift(storeId);
   const storeShifts = getShiftsByStore(storeId);
 
+  // Cuando se abre/cierra un turno, solo refrescamos sin pisar la selección
   const handleShiftChanged = useCallback(() => {
-    setRefreshKey((k) => k + 1);
-    // Auto-select the most recent shift
-    const latest = getShiftsByStore(storeId)[0];
-    if (latest) setSelectedShiftId(latest.id);
-  }, [storeId, getShiftsByStore]);
+    // Force re-render via state toggle — shifts store changed
+    setSelectedShiftId((prev) => prev);
+  }, []);
 
   // Find the selected shift object
   const selectedShift: Shift | null =
@@ -109,8 +107,8 @@ export default function CashClosingPage() {
           Cierre de Caja
         </h2>
 
-        {/* ── Admin: Cashier Summary ── */}
-        {isAdmin && storeShifts.length > 0 && (
+        {/* ── Admin: Cashier Summary — oculto si hay selección ── */}
+        {isAdmin && !selectedShift && storeShifts.length > 0 && (
           <div className="mb-6 bg-pos-background/30 rounded-xl border border-pos-muted/10 p-4 dark:bg-gray-800/50 dark:border-gray-600/30">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-semibold text-pos-text uppercase tracking-wide">
@@ -194,29 +192,37 @@ export default function CashClosingPage() {
           </div>
         )}
 
-        {/* When a shift is selected from history, only show that shift's detail */}
+        {/* Panel central: muestra solo un panel a la vez */}
         {selectedShift ? (
-          selectedShift.reconciliationStatus ? (
+          /* ── Turno cerrado seleccionado del historial ── */
+          selectedShift.status === "closed" && selectedShift.reconciliationStatus ? (
             <ClosureReport
               shiftId={selectedShift.id}
               completedSales={completedSales}
             />
-          ) : (
+          ) : selectedShift.status === "closed" ? (
             <ReconciliationForm
               shift={selectedShift}
               completedSales={completedSales}
-              onReconciled={() => setRefreshKey((k) => k + 1)}
+              onReconciled={() => setSelectedShiftId((prev) => prev)}
+            />
+          ) : (
+            /* Si seleccionaron el turno abierto, igual mostramos el panel del turno abierto */
+            <ShiftPanel
+              storeId={storeId}
+              currentShift={selectedShift}
+              onShiftChanged={handleShiftChanged}
             />
           )
         ) : currentShift ? (
-          /* Open shift exists, no history selected — show the open panel */
+          /* ── Turno abierto, nada seleccionado ── */
           <ShiftPanel
             storeId={storeId}
             currentShift={currentShift}
             onShiftChanged={handleShiftChanged}
           />
         ) : (
-          /* No shift selected and no open shift — show open prompt */
+          /* ── Sin turnos ni selección ── */
           <ShiftPanel
             storeId={storeId}
             currentShift={null}
