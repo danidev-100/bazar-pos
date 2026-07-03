@@ -91,16 +91,6 @@ export default function CashClosingPage() {
     exportTableToPdf(shiftExportData, shiftColumns, "Cierre de Caja");
   }, [shiftExportData]);
 
-  // Determine which panels to show based on selected shift state
-  const showReconciliation =
-    selectedShift &&
-    selectedShift.status === "closed" &&
-    selectedShift.closeTime !== null;
-
-  const showClosureReport =
-    selectedShift &&
-    selectedShift.reconciliationStatus !== null;
-
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* ── Left panel: Shift list ── */}
@@ -204,41 +194,34 @@ export default function CashClosingPage() {
           </div>
         )}
 
-        {/* If there's an open shift, show the ShiftPanel */}
-        {currentShift ? (
+        {/* When a shift is selected from history, only show that shift's detail */}
+        {selectedShift ? (
+          selectedShift.reconciliationStatus ? (
+            <ClosureReport
+              shiftId={selectedShift.id}
+              completedSales={completedSales}
+            />
+          ) : (
+            <ReconciliationForm
+              shift={selectedShift}
+              completedSales={completedSales}
+              onReconciled={() => setRefreshKey((k) => k + 1)}
+            />
+          )
+        ) : currentShift ? (
+          /* Open shift exists, no history selected — show the open panel */
           <ShiftPanel
             storeId={storeId}
             currentShift={currentShift}
             onShiftChanged={handleShiftChanged}
           />
-        ) : !selectedShift ? (
+        ) : (
           /* No shift selected and no open shift — show open prompt */
           <ShiftPanel
             storeId={storeId}
             currentShift={null}
             onShiftChanged={handleShiftChanged}
           />
-        ) : null}
-
-        {/* Reconciliation form — show when selected closed shift needs reconciliation */}
-        {showReconciliation && selectedShift.reconciliationStatus === null && (
-          <div className="mt-4">
-            <ReconciliationForm
-              shift={selectedShift}
-              completedSales={completedSales}
-              onReconciled={() => setRefreshKey((k) => k + 1)}
-            />
-          </div>
-        )}
-
-        {/* ClosureReport — show when shift is reconciled */}
-        {showClosureReport && (
-          <div className="mt-4">
-            <ClosureReport
-              shiftId={selectedShift!.id}
-              completedSales={completedSales}
-            />
-          </div>
         )}
 
         {/* Empty state */}
