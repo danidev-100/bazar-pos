@@ -1,11 +1,11 @@
 ﻿import { select } from "@/lib/db";
 import { useBrandsStore, setNextBrandId } from "@/store/brands";
-import { useProductsStore, setNextProductId, setNextCategoryId, setNextMovementId } from "@/store/products";
+import { useProductsStore, setNextProductId, setNextCategoryId, setNextMovementId as setNextStockMovementId } from "@/store/products";
 import { useCustomersStore, setNextCustomerId } from "@/store/customers";
 import { useProveedoresStore, setNextProveedorId } from "@/store/proveedores";
 import { usePedidosStore, setNextPedidoId, setNextPedidoItemId } from "@/store/pedidos";
 import { useInvoicesStore, setNextInvoiceId, setNextInvoiceItemId } from "@/store/invoices";
-import { useCashClosingStore } from "@/store/cash-closing";
+import { useCashClosingStore, setNextShiftId, setNextMovementId as setNextCashMovementId } from "@/store/cash-closing";
 import { useAuthStore, setNextUserId } from "@/store/auth";
 import { useAppStore } from "@/store";
 
@@ -89,7 +89,7 @@ async function initProducts(): Promise<void> {
     useProductsStore.setState({ products, categories, stockMovements });
     setNextProductId(maxProductId + 1);
     setNextCategoryId(maxCatId + 1);
-    setNextMovementId(maxMovId + 1);
+    setNextStockMovementId(maxMovId + 1);
   } catch { /* table may not exist yet */ }
 }
 
@@ -265,23 +265,53 @@ async function initInvoices(): Promise<void> {
 
 async function initShifts(): Promise<void> {
   try {
-    const rows = await select<any>("SELECT id, employee_name, open_time, close_time, status, store_id, opening_balance, declared_cash, variance, reconciliation_status, reconciled_at FROM shifts");
+    const [shiftRows, movRows, closingRows] = await Promise.all([
+      select<any>("SELECT id, employee_name, open_time, close_time, status, store_id, opening_balance, declared_cash, variance, reconciliation_status, reconciled_at FROM shifts"),
+      select<any>("SELECT id, shift_id, type, amount, method, reason, created_by, store_id, created_at FROM cash_movements"),
+      select<any>("SELECT shift_id, expected_cash, declared_cash, card_total, variance, status, notes, store_id, created_at FROM cash_closings"),
+    ]);
 
-    const shifts = rows.map((r: any) => ({
+    // Build closings map: shift_id -> closing data
+    const closingsByShift = new Map<number, any>();
+    for (const c of closingRows) {
+      closingsByShift.set(c.shift_id, c);
+    }
+
+    const shifts = shiftRows.map((r: any) => {
+      const closing = closingsByShift.get(r.id);
+      return {
+        id: r.id,
+        employee: r.employee_name,
+        openTime: r.open_time,
+        closeTime: r.close_time,
+        status: r.status,
+        storeId: r.store_id,
+        openingBalance: r.opening_balance ?? 0,
+        declaredCash: closing?.declared_cash ?? r.declared_cash ?? null,
+        variance: closing?.variance ?? r.variance ?? null,
+        reconciliationStatus: closing?.status ?? r.reconciliation_status ?? null,
+        reconciledAt: closing?.created_at ?? r.reconciled_at ?? null,
+      };
+    });
+
+    const cashMovements = movRows.map((r: any) => ({
       id: r.id,
-      employee: r.employee_name,
-      openTime: r.open_time,
-      closeTime: r.close_time,
-      status: r.status,
+      shiftId: r.shift_id,
+      type: r.type,
+      amount: r.amount,
+      method: r.method,
+      reason: r.reason ?? "",
+      createdBy: r.created_by,
       storeId: r.store_id,
-      openingBalance: r.opening_balance ?? 0,
-      declaredCash: r.declared_cash,
-      variance: r.variance,
-      reconciliationStatus: r.reconciliation_status,
-      reconciledAt: r.reconciled_at,
+      createdAt: r.created_at,
     }));
 
-    useCashClosingStore.setState({ shifts });
+    const maxShiftId = shifts.reduce((m: number, s: any) => Math.max(m, s.id), 0);
+    const maxMovId = cashMovements.reduce((m: number, mv: any) => Math.max(m, mv.id), 0);
+
+    useCashClosingStore.setState({ shifts, cashMovements });
+    setNextShiftId(maxShiftId + 1);
+    setNextCashMovementId(maxMovId + 1);
   } catch { /* table may not exist yet */ }
 }
 

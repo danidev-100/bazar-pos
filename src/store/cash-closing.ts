@@ -54,6 +54,7 @@ export type ShiftSummary = {
 // ──────────────────────────────────────────────
 
 let nextShiftId = 1;
+export function setNextShiftId(id: number) { nextShiftId = id; }
 
 /** Compute expected cash — sum of cash-method sales within a time window. */
 export function computeExpectedCash(
@@ -133,6 +134,7 @@ export type CashClosingStore = {
 // ──────────────────────────────────────────────
 
 let nextMovementId = 1;
+export function setNextMovementId(id: number) { nextMovementId = id; }
 
 export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
   shifts: [],

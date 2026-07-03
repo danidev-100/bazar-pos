@@ -155,6 +155,13 @@ export const shifts = sqliteTable(
     status: text("status", { enum: ["open", "closed"] })
       .notNull()
       .default("open"),
+    opening_balance: real("opening_balance").notNull().default(0),
+    declared_cash: real("declared_cash"),
+    variance: real("variance"),
+    reconciliation_status: text("reconciliation_status", {
+      enum: ["pending", "matched", "mismatch"],
+    }),
+    reconciled_at: text("reconciled_at"),
     ...syncColumns,
   },
   (table) => ({
@@ -241,6 +248,32 @@ export const cashClosings = sqliteTable(
   (table) => ({
     shiftIdx: index("idx_cash_closings_shift").on(table.shift_id),
     storeIdx: index("idx_cash_closings_store").on(table.store_id),
+  }),
+);
+
+// ──────────────────────────────────────────────
+// Cash Movements (syncable)
+// ──────────────────────────────────────────────
+
+export const cashMovements = sqliteTable(
+  "cash_movements",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    shift_id: integer("shift_id")
+      .notNull()
+      .references((): any => shifts.id),
+    type: text("type", { enum: ["withdrawal", "deposit"] }).notNull(),
+    amount: real("amount").notNull(),
+    method: text("method", { enum: ["cash", "card", "transfer", "other"] })
+      .notNull()
+      .default("cash"),
+    reason: text("reason"),
+    created_by: text("created_by").notNull().default("—"),
+    ...syncColumns,
+  },
+  (table) => ({
+    shiftIdx: index("idx_cash_movements_shift").on(table.shift_id),
+    storeIdx: index("idx_cash_movements_store").on(table.store_id),
   }),
 );
 
