@@ -37,7 +37,7 @@ export default function ClosureReport({
     );
   }
 
-  const { shift, totalSales, cashTotal, cardTotal, transactionCount, itemCount, topProducts, withdrawalsTotal, depositsTotal } = summary;
+  const { shift, totalSales, cashTotal, cardTotal, mercadopagoTotal, transactionCount, itemCount, topProducts, withdrawalsTotal, depositsTotal } = summary;
 
   return (
     <div className="space-y-3">
@@ -92,6 +92,12 @@ export default function ClosureReport({
             <span className="text-sm text-pos-muted">Total Tarjeta</span>
             <span className="text-sm font-mono font-bold">
               ${cardTotal.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-pos-muted">Total Mercado Pago</span>
+            <span className="text-sm font-mono font-bold">
+              ${mercadopagoTotal.toFixed(2)}
             </span>
           </div>
           <hr className="border-pos-muted/20" />

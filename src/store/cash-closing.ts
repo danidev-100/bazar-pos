@@ -40,6 +40,7 @@ export type ShiftSummary = {
   totalSales: number;
   cashTotal: number;
   cardTotal: number;
+  mercadopagoTotal: number;
   transactionCount: number;
   itemCount: number;
   topProducts: { name: string; quantity: number; total: number }[];
@@ -56,7 +57,7 @@ export type ShiftSummary = {
 let nextShiftId = 1;
 export function setNextShiftId(id: number) { nextShiftId = id; }
 
-/** Compute expected cash — sum of cash-method sales within a time window. */
+/** Compute expected cash — sum of cash-method sales + mixed cash portions within a time window. */
 export function computeExpectedCash(
   sales: CompletedSale[],
   openTime: string,
@@ -68,9 +69,13 @@ export function computeExpectedCash(
   return sales
     .filter((s) => {
       const t = new Date(s.date).getTime();
-      return t >= open && t <= close && s.paymentMethod === "cash";
+      return t >= open && t <= close;
     })
-    .reduce((sum, s) => sum + s.total, 0);
+    .reduce((sum, s) => {
+      if (s.paymentMethod === "cash") return sum + s.total;
+      if (s.paymentMethod === "mixed") return sum + (s.cashAmount ?? 0);
+      return sum;
+    }, 0);
 }
 
 /** Compute variance: declared - expected. */
@@ -316,15 +321,25 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       return t >= open && t <= close;
     });
 
-    const cashTotal = shiftSales
-      .filter((s) => s.paymentMethod === "cash")
-      .reduce((sum, s) => sum + s.total, 0);
+    const cashTotal = shiftSales.reduce((sum, s) => {
+      if (s.paymentMethod === "cash") return sum + s.total;
+      if (s.paymentMethod === "mixed") return sum + (s.cashAmount ?? 0);
+      return sum;
+    }, 0);
 
-    const cardTotal = shiftSales
-      .filter((s) => s.paymentMethod === "card")
-      .reduce((sum, s) => sum + s.total, 0);
+    const cardTotal = shiftSales.reduce((sum, s) => {
+      if (s.paymentMethod === "card") return sum + s.total;
+      if (s.paymentMethod === "mixed") return sum + (s.cardAmount ?? 0);
+      return sum;
+    }, 0);
 
-    const totalSales = Math.round((cashTotal + cardTotal) * 100) / 100;
+    const mercadopagoTotal = shiftSales.reduce((sum, s) => {
+      if (s.paymentMethod === "mercadopago") return sum + s.total;
+      if (s.paymentMethod === "mixed") return sum + (s.mercadopagoAmount ?? 0);
+      return sum;
+    }, 0);
+
+    const totalSales = Math.round((cashTotal + cardTotal + mercadopagoTotal) * 100) / 100;
 
     // Cash movements
     const movements = get().cashMovements.filter((m) => m.shiftId === shiftId);
@@ -362,6 +377,7 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       totalSales,
       cashTotal: Math.round(cashTotal * 100) / 100,
       cardTotal: Math.round(cardTotal * 100) / 100,
+      mercadopagoTotal: Math.round(mercadopagoTotal * 100) / 100,
       transactionCount: shiftSales.length,
       itemCount: shiftSales.reduce((sum, s) => sum + s.items.reduce((q, i) => q + i.quantity, 0), 0),
       topProducts,

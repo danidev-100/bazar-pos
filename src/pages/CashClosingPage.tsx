@@ -62,19 +62,21 @@ export default function CashClosingPage() {
           : Date.now();
         return t >= open && t <= close;
       });
-      const cashTotal = shiftSales
-        .filter((s) => s.paymentMethod === "cash")
-        .reduce((sum, s) => sum + s.total, 0);
-      const cardTotal = shiftSales
-        .filter((s) => s.paymentMethod === "card")
-        .reduce((sum, s) => sum + s.total, 0);
-      const mercadopagoTotal =
-        shiftSales
-          .filter((s) => s.paymentMethod === "mercadopago")
-          .reduce((sum, s) => sum + s.total, 0) +
-        shiftSales
-          .filter((s) => s.paymentMethod === "mixed")
-          .reduce((sum, s) => sum + (s.mercadopagoAmount ?? 0), 0);
+      const cashTotal = shiftSales.reduce((sum, s) => {
+        if (s.paymentMethod === "cash") return sum + s.total;
+        if (s.paymentMethod === "mixed") return sum + (s.cashAmount ?? 0);
+        return sum;
+      }, 0);
+      const cardTotal = shiftSales.reduce((sum, s) => {
+        if (s.paymentMethod === "card") return sum + s.total;
+        if (s.paymentMethod === "mixed") return sum + (s.cardAmount ?? 0);
+        return sum;
+      }, 0);
+      const mercadopagoTotal = shiftSales.reduce((sum, s) => {
+        if (s.paymentMethod === "mercadopago") return sum + s.total;
+        if (s.paymentMethod === "mixed") return sum + (s.mercadopagoAmount ?? 0);
+        return sum;
+      }, 0);
       const total = Math.round((cashTotal + cardTotal + mercadopagoTotal) * 100) / 100;
       return {
         cajero: shift.employee,
@@ -165,19 +167,21 @@ export default function CashClosingPage() {
                         : Date.now();
                       return t >= open && t <= close;
                     });
-                    const cashTotal = shiftSales
-                      .filter((s) => s.paymentMethod === "cash")
-                      .reduce((sum, s) => sum + s.total, 0);
-                    const cardTotal = shiftSales
-                      .filter((s) => s.paymentMethod === "card")
-                      .reduce((sum, s) => sum + s.total, 0);
-                    const mercadopagoTotal =
-                      shiftSales
-                        .filter((s) => s.paymentMethod === "mercadopago")
-                        .reduce((sum, s) => sum + s.total, 0) +
-                      shiftSales
-                        .filter((s) => s.paymentMethod === "mixed")
-                        .reduce((sum, s) => sum + (s.mercadopagoAmount ?? 0), 0);
+                    const cashTotal = shiftSales.reduce((sum, s) => {
+                      if (s.paymentMethod === "cash") return sum + s.total;
+                      if (s.paymentMethod === "mixed") return sum + (s.cashAmount ?? 0);
+                      return sum;
+                    }, 0);
+                    const cardTotal = shiftSales.reduce((sum, s) => {
+                      if (s.paymentMethod === "card") return sum + s.total;
+                      if (s.paymentMethod === "mixed") return sum + (s.cardAmount ?? 0);
+                      return sum;
+                    }, 0);
+                    const mercadopagoTotal = shiftSales.reduce((sum, s) => {
+                      if (s.paymentMethod === "mercadopago") return sum + s.total;
+                      if (s.paymentMethod === "mixed") return sum + (s.mercadopagoAmount ?? 0);
+                      return sum;
+                    }, 0);
                     const total = Math.round((cashTotal + cardTotal + mercadopagoTotal) * 100) / 100;
 
                     return (
@@ -399,19 +403,21 @@ function ShiftQuickStats({
     return t >= openTime && t <= closeTime;
   });
 
-  const cashTotal = shiftSales
-    .filter((s) => s.paymentMethod === "cash")
-    .reduce((sum, s) => sum + s.total, 0);
-  const cardTotal = shiftSales
-    .filter((s) => s.paymentMethod === "card")
-    .reduce((sum, s) => sum + s.total, 0);
-  const mercadopagoTotal =
-    shiftSales
-      .filter((s) => s.paymentMethod === "mercadopago")
-      .reduce((sum, s) => sum + s.total, 0) +
-    shiftSales
-      .filter((s) => s.paymentMethod === "mixed")
-      .reduce((sum, s) => sum + (s.mercadopagoAmount ?? 0), 0);
+  const cashTotal = shiftSales.reduce((sum, s) => {
+    if (s.paymentMethod === "cash") return sum + s.total;
+    if (s.paymentMethod === "mixed") return sum + (s.cashAmount ?? 0);
+    return sum;
+  }, 0);
+  const cardTotal = shiftSales.reduce((sum, s) => {
+    if (s.paymentMethod === "card") return sum + s.total;
+    if (s.paymentMethod === "mixed") return sum + (s.cardAmount ?? 0);
+    return sum;
+  }, 0);
+  const mercadopagoTotal = shiftSales.reduce((sum, s) => {
+    if (s.paymentMethod === "mercadopago") return sum + s.total;
+    if (s.paymentMethod === "mixed") return sum + (s.mercadopagoAmount ?? 0);
+    return sum;
+  }, 0);
   const totalSales = Math.round((cashTotal + cardTotal + mercadopagoTotal) * 100) / 100;
   const itemCount = shiftSales.reduce(
     (sum, s) => sum + s.items.reduce((q, i) => q + i.quantity, 0),
