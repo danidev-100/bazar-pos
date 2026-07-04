@@ -7,6 +7,7 @@ import { usePedidosStore, setNextPedidoId, setNextPedidoItemId } from "@/store/p
 import { useInvoicesStore, setNextInvoiceId, setNextInvoiceItemId } from "@/store/invoices";
 import { useCashClosingStore, setNextShiftId, setNextMovementId as setNextCashMovementId } from "@/store/cash-closing";
 import { useAuthStore, setNextUserId } from "@/store/auth";
+import { useComprobantesStore, setNextComprobanteId, setNextComprobanteItemId, type ComprobanteItem } from "@/store/comprobantes";
 import { useAppStore } from "@/store";
 
 let initialized = false;
@@ -24,6 +25,7 @@ export async function initAllStores(force = false): Promise<void> {
     initInvoices(),
     initShifts(),
     initSales(),
+    initComprobantes(),
   ]);
 }
 
@@ -376,5 +378,80 @@ async function initSales(): Promise<void> {
     const merged = [...existing, ...completedSales].sort((a, b) => b.id - a.id);
 
     useAppStore.setState({ completedSales: merged });
+  } catch { /* table may not exist yet */ }
+}
+
+// ── Comprobantes + Items ──
+
+async function initComprobantes(): Promise<void> {
+  try {
+    const [comprobanteRows, itemRows] = await Promise.all([
+      select<any>("SELECT id, tipo, numero, cliente_nombre, cliente_cuit, cliente_direccion, fecha, payment_method, subtotal, iva, total, sale_id, notes, created_by, store_id FROM comprobantes ORDER BY id ASC"),
+      select<any>("SELECT id, comprobante_id, product_id, product_name, quantity, unit_price, subtotal FROM comprobante_items"),
+    ]);
+
+    // Group items by comprobante_id
+    const itemsByComprobante = new Map<number, ComprobanteItem[]>();
+    for (const item of itemRows) {
+      const list = itemsByComprobante.get(item.comprobante_id) ?? [];
+      list.push({
+        id: item.id,
+        comprobante_id: item.comprobante_id,
+        product_id: item.product_id ?? null,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal: item.subtotal,
+      });
+      itemsByComprobante.set(item.comprobante_id, list);
+    }
+
+    // Compute counters per store+tipo
+    const counters: Record<string, Record<string, number>> = {};
+
+    let maxComprobanteId = 0;
+    let maxItemId = 0;
+
+    const comprobantes = comprobanteRows.map((r: any) => {
+      maxComprobanteId = Math.max(maxComprobanteId, r.id);
+
+      // Parse sequential number from the numero format "PREFIX-store-NNNNN"
+      const seqMatch = r.numero?.match(/-(\d+)$/);
+      const seqNum = seqMatch ? parseInt(seqMatch[1], 10) : 0;
+
+      // Update counter for this store+tipo
+      const storeKey = r.store_id;
+      if (!counters[storeKey]) counters[storeKey] = {};
+      counters[storeKey][r.tipo] = Math.max(counters[storeKey][r.tipo] ?? 0, seqNum);
+
+      const items = (itemsByComprobante.get(r.id) ?? []).map((i: ComprobanteItem) => {
+        maxItemId = Math.max(maxItemId, i.id);
+        return i;
+      });
+
+      return {
+        id: r.id,
+        tipo: r.tipo,
+        numero: r.numero,
+        sequentialNumber: seqNum,
+        cliente_nombre: r.cliente_nombre ?? "Consumidor Final",
+        cliente_cuit: r.cliente_cuit ?? "",
+        cliente_direccion: r.cliente_direccion ?? "",
+        fecha: r.fecha,
+        payment_method: r.payment_method ?? null,
+        subtotal: r.subtotal,
+        iva: r.iva,
+        total: r.total,
+        sale_id: r.sale_id ?? null,
+        notes: r.notes ?? "",
+        createdBy: r.created_by ?? "—",
+        items,
+        store_id: r.store_id,
+      };
+    });
+
+    useComprobantesStore.setState({ comprobantes, counters });
+    setNextComprobanteId(maxComprobanteId + 1);
+    setNextComprobanteItemId(maxItemId + 1);
   } catch { /* table may not exist yet */ }
 }

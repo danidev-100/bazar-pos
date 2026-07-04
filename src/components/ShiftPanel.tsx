@@ -66,12 +66,13 @@ export default function ShiftPanel({
     }
   }
 
+  // Mover hook FUERA del condicional para respetar Rules of Hooks
+  const allMovements = useCashClosingStore((s) => s.cashMovements);
+
   // ── Open state ──
   if (currentShift) {
     const openTime = new Date(currentShift.openTime);
-    const movements = useCashClosingStore((s) =>
-      s.cashMovements.filter((m) => m.shiftId === currentShift.id)
-    );
+    const movements = allMovements.filter((m) => m.shiftId === currentShift.id);
 
     return (
       <div className="space-y-3">

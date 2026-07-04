@@ -69,6 +69,8 @@ function formatNumero(storeId: string, tipo: ComprobanteTipo, seq: number): stri
 
 let nextComprobanteId = 1;
 let nextComprobanteItemId = 1;
+export function setNextComprobanteId(id: number) { nextComprobanteId = id; }
+export function setNextComprobanteItemId(id: number) { nextComprobanteItemId = id; }
 
 // ──────────────────────────────────────────────
 // Store shape

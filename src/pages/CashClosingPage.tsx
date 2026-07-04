@@ -47,6 +47,7 @@ export default function CashClosingPage() {
     { header: "Ventas", key: "ventas" },
     { header: "Efectivo", key: "efectivo" },
     { header: "Tarjeta", key: "tarjeta" },
+    { header: "Mercado Pago", key: "mercadopago" },
     { header: "Total", key: "total" },
     { header: "Estado", key: "estado" },
   ];
@@ -67,7 +68,14 @@ export default function CashClosingPage() {
       const cardTotal = shiftSales
         .filter((s) => s.paymentMethod === "card")
         .reduce((sum, s) => sum + s.total, 0);
-      const total = Math.round((cashTotal + cardTotal) * 100) / 100;
+      const mercadopagoTotal =
+        shiftSales
+          .filter((s) => s.paymentMethod === "mercadopago")
+          .reduce((sum, s) => sum + s.total, 0) +
+        shiftSales
+          .filter((s) => s.paymentMethod === "mixed")
+          .reduce((sum, s) => sum + (s.mercadopagoAmount ?? 0), 0);
+      const total = Math.round((cashTotal + cardTotal + mercadopagoTotal) * 100) / 100;
       return {
         cajero: shift.employee,
         turno: new Date(shift.openTime).toLocaleDateString(),
@@ -75,6 +83,7 @@ export default function CashClosingPage() {
         ventas: shiftSales.length,
         efectivo: `$${cashTotal.toFixed(2)}`,
         tarjeta: `$${cardTotal.toFixed(2)}`,
+        mercadopago: `$${mercadopagoTotal.toFixed(2)}`,
         total: `$${total.toFixed(2)}`,
         estado: shift.status === "open" ? "Abierto" : "Cerrado",
       };
@@ -141,6 +150,7 @@ export default function CashClosingPage() {
                     <th className="text-right py-1.5 px-2 font-medium">Ventas</th>
                     <th className="text-right py-1.5 px-2 font-medium">Efectivo</th>
                     <th className="text-right py-1.5 px-2 font-medium">Tarjeta</th>
+                    <th className="text-right py-1.5 px-2 font-medium">M. Pago</th>
                     <th className="text-right py-1.5 px-2 font-medium">Total</th>
                     <th className="text-center py-1.5 pl-2 font-medium">Estado</th>
                   </tr>
@@ -161,7 +171,14 @@ export default function CashClosingPage() {
                     const cardTotal = shiftSales
                       .filter((s) => s.paymentMethod === "card")
                       .reduce((sum, s) => sum + s.total, 0);
-                    const total = Math.round((cashTotal + cardTotal) * 100) / 100;
+                    const mercadopagoTotal =
+                      shiftSales
+                        .filter((s) => s.paymentMethod === "mercadopago")
+                        .reduce((sum, s) => sum + s.total, 0) +
+                      shiftSales
+                        .filter((s) => s.paymentMethod === "mixed")
+                        .reduce((sum, s) => sum + (s.mercadopagoAmount ?? 0), 0);
+                    const total = Math.round((cashTotal + cardTotal + mercadopagoTotal) * 100) / 100;
 
                     return (
                       <tr key={shift.id} className="border-b border-pos-muted/10 hover:bg-pos-background/50 dark:border-gray-700 dark:hover:bg-gray-700/50">
@@ -175,6 +192,7 @@ export default function CashClosingPage() {
                         <td className="py-2 px-2 num">{shiftSales.length}</td>
                         <td className="py-2 px-2 num">${cashTotal.toFixed(2)}</td>
                         <td className="py-2 px-2 num">${cardTotal.toFixed(2)}</td>
+                        <td className="py-2 px-2 num">${mercadopagoTotal.toFixed(2)}</td>
                         <td className="py-2 px-2 num font-bold">${total.toFixed(2)}</td>
                         <td className="py-2 pl-2 text-center">
                           {shift.status === "open" ? (
@@ -387,7 +405,14 @@ function ShiftQuickStats({
   const cardTotal = shiftSales
     .filter((s) => s.paymentMethod === "card")
     .reduce((sum, s) => sum + s.total, 0);
-  const totalSales = Math.round((cashTotal + cardTotal) * 100) / 100;
+  const mercadopagoTotal =
+    shiftSales
+      .filter((s) => s.paymentMethod === "mercadopago")
+      .reduce((sum, s) => sum + s.total, 0) +
+    shiftSales
+      .filter((s) => s.paymentMethod === "mixed")
+      .reduce((sum, s) => sum + (s.mercadopagoAmount ?? 0), 0);
+  const totalSales = Math.round((cashTotal + cardTotal + mercadopagoTotal) * 100) / 100;
   const itemCount = shiftSales.reduce(
     (sum, s) => sum + s.items.reduce((q, i) => q + i.quantity, 0),
     0,
@@ -421,6 +446,12 @@ function ShiftQuickStats({
           <span className="text-xs text-pos-muted">Tarjeta</span>
           <span className="text-sm font-mono">
             ${cardTotal.toFixed(2)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-pos-muted">Mercado Pago</span>
+          <span className="text-sm font-mono">
+            ${mercadopagoTotal.toFixed(2)}
           </span>
         </div>
         <hr className="border-pos-muted/20" />
