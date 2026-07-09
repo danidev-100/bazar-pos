@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAppStore, type Page } from "@/store";
 import { useAdminStore } from "@/store/admin";
 import { useAuthStore } from "@/store/auth";
@@ -89,6 +89,7 @@ export default function App() {
   }, [theme]);
 
   // Intercept Tauri window close to show confirmation modal
+  const closeUnlistenRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     let unlisten: (() => void) | null = null;
 
@@ -100,6 +101,7 @@ export default function App() {
           event.preventDefault();
           setShowCloseConfirm(true);
         });
+        closeUnlistenRef.current = unlisten;
       } catch {
         // Not running inside Tauri — ignore
       }
@@ -115,6 +117,8 @@ export default function App() {
   async function handleConfirmClose() {
     setShowCloseConfirm(false);
     try {
+      // Unregister the close handler first to avoid re-trigger loop
+      closeUnlistenRef.current?.();
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       await getCurrentWindow().close();
     } catch {
