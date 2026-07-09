@@ -127,7 +127,7 @@ export const usePedidosStore = create<PedidosStore>((set, get) => ({
       });
     }
 
-    transaction(stmts).catch(() => {});
+    transaction(stmts).catch((err) => console.error("[db] pedidos.addPedido failed:", err));
 
     return pedido;
   },
@@ -182,7 +182,7 @@ export const usePedidosStore = create<PedidosStore>((set, get) => ({
       });
     }
 
-    transaction(stmts).catch(() => {});
+    transaction(stmts).catch((err) => console.error("[db] pedidos.updatePedido failed:", err));
   },
 
   updateStatus: (id, status) => {
@@ -201,7 +201,7 @@ export const usePedidosStore = create<PedidosStore>((set, get) => ({
       [status, now, id],
     )
       .then(() => enqueueSync("pedido", id, "update", existing.store_id))
-      .catch(() => {});
+      .catch((err) => console.error("[db] pedidos.updateStatus failed:", err));
   },
 
   deletePedido: (id) => {
@@ -219,7 +219,7 @@ export const usePedidosStore = create<PedidosStore>((set, get) => ({
           }
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[db] pedidos.deletePedido failed:", err));
   },
 
   receiveItem: (pedidoId, itemId, quantity) => {
@@ -276,10 +276,10 @@ export const usePedidosStore = create<PedidosStore>((set, get) => ({
         [newStatus, now, pedidoId],
       )
         .then(() => enqueueSync("pedido", pedidoId, "update", existing.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] pedidos.receiveItem statusUpdate failed:", err));
     }
     execute(`UPDATE pedido_items SET received_qty=$1 WHERE id=$2`, [newReceived, itemId])
-      .catch(() => {});
+      .catch((err) => console.error("[db] pedidos.receiveItem execute failed:", err));
   },
 
   getPedidosByStore: (storeId) =>

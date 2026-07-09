@@ -416,7 +416,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       });
     }
 
-    dbTransaction(stmts).catch(() => {});
+    dbTransaction(stmts).catch((err) => console.error("[db] index.checkout failed:", err));
 
     return sale;
   },
@@ -453,7 +453,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       [now, saleId],
     )
       .then(() => enqueueSync("sale", saleId, "update", sale.storeId))
-      .catch(() => {});
+      .catch((err) => console.error("[db] index.refundSale failed:", err));
   },
 
   dismissReceipt: () => set({ lastCompletedSale: null }),

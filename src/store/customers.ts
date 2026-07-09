@@ -64,7 +64,7 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
       [customer.id, customer.name, customer.phone, customer.email, customer.address, customer.cuit, 0, customer.store_id, now, now],
     )
       .then(() => enqueueSync("customer", customer.id, "insert", customer.store_id))
-      .catch(() => {});
+      .catch((err) => console.error("[db] customers.addCustomer failed:", err));
 
     return customer;
   },
@@ -109,7 +109,7 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
         ],
       )
         .then(() => enqueueSync("customer", id, "update", current.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] customers.updateCustomer failed:", err));
     }
   },
 
@@ -125,7 +125,7 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
           enqueueSync("customer", id, "delete", existing.store_id);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[db] customers.deleteCustomer failed:", err));
   },
 
   getCustomersByStore: (storeId) =>
@@ -184,7 +184,7 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
       [payment.id, payment.customer_id, payment.amount, payment.date, payment.notes, payment.sale_id, payment.comprobante_id, payment.store_id, now, now],
     )
       .then(() => enqueueSync("credit_payment", payment.id, "insert", storeId))
-      .catch(() => {});
+      .catch((err) => console.error("[db] customers.updateCreditBalance payment failed:", err));
 
     // Persist balance update
     execute(
@@ -192,7 +192,7 @@ export const useCustomersStore = create<CustomersStore>((set, get) => ({
       [newBalance, now, customerId],
     )
       .then(() => enqueueSync("customer", customerId, "update", storeId))
-      .catch(() => {});
+      .catch((err) => console.error("[db] customers.updateCreditBalance balance failed:", err));
   },
 
   getCreditPaymentsByCustomer: (customerId) =>

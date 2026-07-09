@@ -186,7 +186,7 @@ export const useComprobantesStore = create<ComprobantesStore>((set, get) => ({
       });
     }
 
-    transaction(stmts).catch(() => {});
+    transaction(stmts).catch((err) => console.error("[db] comprobantes.createComprobante failed:", err));
 
     return comprobante;
   },

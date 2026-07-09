@@ -151,7 +151,7 @@ export const useInvoicesStore = create<InvoicesStore>((set, get) => ({
       });
     }
 
-    transaction(stmts).catch(() => {});
+    transaction(stmts).catch((err) => console.error("[db] invoices.generateInvoice failed:", err));
 
     return invoice;
   },

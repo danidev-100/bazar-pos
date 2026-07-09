@@ -63,7 +63,7 @@ export const useBrandsStore = create<BrandsStore>((set, get) => ({
       [brand.id, brand.name, brand.store_id, now, now],
     )
       .then(() => enqueueSync("brand", brand.id, "insert", brand.store_id))
-      .catch(() => {});
+      .catch((err) => console.error("[db] brands.addBrand failed:", err));
 
     return brand;
   },
@@ -106,7 +106,7 @@ export const useBrandsStore = create<BrandsStore>((set, get) => ({
         ],
       )
         .then(() => enqueueSync("brand", id, "update", current.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] brands.updateBrand failed:", err));
     }
   },
 
@@ -123,7 +123,7 @@ export const useBrandsStore = create<BrandsStore>((set, get) => ({
           enqueueSync("brand", id, "delete", existing.store_id);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[db] brands.deleteBrand failed:", err));
   },
 
   getBrandsByStore: (storeId) =>

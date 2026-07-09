@@ -7,6 +7,7 @@ import { usePedidosStore, setNextPedidoId, setNextPedidoItemId } from "@/store/p
 import { useInvoicesStore, setNextInvoiceId, setNextInvoiceItemId } from "@/store/invoices";
 import { useCashClosingStore, setNextShiftId, setNextMovementId as setNextCashMovementId } from "@/store/cash-closing";
 import { useAuthStore, setNextUserId } from "@/store/auth";
+import { useExpensesStore } from "@/store/expenses";
 import { useComprobantesStore, setNextComprobanteId, setNextComprobanteItemId, type ComprobanteItem } from "@/store/comprobantes";
 import { useAppStore } from "@/store";
 
@@ -25,6 +26,7 @@ export async function initAllStores(force = false): Promise<void> {
     initInvoices(),
     initShifts(),
     initSales(),
+    initExpenses(),
     initComprobantes(),
   ]);
 }
@@ -38,7 +40,9 @@ async function initBrands(): Promise<void> {
     const maxId = brands.reduce((m: number, b: any) => Math.max(m, b.id), 0);
     useBrandsStore.setState({ brands });
     setNextBrandId(maxId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initBrands failed:", err);
+  }
 }
 
 // â”€â”€ Products + Categories + StockMovements â”€â”€
@@ -92,7 +96,9 @@ async function initProducts(): Promise<void> {
     setNextProductId(maxProductId + 1);
     setNextCategoryId(maxCatId + 1);
     setNextStockMovementId(maxMovId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initProducts failed:", err);
+  }
 }
 
 // â”€â”€ Customers â”€â”€
@@ -126,7 +132,9 @@ async function initCustomers(): Promise<void> {
     const maxId = customers.reduce((m: number, c: any) => Math.max(m, c.id), 0);
     useCustomersStore.setState({ customers, creditPayments });
     setNextCustomerId(maxId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initCustomers failed:", err);
+  }
 }
 
 // â”€â”€ Proveedores â”€â”€
@@ -146,7 +154,9 @@ async function initProveedores(): Promise<void> {
     const maxId = proveedores.reduce((m: number, p: any) => Math.max(m, p.id), 0);
     useProveedoresStore.setState({ proveedores });
     setNextProveedorId(maxId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initProveedores failed:", err);
+  }
 }
 
 // â”€â”€ Pedidos + Items â”€â”€
@@ -205,7 +215,9 @@ async function initPedidos(): Promise<void> {
     usePedidosStore.setState({ pedidos });
     setNextPedidoId(maxPedidoId + 1);
     setNextPedidoItemId(maxItemId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initPedidos failed:", err);
+  }
 }
 
 // â”€â”€ Invoices + Items â”€â”€
@@ -260,7 +272,9 @@ async function initInvoices(): Promise<void> {
 
     useInvoicesStore.setState({ invoices, counters });
     setNextInvoiceId(maxId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initInvoices failed:", err);
+  }
 }
 
 // â”€â”€ Shifts â”€â”€
@@ -314,7 +328,9 @@ async function initShifts(): Promise<void> {
     useCashClosingStore.setState({ shifts, cashMovements });
     setNextShiftId(maxShiftId + 1);
     setNextCashMovementId(maxMovId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initShifts failed:", err);
+  }
 }
 
 // ── Sales (for stats) ──
@@ -378,7 +394,9 @@ async function initSales(): Promise<void> {
     const merged = [...existing, ...completedSales].sort((a, b) => b.id - a.id);
 
     useAppStore.setState({ completedSales: merged });
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initSales failed:", err);
+  }
 }
 
 // ── Comprobantes + Items ──
@@ -453,5 +471,29 @@ async function initComprobantes(): Promise<void> {
     useComprobantesStore.setState({ comprobantes, counters });
     setNextComprobanteId(maxComprobanteId + 1);
     setNextComprobanteItemId(maxItemId + 1);
-  } catch { /* table may not exist yet */ }
+  } catch (err) {
+    console.error("[init] initComprobantes failed:", err);
+  }
+}
+
+// ── Expenses ──
+
+async function initExpenses(): Promise<void> {
+  try {
+    const rows = await select<any>("SELECT id, description, amount, category, date, payment_method, store_id, created_at, updated_at FROM expenses");
+    const expenses = rows.map((r: any) => ({
+      id: r.id,
+      description: r.description,
+      amount: r.amount,
+      category: r.category,
+      date: r.date,
+      paymentMethod: r.payment_method,
+      storeId: r.store_id,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
+    useExpensesStore.setState({ expenses });
+  } catch (err) {
+    console.error("[init] initExpenses failed:", err);
+  }
 }

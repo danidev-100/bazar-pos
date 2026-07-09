@@ -234,7 +234,7 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
       .then(() =>
         enqueueSync("expense", expense.id, "insert", expense.storeId),
       )
-      .catch(() => {});
+      .catch((err) => console.error("[db] expenses.addExpense failed:", err));
 
     return expense;
   },
@@ -277,7 +277,7 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
       ],
     )
       .then(() => enqueueSync("expense", id, "update", existing.storeId))
-      .catch(() => {});
+      .catch((err) => console.error("[db] expenses.updateExpense failed:", err));
   },
 
   deleteExpense: (id) => {
@@ -294,7 +294,7 @@ export const useExpensesStore = create<ExpensesStore>((set, get) => ({
           enqueueSync("expense", id, "delete", existing.storeId);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[db] expenses.deleteExpense failed:", err));
   },
 
   getExpensesByMonth: (year, month, storeId) => {

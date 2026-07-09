@@ -144,7 +144,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       [product.id, product.barcode, product.name, product.price, product.costPrice, product.stock, product.minStock, product.midStock, product.category_id, product.brandId, product.store_id, now, now],
     )
       .then(() => enqueueSync("product", product.id, "insert", product.store_id))
-      .catch(() => {});
+      .catch((err) => console.error("[db] products.addProduct failed:", err));
 
     return product;
   },
@@ -179,7 +179,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       [current.barcode, current.name, current.price, current.costPrice, current.stock, current.minStock, current.midStock, current.category_id, current.brandId, current.store_id, now, id],
       )
         .then(() => enqueueSync("product", id, "update", current.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] products.updateProduct failed:", err));
     }
   },
 
@@ -194,7 +194,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     if (existing) {
       execute(`DELETE FROM products WHERE id=$1`, [id])
         .then(() => enqueueSync("product", id, "delete", existing.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] products.deleteProduct failed:", err));
     }
   },
 
@@ -226,7 +226,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       [category.id, category.name, category.parent_id, category.store_id, now, now],
     )
       .then(() => enqueueSync("category", category.id, "insert", category.store_id))
-      .catch(() => {});
+      .catch((err) => console.error("[db] products.addCategory failed:", err));
 
     return category;
   },
@@ -265,7 +265,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         [current.name, current.parent_id, current.store_id, now, id],
       )
         .then(() => enqueueSync("category", id, "update", current.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] products.updateCategory failed:", err));
     }
   },
 
@@ -300,7 +300,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     for (const cat of deletedCategories) {
       execute(`DELETE FROM categories WHERE id=$1`, [cat.id])
         .then(() => enqueueSync("category", cat.id, "delete", cat.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] products.deleteCategory failed:", err));
     }
   },
 
@@ -340,7 +340,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
       [movement.id, movement.product_id, movement.type, movement.quantity, movement.delta, movement.reference_id, movement.user_id, movement.store_id, movement.created_at, movement.created_at],
     )
       .then(() => enqueueSync("stock_movement", movement.id, "insert", movement.store_id))
-      .catch(() => {});
+      .catch((err) => console.error("[db] products.recordMovement insert failed:", err));
 
     // Also persist the product stock update
     if (product && newStock !== null) {
@@ -349,7 +349,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
         [newStock, movement.created_at, data.product_id],
       )
         .then(() => enqueueSync("product", data.product_id, "update", product.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] products.recordMovement stockUpdate failed:", err));
     }
 
     return movement;

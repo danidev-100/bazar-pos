@@ -42,7 +42,7 @@ export const useProveedoresStore = create<ProveedoresStore>((set, get) => ({
       [proveedor.id, proveedor.name, proveedor.phone, proveedor.email, proveedor.address, proveedor.cuit, proveedor.store_id, now, now],
     )
       .then(() => enqueueSync("proveedor", proveedor.id, "insert", proveedor.store_id))
-      .catch(() => {});
+      .catch((err) => console.error("[db] proveedores.addProveedor failed:", err));
 
     return proveedor;
   },
@@ -86,7 +86,7 @@ export const useProveedoresStore = create<ProveedoresStore>((set, get) => ({
         ],
       )
         .then(() => enqueueSync("proveedor", id, "update", current.store_id))
-        .catch(() => {});
+        .catch((err) => console.error("[db] proveedores.updateProveedor failed:", err));
     }
   },
 
@@ -102,7 +102,7 @@ export const useProveedoresStore = create<ProveedoresStore>((set, get) => ({
           enqueueSync("proveedor", id, "delete", existing.store_id);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[db] proveedores.deleteProveedor failed:", err));
   },
 
   getProveedoresByStore: (storeId) =>

@@ -28,6 +28,7 @@ async function ensureTables(db: Database): Promise<void> {
       payment_method TEXT NOT NULL,
       cash_amount REAL,
       card_amount REAL,
+      mercadopago_amount REAL,
       change REAL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'completed',
       customer_name TEXT,
@@ -286,6 +287,7 @@ async function ensureTables(db: Database): Promise<void> {
       product_id INTEGER,
       product_name TEXT NOT NULL,
       quantity REAL NOT NULL DEFAULT 1,
+      received_qty REAL NOT NULL DEFAULT 0,
       unit_price REAL NOT NULL,
       subtotal REAL NOT NULL,
       store_id TEXT NOT NULL,
@@ -452,6 +454,8 @@ async function ensureTables(db: Database): Promise<void> {
     `ALTER TABLE comprobantes ADD COLUMN created_by TEXT NOT NULL DEFAULT '—'`,
     `ALTER TABLE sales ADD COLUMN created_by TEXT NOT NULL DEFAULT '—'`,
     `ALTER TABLE credit_payments ADD COLUMN comprobante_id INTEGER`,
+    `ALTER TABLE sales ADD COLUMN mercadopago_amount REAL`,
+    `ALTER TABLE pedido_items ADD COLUMN received_qty REAL NOT NULL DEFAULT 0`,
   ];
   for (const sql of migrations) {
     try {

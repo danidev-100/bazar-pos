@@ -177,7 +177,7 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       [shift.id, shift.employee, now, "open", shift.openingBalance, storeId, now, now],
     )
       .then(() => enqueueSync("shift", shift.id, "insert", storeId))
-      .catch(() => {});
+      .catch((err) => console.error("[db] cash-closing.openShift failed:", err));
 
     return shift;
   },
@@ -205,7 +205,7 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       [now, now, shiftId],
     )
       .then(() => enqueueSync("shift", shiftId, "update", shift.storeId))
-      .catch(() => {});
+      .catch((err) => console.error("[db] cash-closing.closeShift failed:", err));
   },
 
   recordCashMovement: (shiftId, type, amount, reason, createdBy, storeId, method = "cash") => {
@@ -230,7 +230,7 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       [shiftId, type, amount, method, reason, createdBy, storeId, movement.createdAt],
     )
       .then(() => enqueueSync("cash_movement", movement.id, "insert", storeId))
-      .catch(() => {});
+      .catch((err) => console.error("[db] cash-closing.recordCashMovement failed:", err));
 
     return movement;
   },
@@ -304,7 +304,7 @@ export const useCashClosingStore = create<CashClosingStore>((set, get) => ({
       .then(() =>
         enqueueSync("cash_closing", shiftId, "insert", storeId),
       )
-      .catch(() => {});
+      .catch((err) => console.error("[db] cash-closing.reconcile failed:", err));
   },
 
   getShiftSummary: (shiftId, completedSales) => {

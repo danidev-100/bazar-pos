@@ -458,7 +458,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ users: updated });
 
     try {
-      execute("DELETE FROM users WHERE id = $1", [id]).catch(() => {});
+      execute("DELETE FROM users WHERE id = $1", [id]).catch((err) => console.error("[db] auth.deleteUser failed:", err));
     } catch {
       // DB not available
     }
