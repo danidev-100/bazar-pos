@@ -490,15 +490,8 @@ export async function transaction(
   statements: Array<{ sql: string; bind?: unknown[] }>,
 ): Promise<void> {
   const db = await getDb();
-  try {
-    await db.execute("BEGIN IMMEDIATE TRANSACTION");
-    for (const stmt of statements) {
-      await db.execute(stmt.sql, stmt.bind ?? []);
-    }
-    await db.execute("COMMIT");
-  } catch (err) {
-    await db.execute("ROLLBACK");
-    throw err;
+  for (const stmt of statements) {
+    await db.execute(stmt.sql, stmt.bind ?? []);
   }
 }
 
