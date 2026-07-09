@@ -29,6 +29,13 @@ export async function initAllStores(force = false): Promise<void> {
     initExpenses(),
     initComprobantes(),
   ]);
+
+  // Diagnostic log — dump store counts
+  console.log("[diag] completedSales:", useAppStore.getState().completedSales.length);
+  console.log("[diag] expenses:", useExpensesStore.getState().expenses.length);
+  console.log("[diag] comprobantes:", useComprobantesStore.getState().comprobantes.length);
+  console.log("[diag] shifts:", useCashClosingStore.getState().shifts.length);
+  console.log("[diag] products:", useProductsStore.getState().products.length);
 }
 
 // â”€â”€ Brands â”€â”€

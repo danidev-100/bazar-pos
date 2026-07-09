@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore, type Page } from "@/store";
 import { useAdminStore } from "@/store/admin";
 import { useAuthStore } from "@/store/auth";
@@ -8,6 +8,7 @@ import { StoreProvider } from "@/store/context";
 import { initAllStores } from "@/lib/init-stores";
 import AdminRoute from "@/components/AdminRoute";
 import NavigationBar from "@/components/NavigationBar";
+import ConfirmModal from "@/components/ConfirmModal";
 
 // Pages
 import DashboardPage from "@/pages/DashboardPage";
@@ -56,13 +57,18 @@ const ADMIN_PAGES: Page[] = ["admin", "user-management", "cash-closing"];
 // App shell
 // ──────────────────────────────────────────────
 
+declare const __APP_VERSION__: string;
+declare const __BUILD_TIME__: string;
+
 export default function App() {
+  console.log(`[Bazar POS] v${__APP_VERSION__} built ${__BUILD_TIME__} — log de errores abajo`);
   const page = useAppStore((s) => s.page);
   const setPage = useAppStore((s) => s.setPage);
   const theme = useAdminStore((s) => s.theme);
   const currentUser = useAuthStore((s) => s.currentUser);
   const init = useAuthStore((s) => s.init);
   const hasAccess = usePermission(page);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // Hydrate auth store, restore session, load all data from SQLite
   useEffect(() => {
@@ -81,6 +87,40 @@ export default function App() {
       document.documentElement.classList.remove("dark");
     }
   }, [theme]);
+
+  // Intercept Tauri window close to show confirmation modal
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+
+    async function setupCloseHandler() {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const win = getCurrentWindow();
+        unlisten = await win.onCloseRequested(async (event) => {
+          event.preventDefault();
+          setShowCloseConfirm(true);
+        });
+      } catch {
+        // Not running inside Tauri — ignore
+      }
+    }
+
+    setupCloseHandler();
+
+    return () => {
+      unlisten?.();
+    };
+  }, []);
+
+  async function handleConfirmClose() {
+    setShowCloseConfirm(false);
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().close();
+    } catch {
+      // Fallback: not in Tauri
+    }
+  }
 
   // Permission gate: redirect unpermitted pages to dashboard
   useEffect(() => {
@@ -112,6 +152,18 @@ export default function App() {
         </div>
       ) : (
         <LoginPage />
+      )}
+
+      {/* Close window confirmation modal */}
+      {showCloseConfirm && (
+        <ConfirmModal
+          title="Cerrar programa"
+          message="¿Estás seguro de que querés cerrar el programa? Perderás la sesión actual."
+          confirmText="Sí, cerrar"
+          cancelText="Seguir acá"
+          onConfirm={handleConfirmClose}
+          onCancel={() => setShowCloseConfirm(false)}
+        />
       )}
     </StoreProvider>
   );

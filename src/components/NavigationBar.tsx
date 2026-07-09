@@ -1,8 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAppStore, useAuthStore, type Page } from "@/store";
+import { useExpensesStore } from "@/store/expenses";
+import { useComprobantesStore } from "@/store/comprobantes";
+import { useProductsStore } from "@/store/products";
+import { useCashClosingStore } from "@/store/cash-closing";
 import { type Permission } from "@/store/auth";
 import { getSyncState, triggerSync } from "@/hooks/useSync";
 import ThemeToggle from "@/components/ThemeToggle";
+import ConfirmModal from "@/components/ConfirmModal";
+
+declare const __APP_VERSION__: string;
 
 // ──────────────────────────────────────────────
 // Page definitions
@@ -45,6 +52,7 @@ export default function NavigationBar() {
   const logout = useAuthStore((s) => s.logout);
   const [configOpen, setConfigOpen] = useState(true); // open by default in sidebar
   const [clock, setClock] = useState(new Date());
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -77,8 +85,7 @@ export default function NavigationBar() {
     : syncStatus === "error" ? "⚠️" : "☁️";
 
   function handleLogout() {
-    logout();
-    setPage("login");
+    setShowLogoutConfirm(true);
   }
 
   function isActive(id: Page): boolean {
@@ -91,7 +98,7 @@ export default function NavigationBar() {
       {/* Logo / App title */}
       <div className="px-4 py-4 border-b border-white/10">
         <h1 className="text-sm font-bold tracking-wide">Sistema Ventas</h1>
-        <p className="text-[10px] text-white/50 mt-0.5">POS</p>
+        <p className="text-[10px] text-white/50 mt-0.5">POS v{__APP_VERSION__}</p>
       </div>
 
       {/* Live clock */}
@@ -218,7 +225,43 @@ export default function NavigationBar() {
         <div className="flex justify-center">
           <ThemeToggle compact />
         </div>
+
+        {/* Persistence status */}
+        <div className="px-3 py-2 border-t border-white/10">
+          <button
+            onClick={() => {
+              const sales = useAppStore.getState().completedSales.length;
+              const exps = useExpensesStore.getState().expenses.length;
+              const comps = useComprobantesStore.getState().comprobantes.length;
+              const prods = useProductsStore.getState().products.length;
+              const shifts = useCashClosingStore.getState().shifts.length;
+              useAppStore.getState().showNotification(
+                `📊 Ventas:${sales} Gastos:${exps} Comp:${comps} Prod:${prods} Turnos:${shifts}`
+              );
+            }}
+            className="w-full text-[9px] text-white/30 hover:text-white/60 transition-colors text-center"
+            title="Ver conteo de datos cargados"
+          >
+            v{__APP_VERSION__} — tocar para diagnóstico
+          </button>
+        </div>
       </div>
+
+      {/* Logout confirmation modal */}
+      {showLogoutConfirm && (
+        <ConfirmModal
+          title="Cerrar sesión"
+          message="¿Estás seguro de que querés cerrar sesión? Se te redirigirá a la pantalla de inicio."
+          confirmText="Sí, cerrar sesión"
+          cancelText="Cancelar"
+          onConfirm={() => {
+            logout();
+            setPage("login");
+            setShowLogoutConfirm(false);
+          }}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
+      )}
     </aside>
   );
 }
