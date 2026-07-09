@@ -9,7 +9,7 @@ import { useCashClosingStore, setNextShiftId, setNextMovementId as setNextCashMo
 import { useAuthStore, setNextUserId } from "@/store/auth";
 import { useExpensesStore } from "@/store/expenses";
 import { useComprobantesStore, setNextComprobanteId, setNextComprobanteItemId, type ComprobanteItem } from "@/store/comprobantes";
-import { useAppStore } from "@/store";
+import { useAppStore, setNextSaleId, setNextSaleItemId } from "@/store";
 
 let initialized = false;
 
@@ -394,6 +394,9 @@ async function initSales(): Promise<void> {
     const merged = [...existing, ...completedSales].sort((a, b) => b.id - a.id);
 
     useAppStore.setState({ completedSales: merged });
+
+    setNextSaleId(maxSaleId + 1);
+    setNextSaleItemId(maxSaleItemId + 1);
   } catch (err) {
     console.error("[init] initSales failed:", err);
   }

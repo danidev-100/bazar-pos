@@ -153,6 +153,9 @@ function calcSubtotal(qty: number, price: number): number {
 let nextSaleId = 1;
 let nextSaleItemId = 1;
 
+export function setNextSaleId(id: number) { nextSaleId = id; }
+export function setNextSaleItemId(id: number) { nextSaleItemId = id; }
+
 // ──────────────────────────────────────────────
 // Store factory
 // ──────────────────────────────────────────────
