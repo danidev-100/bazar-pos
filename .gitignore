@@ -35,3 +35,12 @@ drizzle/*.sql
 !drizzle/.gitkeep
 
 .vercel
+
+# ATL skill registry (local cache)
+.atl/
+
+# Release installers (local artifacts, not tracked)
+release/
+
+# Diagnostic scripts (local)
+scripts/
