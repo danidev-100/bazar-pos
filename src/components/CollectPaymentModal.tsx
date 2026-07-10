@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useCustomersStore, type Customer } from "@/store/customers";
 import { useActiveStore } from "@/store/context";
 import { formatCurrency } from "@/lib/format";
+import NumberInput from "@/components/NumberInput";
 
 type CollectPaymentModalProps = {
   customer: Customer;
@@ -82,17 +83,13 @@ export default function CollectPaymentModal({
           <label htmlFor="collect-amount" className="block text-sm font-medium text-pos-text mb-1">
             Monto a cobrar
           </label>
-          <input
+          <NumberInput
             id="collect-amount"
-            type="number"
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            min="0"
-            step="0.01"
+            value={parseFloat(amount) || 0}
+            onChange={(n) => setAmount(n.toString())}
+            placeholder="0,00"
             autoFocus
-            className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface"
           />
         </div>
 

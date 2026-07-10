@@ -119,8 +119,19 @@ const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
         return;
       }
 
-      // Extraer contenido sin formato: solo dígitos, coma y signo menos
-      const rawContent = val.replace(/\./g, "").replace(/[^0-9,\-]/g, "");
+      // Normalizar: distinguir punto decimal de punto de miles
+      let rawContent = val.replace(/[^0-9,.\-]/g, "");
+      const dotParts = rawContent.split(".");
+      if (dotParts.length > 1) {
+        const lastSeg = dotParts[dotParts.length - 1];
+        if (lastSeg.length <= decimals && /^\d+$/.test(lastSeg)) {
+          // El último punto es decimal → convertirlo a coma
+          rawContent = dotParts.slice(0, -1).join("").replace(/\D/g, "") + "," + lastSeg;
+        } else {
+          // Los puntos son separadores de miles → sacarlos
+          rawContent = rawContent.replace(/\./g, "");
+        }
+      }
 
       // Limitar decimales
       const parts = rawContent.split(",");
