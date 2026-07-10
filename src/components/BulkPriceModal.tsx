@@ -94,14 +94,18 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
 
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [brandId, setBrandId] = useState<number | "">("");
-  const [percent, setPercent] = useState<string>("10");
+  const [draft, setDraft] = useState<string>("10");
   const [target, setTarget] = useState<"cost" | "selling" | "both">("selling");
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ── Derived ──
 
-  const parsedPercent = parseFloat(percent) || 0;
+  const parsedPercent = (() => {
+    const normalized = draft.replace(",", ".");
+    const n = parseFloat(normalized);
+    return isNaN(n) ? 0 : n;
+  })();
   const groupedPreview = useMemo(
     () => (preview ? groupPreviewByProduct(preview) : []),
     [preview],
@@ -259,12 +263,27 @@ export default function BulkPriceModal({ onClose }: BulkPriceModalProps) {
                 </label>
                 <input
                   id="bulk-percent"
-                  type="number"
-                  value={percent}
-                  onChange={(e) => setPercent(e.target.value)}
+                  type="text"
+                  inputMode="decimal"
+                  value={draft}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^-?[\d,.]*$/.test(val) || val === "") {
+                      setDraft(val);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (draft) {
+                      const n = parseFloat(draft.replace(",", "."));
+                      if (!isNaN(n)) {
+                        setDraft(n.toLocaleString("es-AR", {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 2,
+                        }));
+                      }
+                    }
+                  }}
                   placeholder="10"
-                  step="0.1"
-                  min="-100"
                   aria-label="Porcentaje de aumento"
                   className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface touch-target dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                 />

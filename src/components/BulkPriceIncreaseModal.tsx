@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { Product } from "@/store/products";
 import { formatCurrency } from "@/lib/format";
-import NumberInput from "@/components/NumberInput";
 
 // ──────────────────────────────────────────────
 // Props
@@ -24,7 +23,7 @@ export default function BulkPriceModal({
   onApply,
   onClose,
 }: BulkPriceModalProps) {
-  const [percentage, setPercentage] = useState(0);
+  const [draft, setDraft] = useState("");
   const [animOut, setAnimOut] = useState(false);
 
   useEffect(() => {
@@ -46,7 +45,12 @@ export default function BulkPriceModal({
     [products, selectedIds],
   );
 
-  const pct = percentage;
+  // Parsear el draft a número (acepta coma y punto como decimal)
+  const pct = (() => {
+    const normalized = draft.replace(",", ".");
+    const n = parseFloat(normalized);
+    return isNaN(n) ? 0 : n;
+  })();
 
   return (
     <div
@@ -94,11 +98,31 @@ export default function BulkPriceModal({
               Usá <strong className="text-pos-text">+10</strong> para aumentar o <strong className="text-pos-text">-10</strong> para descontar
             </p>
             <div className="relative">
-              <NumberInput
-                value={percentage}
-                onChange={setPercentage}
-                decimals={2}
+              <input
+                type="text"
+                inputMode="decimal"
+                value={draft}
                 autoFocus
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Solo permitir dígitos, coma, punto, signo menos
+                  if (/^-?[\d,.]*$/.test(val) || val === "") {
+                    setDraft(val);
+                  }
+                }}
+                onBlur={() => {
+                  // Al perder foco, formatear con separador de miles
+                  if (draft) {
+                    const normalized = draft.replace(",", ".");
+                    const n = parseFloat(normalized);
+                    if (!isNaN(n)) {
+                      setDraft(n.toLocaleString("es-AR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }));
+                    }
+                  }
+                }}
                 placeholder="10,00"
                 className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-2xl text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
               />
