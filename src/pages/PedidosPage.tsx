@@ -3,6 +3,7 @@ import { useActiveStore } from "@/store/context";
 import { usePedidosStore, type Pedido, type PedidoStatus, getStatusLabel } from "@/store/pedidos";
 import { useProductsStore } from "@/store/products";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/format";
 import PedidoForm from "@/components/PedidoForm";
 
 type View =
@@ -74,7 +75,7 @@ export default function PedidosPage() {
       proveedor: p.proveedor_name,
       fecha: new Date(p.date).toLocaleDateString("es-AR"),
       estado: getStatusLabel(p.status),
-      total: `$${p.total.toFixed(2)}`,
+      total: formatCurrency(p.total),
     }));
     exportTableToPdf(data, columns, "Pedidos");
   }, [filteredPedidos]);
@@ -251,7 +252,7 @@ export default function PedidosPage() {
                           </span>
                         </td>
                         <td className="py-2 px-1 text-right font-mono text-pos-text">
-                          ${p.total.toFixed(2)}
+                          {formatCurrency(p.total)}
                         </td>
                         <td className="py-2 pl-1 text-right whitespace-nowrap">
                           <select
@@ -334,8 +335,8 @@ function DetailView({ pedido: initialPedido, onBack, onEdit }: { pedido: Pedido;
       <tr>
         <td style="padding:6px 10px;border-bottom:1px solid #d1d5db;">${item.product_name}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #d1d5db;text-align:center;">${item.quantity}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #d1d5db;text-align:right;">$${item.unit_price.toFixed(2)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #d1d5db;text-align:right;">$${item.subtotal.toFixed(2)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #d1d5db;text-align:right;">${formatCurrency(item.unit_price)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #d1d5db;text-align:right;">${formatCurrency(item.subtotal)}</td>
       </tr>`,
       )
       .join("");
@@ -392,7 +393,7 @@ function DetailView({ pedido: initialPedido, onBack, onEdit }: { pedido: Pedido;
           <tfoot>
             <tr class="total-row">
               <td colspan="3" style="text-align:right;">Total</td>
-              <td>$${pedido.total.toFixed(2)}</td>
+              <td>${formatCurrency(pedido.total)}</td>
             </tr>
           </tfoot>
         </table>
@@ -492,8 +493,8 @@ function DetailView({ pedido: initialPedido, onBack, onEdit }: { pedido: Pedido;
                     {item.received_qty}
                   </span>
                 </td>
-                <td className="py-2 px-2 text-right font-mono text-pos-text">${item.unit_price.toFixed(2)}</td>
-                <td className="py-2 pl-2 text-right font-mono text-pos-text">${item.subtotal.toFixed(2)}</td>
+                <td className="py-2 px-2 text-right font-mono text-pos-text">{formatCurrency(item.unit_price)}</td>
+                <td className="py-2 pl-2 text-right font-mono text-pos-text">{formatCurrency(item.subtotal)}</td>
                 {!isLocked && (
                   <td className="py-2 pl-2 text-right">
                     {fullyReceived ? (
@@ -532,7 +533,7 @@ function DetailView({ pedido: initialPedido, onBack, onEdit }: { pedido: Pedido;
         <tfoot>
           <tr className="font-bold text-pos-text">
             <td colSpan={4} className="py-2 pr-2 text-right">Total</td>
-            <td className="py-2 pl-2 text-right font-mono">${pedido.total.toFixed(2)}</td>
+            <td className="py-2 pl-2 text-right font-mono">{formatCurrency(pedido.total)}</td>
             {!isLocked && <td />}
           </tr>
         </tfoot>

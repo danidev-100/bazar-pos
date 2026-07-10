@@ -8,6 +8,7 @@ import {
 } from "@/store/invoices";
 import { exportInvoicePdf } from "@/lib/pdf-export";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/format";
 import InvoiceList from "@/components/InvoiceList";
 import InvoiceDetail from "@/components/InvoiceDetail";
 
@@ -112,7 +113,7 @@ export default function BillingPage() {
       numero: inv.invoiceNumber,
       fecha: new Date(inv.date).toLocaleDateString("es-AR"),
       cliente: inv.customer,
-      total: `$${inv.total.toFixed(2)}`,
+      total: formatCurrency(inv.total),
       pago: inv.paymentMethod === "cash" ? "Efectivo" : inv.paymentMethod === "mixed" ? "Mixto" : inv.paymentMethod === "mercadopago" ? "M. Pago" : "Tarjeta",
     }));
     exportTableToPdf(data, invoiceColumns, "Facturas");

@@ -13,6 +13,7 @@ import PaymentMethodChart from "@/components/PaymentMethodChart";
 import HourlySalesChart from "@/components/HourlySalesChart";
 import CategoryBreakdown from "@/components/CategoryBreakdown";
 import CashierBreakdown from "@/components/CashierBreakdown";
+import { formatCurrency } from "@/lib/format";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
 
 // ──────────────────────────────────────────────
@@ -174,7 +175,7 @@ export default function StatsPage() {
     const data = topSellersData.map((item) => ({
       producto: item.producto,
       cantidad: String(item.cantidad),
-      ingresos: `$${item.ingresos.toFixed(2)}`,
+      ingresos: formatCurrency(item.ingresos),
     }));
     exportTableToPdf(data, topSellersColumns, "Más Vendidos");
   }, [topSellersData]);
@@ -185,12 +186,12 @@ export default function StatsPage() {
 
   const exportSummaryPdf = useCallback(() => {
     const data = [
-      { metrica: "Ingresos Totales", valor: `$${metrics.totalRevenue.toFixed(2)}` },
+      { metrica: "Ingresos Totales", valor: formatCurrency(metrics.totalRevenue) },
       { metrica: "Transacciones", valor: String(metrics.totalTransactions) },
       { metrica: "Productos Vendidos", valor: String(metrics.totalItems) },
-      { metrica: "Margen Bruto", valor: `$${metrics.grossProfit.toFixed(2)} (${metrics.marginPercent}%)` },
-      { metrica: "Gastos", valor: `$${totalExpenses.toFixed(2)}` },
-      { metrica: "Ingreso Neto", valor: `$${netIncome.toFixed(2)}` },
+      { metrica: "Margen Bruto", valor: `${formatCurrency(metrics.grossProfit)} (${metrics.marginPercent}%)` },
+      { metrica: "Gastos", valor: formatCurrency(totalExpenses) },
+      { metrica: "Ingreso Neto", valor: formatCurrency(netIncome) },
     ];
     exportTableToPdf(data, salesSummaryColumns, "Resumen de Ventas");
   }, [metrics, totalExpenses, netIncome]);
@@ -268,7 +269,7 @@ export default function StatsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <SummaryCard
           label="Ingreso Bruto"
-          value={`$${metrics.totalRevenue.toFixed(2)}`}
+          value={formatCurrency(metrics.totalRevenue)}
           delta={<DeltaBadge current={metrics.totalRevenue} previous={prevMetrics.totalRevenue} />}
         />
         <SummaryCard
@@ -283,19 +284,19 @@ export default function StatsPage() {
         />
         <SummaryCard
           label="Ingreso Neto"
-          value={`$${metrics.grossProfit.toFixed(2)}`}
+          value={formatCurrency(metrics.grossProfit)}
           delta={<DeltaBadge current={metrics.grossProfit} previous={prevMetrics.grossProfit} />}
         />
         <SummaryCard
           label="Margen Bruto"
           value={`${metrics.marginPercent}%`}
-          subtitle={`$${metrics.grossProfit.toFixed(2)}`}
+          subtitle={formatCurrency(metrics.grossProfit)}
           delta={<DeltaBadge current={metrics.grossProfit} previous={prevMetrics.grossProfit} />}
         />
         <SummaryCard
           label="Resultado Neto"
-          value={`$${netIncome.toFixed(2)}`}
-          subtitle={`Gastos: $${totalExpenses.toFixed(2)}`}
+          value={formatCurrency(netIncome)}
+          subtitle={`Gastos: ${formatCurrency(totalExpenses)}`}
           negative={netIncome < 0}
         />
       </div>

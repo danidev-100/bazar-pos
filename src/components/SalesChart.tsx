@@ -9,6 +9,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import type { CompletedSale } from "@/store";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Types
@@ -154,7 +155,7 @@ export default function SalesChart({
             }}
             formatter={(value: number, name: string) => {
               if (name === "revenue")
-                return [`$${value.toFixed(2)}`, "Ingresos"];
+                return [formatCurrency(value), "Ingresos"];
               return [value, "Transacciones"];
             }}
           />
@@ -171,7 +172,7 @@ export default function SalesChart({
       <div className="flex gap-6 mt-2 text-xs text-pos-muted">
         <span>
           Total: <strong className="text-pos-text">
-            ${data.reduce((s, d) => s + d.revenue, 0).toFixed(2)}
+            {formatCurrency(data.reduce((s, d) => s + d.revenue, 0))}
           </strong>
         </span>
         <span>

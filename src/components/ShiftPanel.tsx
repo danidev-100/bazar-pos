@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useCashClosingStore, type Shift, type CashMovement } from "@/store/cash-closing";
+import { formatCurrency } from "@/lib/format";
+import NumberInput from "@/components/NumberInput";
 
 // ──────────────────────────────────────────────
 // Props
@@ -24,7 +26,7 @@ export default function ShiftPanel({
   const closeShift = useCashClosingStore((s) => s.closeShift);
 
   const [employee, setEmployee] = useState("");
-  const [openingAmount, setOpeningAmount] = useState("");
+  const [openingAmount, setOpeningAmount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -38,13 +40,13 @@ export default function ShiftPanel({
       return;
     }
 
-    const balance = parseFloat(openingAmount) || 0;
+    const balance = openingAmount;
 
     try {
       openShift(trimmed, storeId, balance);
-      setSuccess(`Turno abierto para ${trimmed} — $${balance.toFixed(2)} de apertura`);
+      setSuccess(`Turno abierto para ${trimmed} — ${formatCurrency(balance)} de apertura`);
       setEmployee("");
-      setOpeningAmount("");
+      setOpeningAmount(0);
       onShiftChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al abrir el turno");
@@ -93,7 +95,7 @@ export default function ShiftPanel({
           </div>
           <div className="text-sm text-pos-text">
             <span className="text-pos-muted">Apertura:</span>{" "}
-            <span className="font-mono">${currentShift.openingBalance.toFixed(2)}</span>
+            <span className="font-mono">{formatCurrency(currentShift.openingBalance)}</span>
           </div>
           <div className="text-xs text-pos-muted">
             Abierto {openTime.toLocaleDateString()} a las{" "}
@@ -130,7 +132,7 @@ export default function ShiftPanel({
                         : "text-pos-success"
                     }`}
                   >
-                    {m.type === "withdrawal" ? "−" : "+"}$&nbsp;{m.amount.toFixed(2)}
+                    {m.type === "withdrawal" ? "−" : "+"}{formatCurrency(m.amount)}
                   </span>
                 </div>
               ))}
@@ -200,18 +202,11 @@ export default function ShiftPanel({
         >
           Apertura de Caja ($)
         </label>
-        <input
+        <NumberInput
           id="shift-opening"
-          type="text"
-          inputMode="decimal"
           value={openingAmount}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
-              setOpeningAmount(val);
-            }
-          }}
-          placeholder="0.00"
+          onChange={setOpeningAmount}
+          placeholder="0,00"
           className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         />
       </div>

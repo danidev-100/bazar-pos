@@ -1,4 +1,5 @@
 import { useAppStore, type CompletedSale } from "@/store";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Props
@@ -80,11 +81,11 @@ export default function ReceiptPreview({
                       x{item.quantity}
                     </span>
                     <div className="text-xs text-pos-muted font-mono">
-                      ${item.unitPrice.toFixed(2)} c/u
+                      {formatCurrency(item.unitPrice)} c/u
                     </div>
                   </div>
                   <span className="font-mono font-medium text-pos-text whitespace-nowrap">
-                    ${item.subtotal.toFixed(2)}
+                    {formatCurrency(item.subtotal)}
                   </span>
                 </div>
               ))}
@@ -95,18 +96,18 @@ export default function ReceiptPreview({
           <div className="border-t border-dashed border-pos-muted/20 pt-3 space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-pos-muted">Subtotal</span>
-              <span className="font-mono">${sale.subtotal.toFixed(2)}</span>
+              <span className="font-mono">{formatCurrency(sale.subtotal)}</span>
             </div>
             {sale.discountAmount > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-pos-muted">Descuento {sale.discountPercent > 0 ? `(${sale.discountPercent}%)` : ""}</span>
-                <span className="font-mono text-pos-danger">−${sale.discountAmount.toFixed(2)}</span>
+                <span className="font-mono text-pos-danger">−{formatCurrency(sale.discountAmount)}</span>
               </div>
             )}
             <div className="flex items-center justify-between text-base font-bold pt-1 border-t border-pos-muted/10">
               <span className="text-pos-text">Total</span>
               <span className="font-mono text-pos-secondary">
-                ${sale.total.toFixed(2)}
+                {formatCurrency(sale.total)}
               </span>
             </div>
           </div>
@@ -124,13 +125,13 @@ export default function ReceiptPreview({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-pos-muted">Monto Pagado</span>
                   <span className="font-mono">
-                    ${sale.amountPaid.toFixed(2)}
+                    {formatCurrency(sale.amountPaid)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm font-semibold">
                   <span className="text-pos-success">Vuelto</span>
                   <span className="font-mono text-pos-success">
-                    ${(sale.change ?? 0).toFixed(2)}
+                    {formatCurrency(sale.change ?? 0)}
                   </span>
                 </div>
               </>
@@ -163,7 +164,7 @@ export default function ReceiptPreview({
           {sale.status !== "refunded" && onRefund && (
             <button
               onClick={() => {
-                if (window.confirm(`¿Devolver venta #${sale.id} por $${sale.total.toFixed(2)}? El stock se va a restablecer.`)) {
+                if (window.confirm(`¿Devolver venta #${sale.id} por ${formatCurrency(sale.total)}? El stock se va a restablecer.`)) {
                   onRefund();
                 }
               }}

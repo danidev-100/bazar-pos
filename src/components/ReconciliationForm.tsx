@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useCashClosingStore, computeExpectedCash, computeVariance, type Shift, type CashMovement } from "@/store/cash-closing";
 import { useAppStore, type CompletedSale } from "@/store";
+import { formatCurrency } from "@/lib/format";
+import NumberInput from "@/components/NumberInput";
 
 // ──────────────────────────────────────────────
 // Props
@@ -23,7 +25,7 @@ export default function ReconciliationForm({
 }: ReconciliationFormProps) {
   const reconcile = useCashClosingStore((s) => s.reconcile);
 
-  const [declaredCash, setDeclaredCash] = useState<string>("");
+  const [declaredCash, setDeclaredCash] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const movements = useCashClosingStore((s) =>
@@ -53,8 +55,8 @@ export default function ReconciliationForm({
 
   const expectedWithMovements = expectedCash + shift.openingBalance - withdrawalsTotal + depositsTotal;
 
-  const declaredNum = parseFloat(declaredCash) || 0;
-  const previewVariance = declaredCash
+  const declaredNum = declaredCash;
+  const previewVariance = declaredCash > 0
     ? computeVariance(declaredNum, expectedWithMovements)
     : null;
 
@@ -70,41 +72,41 @@ export default function ReconciliationForm({
           <div className="flex items-center justify-between">
             <span className="text-sm text-pos-muted">Apertura de Caja</span>
             <span className="text-sm font-mono font-bold">
-              ${shift.openingBalance.toFixed(2)}
+              {formatCurrency(shift.openingBalance)}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-pos-muted">Efectivo Declarado</span>
             <span className="text-sm font-mono font-bold">
-              ${shift.declaredCash!.toFixed(2)}
+              {formatCurrency(shift.declaredCash!)}
             </span>
           </div>
 
           <div className="bg-pos-background/50 rounded-lg p-3 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="text-pos-muted">Ventas Efectivo</span>
-              <span className="font-mono text-pos-success">+${expectedCash.toFixed(2)}</span>
+              <span className="font-mono text-pos-success">+{formatCurrency(expectedCash)}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-pos-muted">Apertura de Caja</span>
-              <span className="font-mono text-pos-success">+${shift.openingBalance.toFixed(2)}</span>
+              <span className="font-mono text-pos-success">+{formatCurrency(shift.openingBalance)}</span>
             </div>
             {withdrawalsTotal > 0 && (
               <div className="flex items-center justify-between text-xs">
                 <span className="text-pos-muted">Retiros</span>
-                <span className="font-mono text-pos-danger">−${withdrawalsTotal.toFixed(2)}</span>
+                <span className="font-mono text-pos-danger">−{formatCurrency(withdrawalsTotal)}</span>
               </div>
             )}
             {depositsTotal > 0 && (
               <div className="flex items-center justify-between text-xs">
                 <span className="text-pos-muted">Depósitos</span>
-                <span className="font-mono text-pos-success">+${depositsTotal.toFixed(2)}</span>
+                <span className="font-mono text-pos-success">+{formatCurrency(depositsTotal)}</span>
               </div>
             )}
             <hr className="border-pos-muted/20" />
             <div className="flex items-center justify-between text-sm font-semibold">
               <span className="text-pos-text">Esperado en Caja</span>
-              <span className="font-mono">${expectedWithMovements.toFixed(2)}</span>
+              <span className="font-mono">{formatCurrency(expectedWithMovements)}</span>
             </div>
           </div>
 
@@ -120,7 +122,7 @@ export default function ReconciliationForm({
                     : "text-pos-accent"
               }`}
             >
-              {shift.variance! >= 0 ? "+" : ""}${shift.variance!.toFixed(2)}
+              {shift.variance! >= 0 ? "+" : ""}{formatCurrency(shift.variance!)}
             </span>
           </div>
           <div
@@ -154,14 +156,14 @@ export default function ReconciliationForm({
         <div className="flex items-center justify-between">
           <span className="text-sm text-pos-muted">Apertura de Caja</span>
           <span className="text-sm font-mono font-bold text-pos-text">
-            ${shift.openingBalance.toFixed(2)}
+            {formatCurrency(shift.openingBalance)}
           </span>
         </div>
 
         <div className="flex items-center justify-between">
           <span className="text-sm text-pos-muted">Dinero en Caja (declarado)</span>
           <span className="text-sm font-mono font-bold text-pos-text">
-            ${declaredNum.toFixed(2)}
+            {formatCurrency(declaredNum)}
           </span>
         </div>
 
@@ -170,35 +172,35 @@ export default function ReconciliationForm({
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Ventas Efectivo</span>
           <span className="text-sm font-mono font-bold text-pos-success text-base">
-            ${expectedCash.toFixed(2)}
+            {formatCurrency(expectedCash)}
           </span>
         </div>
 
         <div className="bg-pos-background/50 rounded-lg p-3 space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="text-pos-muted">Ventas Efectivo</span>
-            <span className="font-mono text-pos-success">+${expectedCash.toFixed(2)}</span>
+            <span className="font-mono text-pos-success">+{formatCurrency(expectedCash)}</span>
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-pos-muted">Apertura de Caja</span>
-            <span className="font-mono text-pos-success">+${shift.openingBalance.toFixed(2)}</span>
+            <span className="font-mono text-pos-success">+{formatCurrency(shift.openingBalance)}</span>
           </div>
           {withdrawalsTotal > 0 && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-pos-muted">Retiros</span>
-              <span className="font-mono text-pos-danger">−${withdrawalsTotal.toFixed(2)}</span>
+              <span className="font-mono text-pos-danger">−{formatCurrency(withdrawalsTotal)}</span>
             </div>
           )}
           {depositsTotal > 0 && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-pos-muted">Depósitos</span>
-              <span className="font-mono text-pos-success">+${depositsTotal.toFixed(2)}</span>
+              <span className="font-mono text-pos-success">+{formatCurrency(depositsTotal)}</span>
             </div>
           )}
           <hr className="border-pos-muted/20" />
           <div className="flex items-center justify-between text-sm font-semibold">
             <span className="text-pos-text">= Esperado en Caja</span>
-            <span className="font-mono">${expectedWithMovements.toFixed(2)}</span>
+            <span className="font-mono">{formatCurrency(expectedWithMovements)}</span>
           </div>
         </div>
 
@@ -211,18 +213,11 @@ export default function ReconciliationForm({
           >
             Dinero en Caja (contado real)
           </label>
-          <input
+          <NumberInput
             id="declared-cash"
-            type="text"
-            inputMode="decimal"
             value={declaredCash}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
-                setDeclaredCash(val);
-              }
-            }}
-            placeholder="0.00"
+            onChange={setDeclaredCash}
+            placeholder="0,00"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-lg text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />
         </div>
@@ -239,7 +234,7 @@ export default function ReconciliationForm({
                     : "text-pos-accent"
               }`}
             >
-              {previewVariance >= 0 ? "+" : ""}${previewVariance.toFixed(2)}
+              {previewVariance >= 0 ? "+" : ""}{formatCurrency(previewVariance)}
             </span>
           </div>
         )}
@@ -247,8 +242,8 @@ export default function ReconciliationForm({
         <button
           onClick={() => {
             setError(null);
-            const amount = parseFloat(declaredCash);
-            if (isNaN(amount) || amount < 0) {
+            const amount = declaredCash;
+            if (amount < 0) {
               setError("Ingresá un monto válido");
               return;
             }
@@ -261,7 +256,7 @@ export default function ReconciliationForm({
               );
             }
           }}
-          disabled={!declaredCash}
+          disabled={declaredCash <= 0}
           className="w-full px-4 py-2 bg-pos-secondary text-white rounded-lg font-medium text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Arquear

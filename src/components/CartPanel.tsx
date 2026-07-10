@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/auth";
 import { useCashClosingStore } from "@/store/cash-closing";
 import { useActiveStore } from "@/store/context";
 import CashMovementModal from "@/components/CashMovementModal";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Props
@@ -138,7 +139,7 @@ export default function CartPanel({
               <span className="text-pos-success font-medium">● Abierto</span>
               {openShift!.openingBalance > 0 && (
                 <span className="text-pos-muted font-mono">
-                  Apert.: ${openShift!.openingBalance.toFixed(2)}
+                  Apert.: {formatCurrency(openShift!.openingBalance)}
                 </span>
               )}
             </div>
@@ -221,12 +222,12 @@ export default function CartPanel({
 
               {/* Price */}
               <span className="shrink-0 text-xs font-mono text-pos-muted tabular-nums min-w-[60px] text-right">
-                ${item.unitPrice.toFixed(2)}
+                {formatCurrency(item.unitPrice)}
               </span>
 
               {/* Subtotal */}
               <span className="shrink-0 text-sm font-bold font-mono text-pos-text tabular-nums min-w-[70px] text-right">
-                ${item.subtotal.toFixed(2)}
+                {formatCurrency(item.subtotal)}
               </span>
 
               {/* Quantity controls */}
@@ -362,7 +363,7 @@ export default function CartPanel({
           {/* Subtotal line */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-pos-muted">Subtotal</span>
-            <span className="font-mono font-medium">${total.toFixed(2)}</span>
+            <span className="font-mono font-medium">{formatCurrency(total)}</span>
           </div>
 
           {/* Tax (placeholder — 0% for now) */}
@@ -375,7 +376,7 @@ export default function CartPanel({
           <div className="flex items-center justify-between text-base font-bold">
             <span className="text-pos-text">Total</span>
             <span className="font-mono text-pos-secondary text-lg">
-              ${total.toFixed(2)}
+              {formatCurrency(total)}
             </span>
           </div>
 
@@ -384,7 +385,7 @@ export default function CartPanel({
             onClick={onCheckout}
             className="w-full py-3 bg-pos-accent text-white rounded-xl font-bold text-base touch-target hover:opacity-90 transition-opacity active:scale-[0.98]"
           >
-            Cobrar — ${total.toFixed(2)}
+            Cobrar — {formatCurrency(total)}
           </button>
         </div>
       )}

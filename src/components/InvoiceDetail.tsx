@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useInvoicesStore, type Invoice } from "@/store/invoices";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Props
@@ -135,10 +136,10 @@ export default function InvoiceDetail({
                   {item.quantity}
                 </td>
                 <td className="py-1.5 px-2 text-right font-mono">
-                  ${item.unitPrice.toFixed(2)}
+                  {formatCurrency(item.unitPrice)}
                 </td>
                 <td className="py-1.5 pl-2 text-right font-mono font-medium">
-                  ${item.subtotal.toFixed(2)}
+                  {formatCurrency(item.subtotal)}
                 </td>
               </tr>
             ))}
@@ -152,14 +153,14 @@ export default function InvoiceDetail({
       <div className="space-y-1 text-sm">
         <div className="flex items-center justify-between">
           <span className="text-pos-muted">Subtotal</span>
-          <span className="font-mono">${invoice.total.toFixed(2)}</span>
+          <span className="font-mono">{formatCurrency(invoice.total)}</span>
         </div>
         {invoice.paymentMethod === "cash" && (
           <>
             <div className="flex items-center justify-between">
               <span className="text-pos-muted">Monto Pagado</span>
               <span className="font-mono">
-                ${invoice.total.toFixed(2)}
+                {formatCurrency(invoice.total)}
               </span>
             </div>
             <div className="flex items-center justify-between text-pos-success">
@@ -172,7 +173,7 @@ export default function InvoiceDetail({
         <div className="flex items-center justify-between font-bold text-pos-text">
           <span>Total</span>
           <span className="font-mono text-lg">
-            ${invoice.total.toFixed(2)}
+            {formatCurrency(invoice.total)}
           </span>
         </div>
       </div>

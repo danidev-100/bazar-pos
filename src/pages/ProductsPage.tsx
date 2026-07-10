@@ -10,6 +10,7 @@ import ImportProductsModal from "@/components/ImportProductsModal";
 import BulkPriceIncreaseModal from "@/components/BulkPriceIncreaseModal";
 import BulkCategoryModal from "@/components/BulkCategoryModal";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/format";
 
 const RENDER_BATCH = 200;
 
@@ -226,8 +227,8 @@ export default function ProductsPage() {
       return {
         codigo: p.barcode ?? "—",
         nombre: p.name,
-        precio: `$${p.price.toFixed(2)}`,
-        ...(canViewCost ? { costo: `$${p.costPrice.toFixed(2)}` } : {}),
+        precio: formatCurrency(p.price),
+        ...(canViewCost ? { costo: formatCurrency(p.costPrice) } : {}),
         stock: p.stock,
         marca: brandName ?? "—",
         categoria: catName ?? "—",
@@ -509,11 +510,11 @@ export default function ProductsPage() {
                             {p.name}
                           </td>
                           <td className="py-2 px-2 num">
-                            ${p.price.toFixed(2)}
+                            {formatCurrency(p.price)}
                           </td>
                           {canViewCost && (
                             <td className="py-2 px-2 num text-pos-muted">
-                              ${p.costPrice.toFixed(2)}
+                              {formatCurrency(p.costPrice)}
                             </td>
                           )}
                           <td

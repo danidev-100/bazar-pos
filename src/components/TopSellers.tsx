@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { CompletedSale } from "@/store";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Types
@@ -101,7 +102,7 @@ export default function TopSellers({ sales, limit = 10 }: TopSellersProps) {
                 {entry.quantity}
               </td>
               <td className="py-2 pl-2 text-right font-mono text-pos-text">
-                ${entry.revenue.toFixed(2)}
+                {formatCurrency(entry.revenue)}
               </td>
             </tr>
           ))}

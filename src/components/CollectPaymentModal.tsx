@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCustomersStore, type Customer } from "@/store/customers";
 import { useActiveStore } from "@/store/context";
+import { formatCurrency } from "@/lib/format";
 
 type CollectPaymentModalProps = {
   customer: Customer;
@@ -32,7 +33,7 @@ export default function CollectPaymentModal({
     }
 
     if (parsedAmount > customer.creditBalance) {
-      setError(`El cliente debe $${customer.creditBalance.toFixed(2)}. No podés cobrar más que eso.`);
+      setError(`El cliente debe ${formatCurrency(customer.creditBalance)}. No podés cobrar más que eso.`);
       return;
     }
 
@@ -62,17 +63,17 @@ export default function CollectPaymentModal({
         <div className="bg-pos-background/50 rounded-xl p-4 space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-pos-muted">Saldo actual</span>
-            <span className="font-mono font-bold text-pos-danger">${customer.creditBalance.toFixed(2)}</span>
+            <span className="font-mono font-bold text-pos-danger">{formatCurrency(customer.creditBalance)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-pos-muted">A cobrar</span>
-            <span className="font-mono font-bold text-pos-success">−$${parsedAmount.toFixed(2)}</span>
+            <span className="font-mono font-bold text-pos-success">−{formatCurrency(parsedAmount)}</span>
           </div>
           <hr className="border-pos-muted/20" />
           <div className="flex items-center justify-between font-semibold">
             <span className="text-sm">Saldo restante</span>
             <span className={`font-mono ${remaining > 0 ? "text-pos-danger" : "text-pos-success"}`}>
-              ${remaining.toFixed(2)}
+              {formatCurrency(remaining)}
             </span>
           </div>
         </div>
@@ -108,7 +109,7 @@ export default function CollectPaymentModal({
             disabled={busy || parsedAmount <= 0}
             className="flex-1 px-4 py-3 bg-pos-success text-white rounded-xl font-bold text-sm touch-target hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {busy ? "Guardando…" : `Cobrar $${parsedAmount.toFixed(2)}`}
+            {busy ? "Guardando…" : `Cobrar ${formatCurrency(parsedAmount)}`}
           </button>
         </div>
       </div>

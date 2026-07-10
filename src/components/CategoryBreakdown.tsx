@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import type { CompletedSale } from "@/store";
 import type { Product, Category } from "@/store/products";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Types
@@ -132,7 +133,7 @@ export default function CategoryBreakdown({
             }}
             formatter={(value: number, name: string) => {
               if (name === "revenue")
-                return [`$${value.toFixed(2)}`, "Ingresos"];
+                return [formatCurrency(value), "Ingresos"];
               return [value, "Unidades"];
             }}
           />
@@ -150,7 +151,7 @@ export default function CategoryBreakdown({
         <span>
           Total:{" "}
           <strong className="text-pos-text">
-            ${data.reduce((s, d) => s + d.revenue, 0).toFixed(2)}
+            {formatCurrency(data.reduce((s, d) => s + d.revenue, 0))}
           </strong>
         </span>
         <span>

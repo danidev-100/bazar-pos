@@ -4,6 +4,7 @@ import { useProductsStore, type Category } from "@/store/products";
 import { useBrandsStore } from "@/store/brands";
 import { useActiveStore } from "@/store/context";
 import { useAppStore } from "@/store";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Props
@@ -413,13 +414,13 @@ function ProductPreviewRows({ group }: { group: ProductGroup }) {
             {item.field === "cost" ? "Costo" : "Venta"}
           </td>
           <td className="py-2 px-3 num text-pos-muted">
-            ${item.currentPrice.toFixed(2)}
+            {formatCurrency(item.currentPrice)}
           </td>
           <td className="py-2 px-3 num text-pos-text font-semibold">
-            ${item.newPrice.toFixed(2)}
+            {formatCurrency(item.newPrice)}
           </td>
           <td className="py-2 px-3 num text-pos-success">
-            +${(item.newPrice - item.currentPrice).toFixed(2)}
+            +{formatCurrency(item.newPrice - item.currentPrice)}
           </td>
         </tr>
       ))}

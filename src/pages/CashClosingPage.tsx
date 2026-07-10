@@ -7,6 +7,7 @@ import ShiftPanel from "@/components/ShiftPanel";
 import ReconciliationForm from "@/components/ReconciliationForm";
 import ClosureReport from "@/components/ClosureReport";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Component
@@ -81,12 +82,12 @@ export default function CashClosingPage() {
       return {
         cajero: shift.employee,
         turno: new Date(shift.openTime).toLocaleDateString(),
-        apertura: `$${shift.openingBalance.toFixed(2)}`,
+        apertura: formatCurrency(shift.openingBalance),
         ventas: shiftSales.length,
-        efectivo: `$${cashTotal.toFixed(2)}`,
-        tarjeta: `$${cardTotal.toFixed(2)}`,
-        mercadopago: `$${mercadopagoTotal.toFixed(2)}`,
-        total: `$${total.toFixed(2)}`,
+        efectivo: formatCurrency(cashTotal),
+        tarjeta: formatCurrency(cardTotal),
+        mercadopago: formatCurrency(mercadopagoTotal),
+        total: formatCurrency(total),
         estado: shift.status === "open" ? "Abierto" : "Cerrado",
       };
     });
@@ -191,13 +192,13 @@ export default function CashClosingPage() {
                           {new Date(shift.openTime).toLocaleDateString()}
                         </td>
                         <td className="py-2 px-2 num text-pos-muted">
-                          ${shift.openingBalance.toFixed(2)}
+                          {formatCurrency(shift.openingBalance)}
                         </td>
                         <td className="py-2 px-2 num">{shiftSales.length}</td>
-                        <td className="py-2 px-2 num">${cashTotal.toFixed(2)}</td>
-                        <td className="py-2 px-2 num">${cardTotal.toFixed(2)}</td>
-                        <td className="py-2 px-2 num">${mercadopagoTotal.toFixed(2)}</td>
-                        <td className="py-2 px-2 num font-bold">${total.toFixed(2)}</td>
+                        <td className="py-2 px-2 num">{formatCurrency(cashTotal)}</td>
+                        <td className="py-2 px-2 num">{formatCurrency(cardTotal)}</td>
+                        <td className="py-2 px-2 num">{formatCurrency(mercadopagoTotal)}</td>
+                        <td className="py-2 px-2 num font-bold">{formatCurrency(total)}</td>
                         <td className="py-2 pl-2 text-center">
                           {shift.status === "open" ? (
                             <span className="text-pos-success font-medium">● Abierto</span>
@@ -445,26 +446,26 @@ function ShiftQuickStats({
         <div className="flex items-center justify-between">
           <span className="text-xs text-pos-muted">Efectivo</span>
           <span className="text-sm font-mono">
-            ${cashTotal.toFixed(2)}
+            {formatCurrency(cashTotal)}
           </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-pos-muted">Tarjeta</span>
           <span className="text-sm font-mono">
-            ${cardTotal.toFixed(2)}
+            {formatCurrency(cardTotal)}
           </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-pos-muted">Mercado Pago</span>
           <span className="text-sm font-mono">
-            ${mercadopagoTotal.toFixed(2)}
+            {formatCurrency(mercadopagoTotal)}
           </span>
         </div>
         <hr className="border-pos-muted/20" />
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold">Total Ventas</span>
           <span className="text-sm font-mono font-bold text-pos-text">
-            ${totalSales.toFixed(2)}
+            {formatCurrency(totalSales)}
           </span>
         </div>
       </div>

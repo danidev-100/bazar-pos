@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Product } from "@/store/products";
+import { formatCurrency } from "@/lib/format";
+import NumberInput from "@/components/NumberInput";
 
 // ──────────────────────────────────────────────
 // Props
@@ -22,7 +24,7 @@ export default function BulkPriceModal({
   onApply,
   onClose,
 }: BulkPriceModalProps) {
-  const [percentage, setPercentage] = useState("");
+  const [percentage, setPercentage] = useState(0);
   const [animOut, setAnimOut] = useState(false);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function BulkPriceModal({
     [products, selectedIds],
   );
 
-  const pct = parseFloat(percentage) || 0;
+  const pct = percentage;
 
   return (
     <div
@@ -86,22 +88,19 @@ export default function BulkPriceModal({
           {/* Percentage input */}
           <div>
             <label className="block text-xs font-semibold text-pos-muted uppercase tracking-wide mb-1.5">
-              Porcentaje de aumento
+              Porcentaje de ajuste
             </label>
+            <p className="text-[10px] text-pos-muted/50 -mt-0.5 mb-2">
+              Usá <strong className="text-pos-text">+10</strong> para aumentar o <strong className="text-pos-text">-10</strong> para descontar
+            </p>
             <div className="relative">
-              <input
-                type="text"
-                inputMode="decimal"
+              <NumberInput
                 value={percentage}
+                onChange={setPercentage}
+                decimals={2}
                 autoFocus
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
-                    setPercentage(val);
-                  }
-                }}
-                placeholder="ej: 15"
-                className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-xl text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-accent touch-target bg-pos-background"
+                placeholder="10,00"
+                className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-2xl text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-bold text-pos-muted/40">
                 %
@@ -110,10 +109,10 @@ export default function BulkPriceModal({
           </div>
 
           {/* Preview */}
-          {pct > 0 && selected.length > 0 && (
+          {pct !== 0 && selected.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-pos-muted uppercase tracking-wide mb-2">
-                Vista previa ({selected.length > 5 ? "primeros 5" : "todos"})
+                Vista previa — {pct > 0 ? "+" : ""}{pct}% ({selected.length > 5 ? "primeros 5" : "todos"})
               </p>
               <div className="bg-pos-background/50 rounded-xl divide-y divide-pos-muted/10 overflow-hidden">
                 {selected.slice(0, 5).map((p) => {
@@ -128,10 +127,10 @@ export default function BulkPriceModal({
                         {p.name}
                       </span>
                       <span className="font-mono text-pos-muted line-through mr-2">
-                        ${p.price.toFixed(2)}
+                        {formatCurrency(p.price)}
                       </span>
                       <span className="font-mono font-bold text-pos-accent">
-                        ${newPrice.toFixed(2)}
+                        {formatCurrency(newPrice)}
                       </span>
                     </div>
                   );
@@ -145,10 +144,10 @@ export default function BulkPriceModal({
             </div>
           )}
 
-          {pct <= 0 && (
+          {pct === 0 && selected.length > 0 && (
             <div className="flex items-center gap-2.5 bg-pos-background/50 rounded-xl px-4 py-3 text-xs text-pos-muted">
               <span>💡</span>
-              <span>Ingresá un porcentaje mayor a 0 para ver la previsualización</span>
+              <span>Ingresá un porcentaje para ver la previsualización</span>
             </div>
           )}
         </div>

@@ -4,6 +4,7 @@ import {
   type ShiftSummary,
 } from "@/store/cash-closing";
 import { useAppStore, type CompletedSale } from "@/store";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Props
@@ -85,26 +86,26 @@ export default function ClosureReport({
           <div className="flex items-center justify-between">
             <span className="text-sm text-pos-muted">Total Efectivo</span>
             <span className="text-sm font-mono font-bold">
-              ${cashTotal.toFixed(2)}
+              {formatCurrency(cashTotal)}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-pos-muted">Total Tarjeta</span>
             <span className="text-sm font-mono font-bold">
-              ${cardTotal.toFixed(2)}
+              {formatCurrency(cardTotal)}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-pos-muted">Total Mercado Pago</span>
             <span className="text-sm font-mono font-bold">
-              ${mercadopagoTotal.toFixed(2)}
+              {formatCurrency(mercadopagoTotal)}
             </span>
           </div>
           <hr className="border-pos-muted/20" />
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">Total Ventas</span>
             <span className="text-base font-mono font-bold text-pos-text">
-              ${totalSales.toFixed(2)}
+              {formatCurrency(totalSales)}
             </span>
           </div>
         </div>
@@ -119,7 +120,7 @@ export default function ClosureReport({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-pos-muted">Retiros</span>
                 <span className="text-sm font-mono font-bold text-pos-danger">
-                  −${withdrawalsTotal.toFixed(2)}
+                  −{formatCurrency(withdrawalsTotal)}
                 </span>
               </div>
             )}
@@ -127,7 +128,7 @@ export default function ClosureReport({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-pos-muted">Depósitos</span>
                 <span className="text-sm font-mono font-bold text-pos-success">
-                  +${depositsTotal.toFixed(2)}
+                  +{formatCurrency(depositsTotal)}
                 </span>
               </div>
             )}
@@ -143,23 +144,23 @@ export default function ClosureReport({
             <div className="flex items-center justify-between">
               <span className="text-sm text-pos-muted">Apertura de Caja</span>
               <span className="text-sm font-mono">
-                ${shift.openingBalance.toFixed(2)}
+                {formatCurrency(shift.openingBalance)}
               </span>
             </div>
 
             <div className="bg-pos-background/30 rounded-lg p-3 space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-pos-muted">Caja declarada</span>
-                <span className="font-mono">${shift.declaredCash!.toFixed(2)}</span>
+                <span className="font-mono">{formatCurrency(shift.declaredCash!)}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-pos-muted">− Apertura</span>
-                <span className="font-mono text-pos-danger">−${shift.openingBalance.toFixed(2)}</span>
+                <span className="font-mono text-pos-danger">−{formatCurrency(shift.openingBalance)}</span>
               </div>
               <hr className="border-pos-muted/20" />
               <div className="flex items-center justify-between text-sm font-semibold">
                 <span className="text-pos-text">= Ventas Efectivo</span>
-                <span className="font-mono">${cashTotal.toFixed(2)}</span>
+                <span className="font-mono">{formatCurrency(cashTotal)}</span>
               </div>
             </div>
 
@@ -175,7 +176,7 @@ export default function ClosureReport({
                       : "text-pos-accent"
                 }`}
               >
-                {shift.variance! >= 0 ? "+" : ""}${shift.variance!.toFixed(2)}
+                {shift.variance! >= 0 ? "+" : ""}{formatCurrency(shift.variance!)}
               </span>
             </div>
             <div
@@ -212,7 +213,7 @@ export default function ClosureReport({
                     x{p.quantity}
                   </span>
                   <span className="font-mono text-xs ml-2 w-16 text-right">
-                    ${p.total.toFixed(2)}
+                    {formatCurrency(p.total)}
                   </span>
                 </div>
               ))}

@@ -18,6 +18,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/format";
+import NumberInput from "@/components/NumberInput";
 
 // ──────────────────────────────────────────────
 // Types
@@ -151,7 +153,7 @@ export default function ExpensesPage() {
         fecha: `${d}/${m}`,
         categoria: CATEGORY_LABELS[exp.category],
         descripcion: exp.description,
-        monto: `$${exp.amount.toFixed(2)}`,
+        monto: formatCurrency(exp.amount),
         pago: paymentLabel(exp.paymentMethod),
       };
     });
@@ -180,7 +182,7 @@ export default function ExpensesPage() {
       (cat) => summary.byCategory[cat].total > 0,
     ).map((cat) => ({
       categoria: CATEGORY_LABELS[cat],
-      total: `$${summary.byCategory[cat].total.toFixed(2)}`,
+      total: formatCurrency(summary.byCategory[cat].total),
       cantidad: summary.byCategory[cat].count,
     }));
     exportTableToPdf(
@@ -518,7 +520,7 @@ function RegisterTab({
                         {exp.description}
                       </td>
                       <td className="py-2 px-2 text-right font-mono font-medium">
-                        ${exp.amount.toFixed(2)}
+                        {formatCurrency(exp.amount)}
                       </td>
                       <td className="py-2 px-2 text-xs text-pos-muted">
                         {paymentLabel(exp.paymentMethod)}
@@ -646,7 +648,7 @@ function SummaryTab({
                       {CATEGORY_LABELS[cat]}
                     </td>
                     <td className="py-2 px-2 text-right font-mono">
-                      ${data.total.toFixed(2)}
+                      {formatCurrency(data.total)}
                     </td>
                     <td className="py-2 pl-2 text-right font-mono text-pos-muted">
                       {data.count}
@@ -659,7 +661,7 @@ function SummaryTab({
               <tr className="border-t border-pos-muted/20 font-bold">
                 <td className="py-2 pr-2 text-pos-text">Total</td>
                 <td className="py-2 px-2 text-right font-mono">
-                  ${summary.total.toFixed(2)}
+                  {formatCurrency(summary.total)}
                 </td>
                 <td className="py-2 pl-2 text-right font-mono text-pos-muted">
                   {EXPENSE_CATEGORIES.reduce(
@@ -689,7 +691,7 @@ function SummaryTab({
               </span>
               <div className="text-right">
                 <span className="text-sm font-mono font-medium">
-                  ${summary.byPaymentMethod[method].total.toFixed(2)}
+                  {formatCurrency(summary.byPaymentMethod[method].total)}
                 </span>
                 <span className="text-xs text-pos-muted ml-2">
                   ({summary.byPaymentMethod[method].count} operaciones)
@@ -722,7 +724,7 @@ function SummaryTab({
                   tickFormatter={(v: number) => `$${v}`}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, "Total"]}
+                  formatter={(value: number) => [formatCurrency(value), "Total"]}
                   contentStyle={{
                     backgroundColor: "var(--color-surface, #1f2937)",
                     border: "1px solid rgba(255,255,255,0.1)",
@@ -791,14 +793,11 @@ function ExpenseModal({
             <label className="block text-xs font-medium text-pos-muted mb-1">
               Monto
             </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={form.amount}
-              onChange={(e) => onChange("amount", e.target.value)}
+            <NumberInput
+              value={form.amount ? parseFloat(form.amount) : 0}
+              onChange={(n) => onChange("amount", String(n))}
+              placeholder="0,00"
               className="w-full border border-pos-muted/20 rounded-lg px-3 py-2 text-sm bg-pos-background text-pos-text focus:outline-none focus:ring-2 focus:ring-pos-secondary"
-              placeholder="0.00"
             />
           </div>
 

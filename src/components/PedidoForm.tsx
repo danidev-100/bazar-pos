@@ -4,6 +4,7 @@ import { useProveedoresStore } from "@/store/proveedores";
 import { useProductsStore } from "@/store/products";
 import { usePedidosStore, type Pedido } from "@/store/pedidos";
 import { useKeyboardListNavigation } from "@/hooks/useKeyboardListNavigation";
+import { formatCurrency } from "@/lib/format";
 
 interface ItemRow {
   key: number;
@@ -342,7 +343,7 @@ export default function PedidoForm({ onSaved, onCancel, editPedido }: PedidoForm
         </div>
 
         <div className="text-right mt-2 font-semibold text-pos-text">
-          Total: ${total.toFixed(2)}
+          Total: {formatCurrency(total)}
         </div>
       </div>
 
@@ -469,7 +470,7 @@ function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove 
                   >
                     <td className="px-3 py-1.5 font-mono text-pos-muted">{p.barcode ?? "—"}</td>
                     <td className="px-2 py-1.5 font-medium">{p.name}</td>
-                    <td className="px-3 py-1.5 text-right font-mono">${p.price.toFixed(2)}</td>
+                    <td className="px-3 py-1.5 text-right font-mono">{formatCurrency(p.price)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -500,7 +501,7 @@ function ProductRow({ row, allProducts, onSelect, onChange, onRemove, canRemove 
         />
       </td>
       <td className="py-1 px-1 text-right font-mono text-xs text-pos-text">
-        ${row.subtotal.toFixed(2)}
+        {formatCurrency(row.subtotal)}
       </td>
       <td className="py-1 pl-1">
         <button

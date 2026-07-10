@@ -4,6 +4,7 @@ import { useCustomersStore } from "@/store/customers";
 import { useProductsStore } from "@/store/products";
 import { useComprobantesStore, type Comprobante, type ComprobanteTipo, getTipoLabel } from "@/store/comprobantes";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/format";
 import { printComprobante } from "@/lib/pdf-export";
 import { useAuthStore } from "@/store/auth";
 import { useAppStore } from "@/store";
@@ -128,7 +129,7 @@ export default function ComprobantesPage() {
       tipo: getTipoLabel(c.tipo),
       cliente: c.cliente_nombre,
       fecha: new Date(c.fecha).toLocaleDateString("es-AR"),
-      total: `$${c.total.toFixed(2)}`,
+      total: formatCurrency(c.total),
     }));
     exportTableToPdf(data, columns, "Comprobantes");
   }, [filtered]);
@@ -261,7 +262,7 @@ export default function ComprobantesPage() {
                         <td className="py-2 px-2 text-pos-text">{c.cliente_nombre}</td>
                         <td className="py-2 px-2 text-pos-muted text-xs">{c.createdBy}</td>
                         <td className="py-2 px-2 text-pos-muted">{new Date(c.fecha).toLocaleDateString("es-AR")}</td>
-                        <td className="py-2 px-2 text-right font-mono text-pos-text">${c.total.toFixed(2)}</td>
+                        <td className="py-2 px-2 text-right font-mono text-pos-text">{formatCurrency(c.total)}</td>
                         <td className="py-2 pl-2 text-right">
                           <button onClick={(e) => { e.stopPropagation(); setView({ kind: "detail", comprobante: c }); }} className="text-xs px-2 py-1 text-pos-secondary hover:bg-pos-secondary/10 rounded touch-target">Ver</button>
                         </td>
@@ -540,9 +541,9 @@ function ComprobanteForm({ onSaved, onCancel }: { onSaved: () => void; onCancel:
         </div>
 
         <div className="text-right mt-2 space-y-1">
-          <div className="text-sm text-pos-muted">Subtotal: <span className="font-mono">${subtotal.toFixed(2)}</span></div>
-          {tipo === "factura" && <div className="text-sm text-pos-muted">IVA ({ivaPercent}%): <span className="font-mono">$${calculatedIva.toFixed(2)}</span></div>}
-          <div className="text-base font-bold text-pos-text">Total: <span className="font-mono">${calculatedTotal.toFixed(2)}</span></div>
+          <div className="text-sm text-pos-muted">Subtotal: <span className="font-mono">{formatCurrency(subtotal)}</span></div>
+          {tipo === "factura" && <div className="text-sm text-pos-muted">IVA ({ivaPercent}%): <span className="font-mono">{formatCurrency(calculatedIva)}</span></div>}
+          <div className="text-base font-bold text-pos-text">Total: <span className="font-mono">{formatCurrency(calculatedTotal)}</span></div>
         </div>
       </div>
 
@@ -625,7 +626,7 @@ function ProductSearchRow({
           onChange={(e) => onChange(row.key, "unit_price", Math.max(0, Number(e.target.value)))}
           className="w-full border border-pos-muted/30 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-pos-secondary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
       </td>
-      <td className="py-1 px-1 text-right font-mono text-xs text-pos-text">${row.subtotal.toFixed(2)}</td>
+      <td className="py-1 px-1 text-right font-mono text-xs text-pos-text">{formatCurrency(row.subtotal)}</td>
       <td className="py-1 pl-1">
         <button type="button" onClick={onRemove} disabled={!canRemove}
           className="text-xs px-1.5 py-1 text-pos-danger hover:bg-pos-danger/10 rounded touch-target disabled:opacity-30">✕</button>
@@ -691,17 +692,17 @@ function ComprobanteDetail({ comprobante, onBack }: { comprobante: Comprobante; 
               <tr key={item.id} className="border-b border-pos-muted/10">
                 <td className="py-1 pr-2 text-pos-text">{item.product_name}</td>
                 <td className="py-1 px-2 text-right font-mono">{item.quantity}</td>
-                <td className="py-1 px-2 text-right font-mono">${item.unit_price.toFixed(2)}</td>
-                <td className="py-1 pl-2 text-right font-mono">${item.subtotal.toFixed(2)}</td>
+                <td className="py-1 px-2 text-right font-mono">{formatCurrency(item.unit_price)}</td>
+                <td className="py-1 pl-2 text-right font-mono">{formatCurrency(item.subtotal)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
         <div className="text-right space-y-0.5 pt-2 border-t border-pos-muted/20">
-          <div className="text-sm text-pos-muted">Subtotal: <span className="font-mono">${comprobante.subtotal.toFixed(2)}</span></div>
-          {comprobante.iva > 0 && <div className="text-sm text-pos-muted">IVA: <span className="font-mono">$${comprobante.iva.toFixed(2)}</span></div>}
-          <div className="text-base font-bold text-pos-text">Total: <span className="font-mono">${comprobante.total.toFixed(2)}</span></div>
+          <div className="text-sm text-pos-muted">Subtotal: <span className="font-mono">{formatCurrency(comprobante.subtotal)}</span></div>
+          {comprobante.iva > 0 && <div className="text-sm text-pos-muted">IVA: <span className="font-mono">{formatCurrency(comprobante.iva)}</span></div>}
+          <div className="text-base font-bold text-pos-text">Total: <span className="font-mono">{formatCurrency(comprobante.total)}</span></div>
         </div>
 
         {comprobante.notes && <p className="text-xs text-pos-muted">Notas: {comprobante.notes}</p>}

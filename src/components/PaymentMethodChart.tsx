@@ -8,6 +8,7 @@ import {
   Legend,
 } from "recharts";
 import type { CompletedSale } from "@/store";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Types
@@ -53,7 +54,7 @@ const PAYMENT_COLORS: Record<BucketKey, string> = {
 const tooltipFormatter = (value: number, _name: string, entry: any) => {
   const total = entry?.payload?.total ?? 1;
   const pct = ((value / total) * 100).toFixed(1);
-  return [`$${value.toFixed(2)} (${pct}%)`, entry?.payload?.name ?? ""];
+  return [`${formatCurrency(value)} (${pct}%)`, entry?.payload?.name ?? ""];
 };
 
 /**
@@ -203,7 +204,7 @@ export default function PaymentMethodChart({ sales }: Props) {
         <span>
           Total:{" "}
           <strong className="text-pos-text">
-            ${data.reduce((s, d) => s + d.value, 0).toFixed(2)}
+            {formatCurrency(data.reduce((s, d) => s + d.value, 0))}
           </strong>
         </span>
         <span>

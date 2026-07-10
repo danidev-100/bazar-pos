@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useInvoicesStore, type Invoice } from "@/store/invoices";
+import { formatCurrency } from "@/lib/format";
 
 // ──────────────────────────────────────────────
 // Props
@@ -130,7 +131,7 @@ export default function InvoiceList({
                     {inv.invoiceNumber}
                   </span>
                   <span className="text-xs font-mono font-bold">
-                    ${inv.total.toFixed(2)}
+                    {formatCurrency(inv.total)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-pos-muted">

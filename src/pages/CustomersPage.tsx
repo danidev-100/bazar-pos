@@ -4,6 +4,7 @@ import { useCustomersStore, type Customer, type CreditPayment } from "@/store/cu
 import CustomerForm from "@/components/CustomerForm";
 import CollectPaymentModal from "@/components/CollectPaymentModal";
 import { exportTableToPdf, exportToExcel, type ExportColumn } from "@/lib/export-utils";
+import { formatCurrency } from "@/lib/format";
 import { printCreditPayment, printCreditStatement } from "@/lib/pdf-export";
 
 // ──────────────────────────────────────────────
@@ -67,7 +68,7 @@ export default function CustomersPage() {
       email: c.email || "—",
       cuit: c.cuit || "—",
       direccion: c.address || "—",
-      saldo: c.creditBalance > 0 ? `$${c.creditBalance.toFixed(2)}` : "—",
+      saldo: c.creditBalance > 0 ? formatCurrency(c.creditBalance) : "—",
     }));
     exportTableToPdf(data, customerColumns, "Clientes");
   }, [filteredCustomers]);
@@ -231,7 +232,7 @@ export default function CustomersPage() {
                         <td className={`py-2 px-2 text-right font-mono text-sm font-bold ${
                           c.creditBalance > 0 ? "text-pos-danger" : "text-pos-muted"
                         }`}>
-                          {c.creditBalance > 0 ? `$${c.creditBalance.toFixed(2)}` : "—"}
+                          {c.creditBalance > 0 ? formatCurrency(c.creditBalance) : "—"}
                         </td>
                         <td className="py-2 pl-2 text-right whitespace-nowrap">
                           <button
@@ -355,7 +356,7 @@ function CustomerDetail({ customer, onBack }: { customer: Customer; onBack: () =
           <div className="text-right">
             <div className="text-xs text-pos-muted">Saldo</div>
             <div className={`text-2xl font-bold font-mono ${displayCustomer.creditBalance > 0 ? "text-pos-danger" : "text-pos-success"}`}>
-              ${displayCustomer.creditBalance.toFixed(2)}
+              {formatCurrency(displayCustomer.creditBalance)}
             </div>
             {displayCustomer.creditBalance > 0 && (
               <button
@@ -404,10 +405,10 @@ function CustomerDetail({ customer, onBack }: { customer: Customer; onBack: () =
                     {p.notes || (p.amount > 0 ? "Venta a cuenta" : "Cobro")}
                   </td>
                   <td className={`py-2 px-2 text-right font-mono font-bold ${p.amount > 0 ? "text-pos-danger" : "text-pos-success"}`}>
-                    {p.amount > 0 ? `+$${p.amount.toFixed(2)}` : `-$${Math.abs(p.amount).toFixed(2)}`}
+                    {p.amount > 0 ? `+${formatCurrency(p.amount)}` : formatCurrency(p.amount)}
                   </td>
                   <td className={`py-2 px-2 text-right font-mono ${p.balanceAfter > 0 ? "text-pos-danger" : "text-pos-muted"}`}>
-                    ${p.balanceAfter.toFixed(2)}
+                    {formatCurrency(p.balanceAfter)}
                   </td>
                   <td className="py-2 pl-2 text-right">
                     <button

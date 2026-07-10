@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCashClosingStore } from "@/store/cash-closing";
 import { useActiveStore } from "@/store/context";
+import NumberInput from "@/components/NumberInput";
 
 type OpenShiftModalProps = {
   employeeName: string;
@@ -16,7 +17,7 @@ export default function OpenShiftModal({
   const { storeId } = useActiveStore();
   const openShift = useCashClosingStore((s) => s.openShift);
 
-  const [openingAmount, setOpeningAmount] = useState("");
+  const [openingAmount, setOpeningAmount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -24,7 +25,7 @@ export default function OpenShiftModal({
     setError(null);
     setSaving(true);
 
-    const balance = parseFloat(openingAmount) || 0;
+    const balance = openingAmount;
 
     try {
       openShift(employeeName, storeId, balance);
@@ -63,18 +64,10 @@ export default function OpenShiftModal({
           >
             Dinero Inicial en Caja ($)
           </label>
-          <input
-            id="modal-opening"
-            type="text"
-            inputMode="decimal"
+          <NumberInput
             value={openingAmount}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
-                setOpeningAmount(val);
-              }
-            }}
-            placeholder="0.00"
+            onChange={setOpeningAmount}
+            placeholder="0,00"
             autoFocus
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-3 text-2xl text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />

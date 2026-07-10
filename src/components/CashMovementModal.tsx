@@ -5,6 +5,8 @@ import {
 } from "@/store/cash-closing";
 import { useAuthStore } from "@/store/auth";
 import { useAppStore } from "@/store";
+import { formatCurrency } from "@/lib/format";
+import NumberInput from "@/components/NumberInput";
 
 // ──────────────────────────────────────────────
 // Props
@@ -81,7 +83,7 @@ export default function CashMovementModal({
   }, [shift, completedSales, cashMovements, shiftId, openTime]);
 
   const [type, setType] = useState<"withdrawal" | "deposit">("withdrawal");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(0);
   const [method, setMethod] = useState<CashMovementMethod>("cash");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -108,14 +110,14 @@ export default function CashMovementModal({
 
   function handleSubmit() {
     setError(null);
-    const num = parseFloat(amount);
-    if (isNaN(num) || num <= 0) {
+    const num = amount;
+    if (num <= 0) {
       setError("Ingresá un monto válido mayor a 0");
       return;
     }
     if (type === "withdrawal" && method === "cash" && num > availableCash) {
       setError(
-        `Solo podés retirar hasta $${availableCash.toFixed(2)}.`,
+        `Solo podés retirar hasta ${formatCurrency(availableCash)}.`,
       );
       return;
     }
@@ -138,7 +140,7 @@ export default function CashMovementModal({
   const isCashWithdrawal =
     type === "withdrawal" && method === "cash";
   const exceedsLimit =
-    isCashWithdrawal && parseFloat(amount) > availableCash;
+    isCashWithdrawal && amount > availableCash;
 
   return (
     <div
@@ -232,18 +234,11 @@ export default function CashMovementModal({
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-pos-muted/40">
                 $
               </span>
-              <input
+              <NumberInput
                 ref={inputRef}
-                type="text"
-                inputMode="decimal"
                 value={amount}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
-                    setAmount(val);
-                  }
-                }}
-                placeholder="0.00"
+                onChange={setAmount}
+                placeholder="0,00"
                 className={`w-full border rounded-xl pl-8 pr-4 py-3 text-xl text-right font-mono focus:outline-none focus:ring-2 touch-target bg-pos-background transition-colors ${
                   exceedsLimit
                     ? "border-pos-danger/50 focus:ring-pos-danger"
@@ -257,7 +252,7 @@ export default function CashMovementModal({
                   Disponible en caja
                 </span>
                 <span className="text-xs font-mono font-semibold tabular-nums text-pos-text">
-                  ${availableCash.toFixed(2)}
+                  {formatCurrency(availableCash)}
                 </span>
               </div>
             )}

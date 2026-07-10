@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useAppStore, useCustomersStore } from "@/store";
 import { useActiveStore } from "@/store/context";
 import { type ComprobanteTipo, getTipoLabel } from "@/store/comprobantes";
+import { formatCurrency } from "@/lib/format";
+import NumberInput from "@/components/NumberInput";
 
 type CheckoutModalProps = {
   onClose: () => void;
@@ -92,7 +94,7 @@ export default function CheckoutModal({
     }
 
     if (paymentMethod === "cash" && parsedCash < total) {
-      setError(`Pago insuficiente: $${parsedCash.toFixed(2)} es menor al total de $${total.toFixed(2)}`);
+      setError(`Pago insuficiente: ${formatCurrency(parsedCash)} es menor al total de ${formatCurrency(total)}`);
       return;
     }
 
@@ -102,7 +104,7 @@ export default function CheckoutModal({
         return;
       }
       if (enteredTotal < total) {
-        setError(`Total ingresado: $${enteredTotal.toFixed(2)} — faltan $${(total - enteredTotal).toFixed(2)}`);
+        setError(`Total ingresado: ${formatCurrency(enteredTotal)} — faltan ${formatCurrency(total - enteredTotal)}`);
         return;
       }
     }
@@ -178,7 +180,7 @@ export default function CheckoutModal({
                     {item.quantity}x {item.productName}
                   </span>
                   <span className="font-mono text-pos-muted">
-                    ${item.subtotal.toFixed(2)}
+                    {formatCurrency(item.subtotal)}
                   </span>
                 </div>
               ))}
@@ -232,7 +234,7 @@ export default function CheckoutModal({
           <div className="bg-pos-background/30 rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-pos-muted">Subtotal</span>
-              <span className="text-sm font-mono">${subtotal.toFixed(2)}</span>
+              <span className="text-sm font-mono">{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex items-center gap-2">
               <label htmlFor="global-discount" className="text-xs font-medium text-pos-muted whitespace-nowrap">
@@ -261,7 +263,7 @@ export default function CheckoutModal({
                 className="w-16 border border-pos-muted/30 rounded-lg px-2 py-1 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-surface [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               {discountAmount > 0 && (
-                <span className="text-xs text-pos-danger font-medium">−${discountAmount.toFixed(2)}</span>
+                <span className="text-xs text-pos-danger font-medium">−{formatCurrency(discountAmount)}</span>
               )}
             </div>
           </div>
@@ -270,7 +272,7 @@ export default function CheckoutModal({
           <div className="flex items-center justify-between pt-2 border-t border-pos-muted/20">
             <span className="text-base font-bold text-pos-text">Total</span>
             <span className="text-xl font-bold font-mono text-pos-secondary">
-              ${total.toFixed(2)}
+              {formatCurrency(total)}
             </span>
           </div>
 
@@ -349,16 +351,13 @@ export default function CheckoutModal({
                 Pago en efectivo
               </h3>
               <div className="space-y-3">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={cashAmount}
-                    onChange={(e) => setCashAmount(e.target.value)}
+                  <NumberInput
+                    value={parseFloat(cashAmount) || 0}
+                    onChange={(n) => setCashAmount(n.toString())}
                     placeholder="Monto recibido"
-                    min={total}
-                    step="0.01"
+                    decimals={2}
                     aria-label="Monto recibido en efectivo"
-                    className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-lg font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full border border-pos-muted/30 rounded-xl px-4 py-3 text-lg font-mono font-bold text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
                     autoFocus
                   />
 
@@ -368,7 +367,7 @@ export default function CheckoutModal({
                       Vuelto
                     </span>
                     <span className="text-lg font-bold font-mono text-pos-success">
-                      ${change.toFixed(2)}
+                      {formatCurrency(change)}
                     </span>
                   </div>
                 )}
@@ -385,44 +384,35 @@ export default function CheckoutModal({
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label htmlFor="mixed-cash-input" className="block text-[10px] text-pos-muted mb-1">💵 Efectivo</label>
-                  <input
+                  <NumberInput
                     id="mixed-cash-input"
-                    type="number"
-                    inputMode="decimal"
-                    value={cashAmount}
-                    onChange={(e) => setCashAmount(e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={parseFloat(cashAmount) || 0}
+                    onChange={(n) => setCashAmount(n.toString())}
+                    placeholder="0,00"
+                    decimals={2}
+                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
                   />
                 </div>
                 <div>
                   <label htmlFor="mixed-card-input" className="block text-[10px] text-pos-muted mb-1">💳 Tarjeta</label>
-                  <input
+                  <NumberInput
                     id="mixed-card-input"
-                    type="number"
-                    inputMode="decimal"
-                    value={cardAmount}
-                    onChange={(e) => setCardAmount(e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={parseFloat(cardAmount) || 0}
+                    onChange={(n) => setCardAmount(n.toString())}
+                    placeholder="0,00"
+                    decimals={2}
+                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
                   />
                 </div>
                 <div>
                   <label htmlFor="mixed-mp-input" className="block text-[10px] text-pos-muted mb-1">🧾 M. Pago</label>
-                  <input
+                  <NumberInput
                     id="mixed-mp-input"
-                    type="number"
-                    inputMode="decimal"
-                    value={mercadopagoAmount}
-                    onChange={(e) => setMercadopagoAmount(e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={parseFloat(mercadopagoAmount) || 0}
+                    onChange={(n) => setMercadopagoAmount(n.toString())}
+                    placeholder="0,00"
+                    decimals={2}
+                    className="w-full border border-pos-muted/30 rounded-xl px-2 py-2 text-base font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target bg-pos-background"
                   />
                 </div>
               </div>
@@ -430,7 +420,7 @@ export default function CheckoutModal({
                 <div className="flex items-center justify-between text-sm bg-pos-background/50 rounded-xl px-3 py-2">
                   <span className="text-pos-muted">Total ingresado</span>
                   <span className={`font-mono font-bold ${enteredTotal >= total ? "text-pos-success" : "text-pos-danger"}`}>
-                    ${enteredTotal.toFixed(2)}
+                    {formatCurrency(enteredTotal)}
                   </span>
                 </div>
               )}
@@ -438,7 +428,7 @@ export default function CheckoutModal({
                 <div className="flex items-center justify-between bg-pos-success/10 border border-pos-success/20 rounded-xl px-4 py-3">
                   <span className="text-sm font-semibold text-pos-success">Vuelto (efectivo)</span>
                   <span className="text-lg font-bold font-mono text-pos-success">
-                    ${change.toFixed(2)}
+                    {formatCurrency(change)}
                   </span>
                 </div>
               )}
@@ -450,13 +440,13 @@ export default function CheckoutModal({
             <div className="bg-pos-accent/10 border border-pos-accent/20 rounded-xl px-4 py-3">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm font-medium text-pos-accent">📒 Cuenta Corriente</p>
-                <span className="text-sm font-mono font-bold">${total.toFixed(2)}</span>
+                <span className="text-sm font-mono font-bold">{formatCurrency(total)}</span>
               </div>
               <p className="text-xs text-pos-muted">
                 Se suma a la cuenta de <span className="font-semibold text-pos-text">{liveCustomer!.name}</span>
               </p>
               <p className="text-xs text-pos-danger mt-1">
-                Saldo actual: ${(liveCustomer?.creditBalance ?? 0).toFixed(2)}
+                Saldo actual: {formatCurrency(liveCustomer?.creditBalance ?? 0)}
               </p>
             </div>
           )}
@@ -505,7 +495,7 @@ export default function CheckoutModal({
             >
               {busy
                 ? "Procesando…"
-                : `Confirmar — $${total.toFixed(2)}`}
+                : `Confirmar — ${formatCurrency(total)}`}
             </button>
           </div>
         </div>

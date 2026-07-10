@@ -8,6 +8,7 @@ import { useBrandsStore } from "@/store/brands";
 import { useAuthStore } from "@/store/auth";
 import { useActiveStore } from "@/store/context";
 import { productSchema } from "@/lib/validations";
+import NumberInput from "@/components/NumberInput";
 
 // ──────────────────────────────────────────────
 // Form state
@@ -251,13 +252,11 @@ export default function ProductForm({
         >
           Precio
         </label>
-        <input
+        <NumberInput
           id="product-price"
-          type="number"
-          min="0"
-          step="0.01"
-          value={form.price}
-          onChange={(e) => setForm({ ...form, price: e.target.value })}
+          value={parseFloat(form.price) || 0}
+          onChange={(n) => setForm({ ...form, price: n.toString() })}
+          placeholder="0,00"
           className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
         />
       </div>
@@ -272,13 +271,11 @@ export default function ProductForm({
             Cost Price
             <span className="text-pos-muted ml-1">(opcional)</span>
           </label>
-          <input
+          <NumberInput
             id="product-cost-price"
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.costPrice}
-            onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
+            value={parseFloat(form.costPrice) || 0}
+            onChange={(n) => setForm({ ...form, costPrice: n.toString() })}
+            placeholder="0,00"
             className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary touch-target"
           />
         </div>
