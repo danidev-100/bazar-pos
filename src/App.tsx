@@ -136,10 +136,12 @@ export default function App() {
   async function handleConfirmClose() {
     setShowCloseConfirm(false);
     try {
-      // Unregister the close handler first to avoid re-trigger loop
+      // Unregister the close handler first
       closeUnlistenRef.current?.();
+      // Use destroy() instead of close() — Tauri v2 bug: close() after
+      // preventDefault() deja el proceso zombie en segundo plano.
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      await getCurrentWindow().close();
+      await getCurrentWindow().destroy();
     } catch {
       // Fallback: not in Tauri
     }
