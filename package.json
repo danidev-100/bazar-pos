@@ -14,7 +14,8 @@
     "db:generate:local": "drizzle-kit generate --config=drizzle.config.local.ts",
     "db:generate:cloud": "drizzle-kit generate --config=drizzle.config.cloud.ts",
     "db:push:local": "drizzle-kit push --config=drizzle.config.local.ts",
-    "db:push:cloud": "drizzle-kit push --config=drizzle.config.cloud.ts"
+    "db:push:cloud": "drizzle-kit push --config=drizzle.config.cloud.ts",
+    "license:generate": "node scripts/generate-key.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

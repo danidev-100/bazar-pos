@@ -344,6 +344,14 @@ async function ensureTables(db: Database): Promise<void> {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    // ── Activation (local-only license proof) ──
+    `CREATE TABLE IF NOT EXISTS activation (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      license_key TEXT NOT NULL,
+      device_id TEXT NOT NULL,
+      device_name TEXT NOT NULL,
+      activated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_name ON users(name)`,
   ];
 
@@ -502,6 +510,50 @@ export async function select<T>(
 ): Promise<T[]> {
   const db = await getDb();
   return db.select<T[]>(sql, bind);
+}
+
+// ──────────────────────────────────────────────
+// Activation helpers (local-only, via tauri-plugin-sql)
+// ──────────────────────────────────────────────
+
+export interface ActivationRow {
+  license_key: string;
+  device_id: string;
+  device_name: string;
+  activated_at: string;
+}
+
+/**
+ * Check if the app has a valid local activation record.
+ * Reads from the `activation` table managed by tauri-plugin-sql.
+ */
+export async function getActivation(): Promise<ActivationRow | null> {
+  try {
+    const rows = await select<ActivationRow>(
+      "SELECT license_key, device_id, device_name, activated_at FROM activation ORDER BY id DESC LIMIT 1",
+    );
+    return rows.length > 0 ? rows[0] : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save an activation record locally.
+ * Clears any previous activation, then inserts the new one.
+ */
+export async function saveActivation(
+  licenseKey: string,
+  deviceId: string,
+  deviceName: string,
+): Promise<void> {
+  await transaction([
+    { sql: "DELETE FROM activation" },
+    {
+      sql: "INSERT INTO activation (license_key, device_id, device_name, activated_at) VALUES ($1, $2, $3, datetime('now'))",
+      bind: [licenseKey, deviceId, deviceName],
+    },
+  ]);
 }
 
 /**
