@@ -3,6 +3,8 @@ mod pdf;
 mod printer;
 mod sync;
 
+use activation::{activate_license, get_machine_code};
+
 // ──────────────────────────────────────────────
 // Tauri commands
 // ──────────────────────────────────────────────
