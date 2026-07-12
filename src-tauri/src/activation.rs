@@ -127,13 +127,15 @@ pub fn activate_license(
 /// Generate the hash portion of a license key from a machine code.
 ///
 /// `SHA-256(SECRET + machine_code)` → first 16 hex chars
+/// (8 bytes → 16 hex chars — matches Node.js `substring(0, 16)`)
 pub fn generate_hash(machine_code: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(LICENSE_SECRET.as_bytes());
     hasher.update(machine_code.as_bytes());
     let result = hasher.finalize();
 
-    result[..KEY_CHARS.min(result.len())]
+    let n_bytes = KEY_CHARS / 2; // 16 hex chars = 8 bytes
+    result[..n_bytes.min(result.len())]
         .iter()
         .map(|b| format!("{:02X}", b))
         .collect()
