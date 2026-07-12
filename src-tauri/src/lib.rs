@@ -1,3 +1,4 @@
+mod activation;
 mod pdf;
 mod printer;
 mod sync;
@@ -54,7 +55,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             generate_pdf,
             print_receipt,
-            sync_now
+            sync_now,
+            get_machine_code,
+            activate_license,
         ])
         .setup(|app| {
             #[cfg(debug_assertions)]

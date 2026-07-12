@@ -25,6 +25,7 @@ import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import LoginPage from "@/pages/LoginPage";
+import ActivationPage from "@/pages/ActivationPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component
@@ -69,6 +70,24 @@ export default function App() {
   const init = useAuthStore((s) => s.init);
   const hasAccess = usePermission(page);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [activationChecked, setActivationChecked] = useState(false);
+  const [isActivated, setIsActivated] = useState(false);
+
+  // Check license activation on mount — reads local SQLite via tauri-plugin-sql
+  useEffect(() => {
+    async function checkActivation() {
+      try {
+        const { getActivation } = await import("@/lib/db");
+        const activation = await getActivation();
+        setIsActivated(activation !== null);
+      } catch {
+        setIsActivated(false);
+      } finally {
+        setActivationChecked(true);
+      }
+    }
+    checkActivation();
+  }, []);
 
   // Hydrate auth store, restore session, load all data from SQLite
   useEffect(() => {
@@ -141,7 +160,13 @@ export default function App() {
 
   return (
     <StoreProvider initialStoreId="store_1">
-      {isAuthenticated ? (
+      {!activationChecked ? (
+        <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-gray-900">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        </div>
+      ) : !isActivated ? (
+        <ActivationPage />
+      ) : isAuthenticated ? (
         <div className="flex h-screen w-screen overflow-hidden">
           <NavigationBar />
           <main className="flex-1 overflow-auto p-4">
@@ -158,8 +183,8 @@ export default function App() {
         <LoginPage />
       )}
 
-      {/* Close window confirmation modal */}
-      {showCloseConfirm && (
+      {/* Close window confirmation modal — only when activated */}
+      {isActivated && showCloseConfirm && (
         <ConfirmModal
           title="Cerrar programa"
           message="¿Estás seguro de que querés cerrar el programa? Perderás la sesión actual."

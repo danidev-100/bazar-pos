@@ -519,6 +519,23 @@ export const users = sqliteTable(
 );
 
 // ──────────────────────────────────────────────
+// Activation (local-only — stores activation proof)
+// ──────────────────────────────────────────────
+
+export const activation = sqliteTable(
+  "activation",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    licenseKey: text("license_key").notNull(),
+    deviceId: text("device_id").notNull(),
+    deviceName: text("device_name").notNull(),
+    activatedAt: text("activated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+);
+
+// ──────────────────────────────────────────────
 // Sync Queue (infrastructure — tracks row-level ops)
 // ──────────────────────────────────────────────
 
