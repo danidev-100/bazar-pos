@@ -420,12 +420,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
         created_by: currentUserName,
         store_id: resolvedStoreId,
         sale_id: sale.id,
-        items: sale.items.map((i) => ({
-          product_name: i.productName,
-          quantity: i.quantity,
-          unit_price: i.unitPrice,
-          subtotal: i.subtotal,
-        })),
+        items: sale.items.map((i) => {
+          const entry: Record<string, unknown> = {
+            product_name: i.productName,
+            quantity: i.quantity,
+            unit_price: i.unitPrice,
+            subtotal: i.subtotal,
+          };
+          // Attach combo_name if this item is part of a combo
+          const mapped = comboMap.get(i.productId);
+          if (mapped) {
+            const combo = useCombosStore.getState().combos.find((c) => c.id === mapped.comboId);
+            entry.combo_name = combo?.name ?? null;
+          }
+          return entry;
+        }),
       });
       comprobanteId = comp.id;
       // Reset after generation

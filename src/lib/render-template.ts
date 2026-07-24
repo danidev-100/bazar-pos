@@ -17,6 +17,7 @@ export type TemplateItemRow = {
   quantity: string;
   unit_price: string;
   subtotal: string;
+  combo_name: string;
 };
 
 export type TemplateData = {
@@ -31,6 +32,8 @@ export type TemplateData = {
   tipo_label: string;
   notes: string;
   items: TemplateItemRow[];
+  /** Combo savings line — empty string when no combo applied */
+  combo_savings: string;
   /** Company info — set from CompanySettings */
   company_name: string;
   company_phone: string;
@@ -106,7 +109,11 @@ export type ComprobanteLike = {
     quantity: number;
     unit_price: number;
     subtotal: number;
+    /** Optional — set when a combo discount was applied to this item */
+    combo_name?: string | null;
   }>;
+  /** Optional — total combo savings to display on the receipt */
+  combo_savings?: number;
 };
 
 function fmt(n: number): string {
@@ -143,7 +150,9 @@ export function comprobanteToTemplateData(c: ComprobanteLike, company?: Record<s
       quantity: String(i.quantity),
       unit_price: fmt(i.unit_price),
       subtotal: fmt(i.subtotal),
+      combo_name: i.combo_name ?? "",
     })),
+    combo_savings: c.combo_savings ? fmt(c.combo_savings) : "",
     // Company info — defaults to empty, overridden by buildComprobanteHtml
     company_name: company?.name ?? "",
     company_phone: company?.phone ?? "",

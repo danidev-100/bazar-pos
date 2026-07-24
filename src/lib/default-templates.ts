@@ -166,7 +166,7 @@ const ITEMS_TABLE = `
     <tbody>
       {{#items}}
       <tr>
-        <td>{{product_name}}</td>
+        <td>{{product_name}}<br><span style="font-size:9px;color:#059669;">{{combo_name}}</span></td>
         <td style="text-align:center">{{quantity}}</td>
         <td style="text-align:center">{{unit_price}}</td>
         <td>{{subtotal}}</td>
@@ -190,7 +190,7 @@ const ITEMS_TABLE_THERMAL = `
     <tbody>
       {{#items}}
       <tr>
-        <td>{{product_name}}</td>
+        <td>{{product_name}}<br><span style="font-size:9px;color:#059669;">{{combo_name}}</span></td>
         <td class="qty">{{quantity}}</td>
         <td class="num">{{unit_price}}</td>
         <td class="num">{{subtotal}}</td>
@@ -247,6 +247,7 @@ const FACTURA_TEMPLATE = wrapPage("Factura", `
     <table>
       <tr><td style="text-align:right;color:#666;font-size:10px;">Subtotal</td><td>{{subtotal}}</td></tr>
       <tr><td style="text-align:right;color:#666;font-size:10px;">IVA 21%</td><td>{{iva}}</td></tr>
+      <tr><td style="text-align:right;color:#059669;font-size:10px;">Ahorro combos</td><td style="color:#059669;">−{{combo_savings}}</td></tr>
       <tr class="line"><td></td><td></td></tr>
       <tr class="grand-total"><td style="text-align:right;">TOTAL</td><td>{{total}}</td></tr>
     </table>
@@ -272,6 +273,7 @@ const BOLETA_TEMPLATE = wrapPage("Boleta", `
   <div class="totals">
     <table>
       <tr><td style="text-align:right;color:#666;font-size:10px;">Subtotal</td><td>{{subtotal}}</td></tr>
+      <tr><td style="text-align:right;color:#059669;font-size:10px;">Ahorro combos</td><td style="color:#059669;">−{{combo_savings}}</td></tr>
       <tr class="line"><td></td><td></td></tr>
       <tr class="grand-total"><td style="text-align:right;">TOTAL</td><td>{{total}}</td></tr>
     </table>
@@ -305,6 +307,7 @@ const TICKET_TEMPLATE = wrapThermal("Ticket", `
   ${ITEMS_TABLE_THERMAL}
 
   <table class="totals">
+    <tr><td style="text-align:right;font-size:10px;color:#059669;">Ahorro combos</td><td class="num" style="font-size:10px;color:#059669;">−{{combo_savings}}</td></tr>
     <tr><td style="text-align:right;font-weight:bold;">TOTAL</td><td class="num" style="font-weight:bold;">{{total}}</td></tr>
   </table>
 

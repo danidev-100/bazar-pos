@@ -15,6 +15,8 @@ export type ComprobanteItem = {
   quantity: number;
   unit_price: number;
   subtotal: number;
+  /** Human-readable combo name, e.g. \"Combo A+B\" */
+  combo_name: string;
 };
 
 export type Comprobante = {
@@ -96,6 +98,7 @@ export type ComprobantesStore = {
       quantity: number;
       unit_price: number;
       subtotal: number;
+      combo_name?: string | null;
     }>;
     ivaPercent?: number;
   }) => Comprobante;
@@ -133,6 +136,7 @@ export const useComprobantesStore = create<ComprobantesStore>((set, get) => ({
       quantity: item.quantity,
       unit_price: item.unit_price,
       subtotal: item.subtotal,
+      combo_name: item.combo_name ?? "",
     }));
 
     const comprobante: Comprobante = {
