@@ -181,8 +181,8 @@ export const useComprobantesStore = create<ComprobantesStore>((set, get) => ({
 
     for (const item of comprobante.items) {
       stmts.push({
-        sql: `INSERT INTO comprobante_items (id, comprobante_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
-        bind: [item.id, item.comprobante_id, item.product_id, item.product_name, item.quantity, item.unit_price, item.subtotal, comprobante.store_id, now, now],
+        sql: `INSERT INTO comprobante_items (id, comprobante_id, product_id, product_name, quantity, unit_price, subtotal, combo_name, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')`,
+        bind: [item.id, item.comprobante_id, item.product_id, item.product_name, item.quantity, item.unit_price, item.subtotal, item.combo_name, comprobante.store_id, now, now],
       });
       stmts.push({
         sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
