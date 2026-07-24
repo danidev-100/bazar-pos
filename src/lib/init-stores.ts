@@ -417,7 +417,7 @@ async function initComprobantes(): Promise<void> {
   try {
     const [comprobanteRows, itemRows] = await Promise.all([
       select<any>("SELECT id, tipo, numero, cliente_nombre, cliente_cuit, cliente_direccion, fecha, payment_method, subtotal, iva, total, sale_id, notes, created_by, store_id FROM comprobantes ORDER BY id ASC"),
-      select<any>("SELECT id, comprobante_id, product_id, product_name, quantity, unit_price, subtotal FROM comprobante_items"),
+      select<any>("SELECT id, comprobante_id, product_id, product_name, quantity, unit_price, subtotal, combo_name FROM comprobante_items"),
     ]);
 
     // Group items by comprobante_id
@@ -432,6 +432,7 @@ async function initComprobantes(): Promise<void> {
         quantity: item.quantity,
         unit_price: item.unit_price,
         subtotal: item.subtotal,
+        combo_name: item.combo_name ?? "",
       });
       itemsByComprobante.set(item.comprobante_id, list);
     }

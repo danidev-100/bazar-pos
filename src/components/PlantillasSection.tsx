@@ -38,9 +38,10 @@ const SAMPLE_DATA: TemplateData = {
   total: "$1,210.00",
   tipo_label: "Factura",
   notes: "Gracias por su compra",
+  combo_savings: "$100.00",
   items: [
-    { product_name: "Producto A", quantity: "2", unit_price: "$250.00", subtotal: "$500.00" },
-    { product_name: "Producto B", quantity: "1", unit_price: "$500.00", subtotal: "$500.00" },
+    { product_name: "Producto A", quantity: "2", unit_price: "$250.00", subtotal: "$500.00", combo_name: "Combo A+B" },
+    { product_name: "Producto B", quantity: "1", unit_price: "$500.00", subtotal: "$500.00", combo_name: "Combo A+B" },
   ],
   company_name: "Mi Empresa S.R.L.",
   company_phone: "(011) 4567-8901",

@@ -31,9 +31,10 @@ const sampleData: TemplateData = {
   total: "$1.210,00",
   tipo_label: "Factura",
   notes: "Pago en efectivo",
+  combo_savings: "",
   items: [
-    { product_name: "Arroz 1kg", quantity: "2", unit_price: "$250,00", subtotal: "$500,00" },
-    { product_name: "Fideos 500g", quantity: "3", unit_price: "$120,00", subtotal: "$360,00" },
+    { product_name: "Arroz 1kg", quantity: "2", unit_price: "$250,00", subtotal: "$500,00", combo_name: "" },
+    { product_name: "Fideos 500g", quantity: "3", unit_price: "$120,00", subtotal: "$360,00", combo_name: "" },
   ],
   ...COMPANY_FIELDS,
 };
@@ -73,7 +74,7 @@ describe("renderTemplate — items loop", () => {
   it("renders single item correctly", () => {
     const singleItem: TemplateData = {
       ...sampleData,
-      items: [{ product_name: "Pan", quantity: "1", unit_price: "$100,00", subtotal: "$100,00" }],
+      items: [{ product_name: "Pan", quantity: "1", unit_price: "$100,00", subtotal: "$100,00", combo_name: "" }],
     };
     const html = "{{#items}}{{product_name}}-{{quantity}}{{/items}}";
     const result = renderTemplate(html, singleItem);
