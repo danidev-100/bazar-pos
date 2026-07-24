@@ -5,6 +5,10 @@ import { renderTemplate, comprobanteToTemplateData, type ComprobanteLike, type T
 import { getDefaultTemplate } from "@/lib/default-templates";
 import { usePlantillasStore } from "@/store/plantillas";
 import { select } from "@/lib/db";
+import { detectActiveCombos } from "@/lib/combos";
+import { useAppStore } from "@/store";
+import { useCombosStore } from "@/store/combos";
+import { useProductsStore } from "@/store/products";
 
 // ──────────────────────────────────────────────
 // Adapters
@@ -131,7 +135,19 @@ export function exportHtmlAsPdf(html: string): void {
  * Uses saved template from Admin, falls back gracefully.
  */
 export async function printComprobante(comprobante: Comprobante): Promise<void> {
-  const data = comprobanteToTemplateData(comprobante);
+  // Compute combo_savings from the completed sale if available
+  let comboSavings = 0;
+  if (comprobante.sale_id != null) {
+    const sale = useAppStore.getState().completedSales.find((s) => s.id === comprobante.sale_id);
+    if (sale) {
+      const combos = useCombosStore.getState().combos;
+      const products = useProductsStore.getState().products;
+      const matches = detectActiveCombos(sale.items, combos, products);
+      comboSavings = matches.reduce((sum, m) => sum + m.totalSavings, 0);
+    }
+  }
+
+  const data = comprobanteToTemplateData({ ...comprobante, combo_savings: comboSavings || undefined });
   const html = await buildComprobanteHtml(data, comprobante.tipo, comprobante.store_id);
   exportHtmlAsPdf(html);
 }
