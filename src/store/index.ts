@@ -408,6 +408,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
       });
     }
 
+    // ── Compute combo_id x qty map for sale_items ──
+    // Tracks how many units of each product are covered by combo sets
+    const comboInfo = computeComboInfo(items);
+    const comboMap = new Map<number, { comboId: number; coveredQty: number }>();
+    if (comboInfo) {
+      for (const c of comboInfo.combos) {
+        const combo = useCombosStore.getState().combos.find((co) => co.id === c.comboId);
+        if (combo) {
+          for (const ci of combo.items) {
+            comboMap.set(ci.productId, { comboId: c.comboId, coveredQty: ci.quantity * c.times });
+          }
+        }
+      }
+    }
+
     // ── Generate comprobante if selected ──
     const comprobanteTipo = get().selectedComprobanteTipo;
     let comprobanteId: number | null = null;
@@ -420,26 +435,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
         created_by: currentUserName,
         store_id: resolvedStoreId,
         sale_id: sale.id,
-        items: sale.items.map((i) => {
-          const item: {
-            product_name: string;
-            quantity: number;
-            unit_price: number;
-            subtotal: number;
-            combo_name?: string | null;
-          } = {
-            product_name: i.productName,
-            quantity: i.quantity,
-            unit_price: i.unitPrice,
-            subtotal: i.subtotal,
-          };
-          const mapped = comboMap.get(i.productId);
-          if (mapped) {
-            const combo = useCombosStore.getState().combos.find((c) => c.id === mapped.comboId);
-            item.combo_name = combo?.name ?? null;
-          }
-          return item;
-        }),
+        items: sale.items.map((i) => ({
+          product_name: i.productName,
+          quantity: i.quantity,
+          unit_price: i.unitPrice,
+          subtotal: i.subtotal,
+          combo_name: comboMap.get(i.productId) != null
+            ? (useCombosStore.getState().combos.find((c) => c.id === comboMap.get(i.productId)!.comboId)?.name ?? null)
+            : null,
+        })),
       });
       comprobanteId = comp.id;
       // Reset after generation
@@ -461,21 +465,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const now = new Date().toISOString();
     const dbCash = paymentMethod === "mixed" ? (cashAmount ?? 0) : paymentMethod === "cash" ? (amountPaid ?? null) : null;
     const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) + (mercadopagoAmount ?? 0) : paymentMethod === "card" || paymentMethod === "mercadopago" ? total : null;
-
-    // ── Compute combo_id x qty map for sale_items ──
-    // Tracks how many units of each product are covered by combo sets
-    const comboInfo = computeComboInfo(items);
-    const comboMap = new Map<number, { comboId: number; coveredQty: number }>();
-    if (comboInfo) {
-      for (const c of comboInfo.combos) {
-        const combo = useCombosStore.getState().combos.find((co) => co.id === c.comboId);
-        if (combo) {
-          for (const ci of combo.items) {
-            comboMap.set(ci.productId, { comboId: c.comboId, coveredQty: ci.quantity * c.times });
-          }
-        }
-      }
-    }
 
     const stmts = [
       {
