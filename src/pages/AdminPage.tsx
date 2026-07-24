@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAppStore, useAuthStore, useAdminStore } from "@/store";
+import { useCombosStore, useProductsStore } from "@/store";
 import BrandList from "@/components/BrandList";
 import CategoryList from "@/components/CategoryList";
 import BulkPriceModal from "@/components/BulkPriceModal";
@@ -8,12 +9,13 @@ import CompanySettings from "@/components/CompanySettings";
 import ThemeToggle from "@/components/ThemeToggle";
 import { exportBackup, downloadBackup, importBackup } from "@/lib/backup";
 import { runSeeder } from "@/lib/seeder";
+import { useActiveStore } from "@/store/context";
 
 // ──────────────────────────────────────────────
 // Admin section definitions
 // ──────────────────────────────────────────────
 
-type SectionId = "categories" | "brands" | "bulk-price" | "backup" | "settings" | "plantillas" | "empresa";
+type SectionId = "categories" | "brands" | "bulk-price" | "backup" | "settings" | "plantillas" | "empresa" | "combos";
 
 type SectionDef = {
   id: SectionId;
@@ -98,6 +100,16 @@ function CompanyIcon() {
   );
 }
 
+function CombosIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  );
+}
+
 const SECTIONS: SectionDef[] = [
   {
     id: "categories",
@@ -141,6 +153,12 @@ const SECTIONS: SectionDef[] = [
     description: "datos de tu empresa para comprobantes",
     icon: <CompanyIcon />,
   },
+  {
+    id: "combos",
+    label: "Combos",
+    description: "creá combos con precio especial",
+    icon: <CombosIcon />,
+  },
 ];
 
 // ──────────────────────────────────────────────
@@ -155,6 +173,7 @@ const ACCENTS: Record<string, { bg: string; text: string; bar: string }> = {
   settings:    { bg: "bg-sky-500/8 dark:bg-sky-500/15",     text: "text-sky-600 dark:text-sky-400",     bar: "#0ea5e9" },
   plantillas:  { bg: "bg-indigo-500/8 dark:bg-indigo-500/15",   text: "text-indigo-600 dark:text-indigo-400",  bar: "#6366f1" },
   empresa:     { bg: "bg-teal-500/8 dark:bg-teal-500/15",     text: "text-teal-600 dark:text-teal-400",    bar: "#14b8a6" },
+  combos:      { bg: "bg-orange-500/8 dark:bg-orange-500/15", text: "text-orange-600 dark:text-orange-400", bar: "#f97316" },
 };
 
 // ──────────────────────────────────────────────
@@ -250,6 +269,7 @@ export default function AdminPage() {
       {activeSection === "settings" && <SettingsSection />}
       {activeSection === "plantillas" && <PlantillasSection />}
       {activeSection === "empresa" && <CompanySection />}
+      {activeSection === "combos" && <CombosSection />}
     </div>
   );
 }
@@ -529,6 +549,316 @@ function CompanySection() {
     <div>
       <h3 className="text-base font-semibold text-pos-text mb-4">Empresa</h3>
       <CompanySettings />
+    </div>
+  );
+}
+
+function CombosSection() {
+  const { storeId } = useActiveStore();
+  const combos = useCombosStore((s) => s.combos);
+  const products = useProductsStore((s) => s.products);
+  const addCombo = useCombosStore((s) => s.addCombo);
+  const updateCombo = useCombosStore((s) => s.updateCombo);
+  const deleteCombo = useCombosStore((s) => s.deleteCombo);
+  const showNotification = useAppStore((s) => s.showNotification);
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [name, setName] = useState("");
+  const [comboPrice, setComboPrice] = useState("");
+  const [selectedItems, setSelectedItems] = useState<{ productId: number; quantity: number }[]>([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [highlightIndex, setHighlightIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  function resetForm() {
+    setEditingId(null);
+    setName("");
+    setComboPrice("");
+    setSelectedItems([]);
+    setProductSearch("");
+  }
+
+  function startEdit(combo: typeof combos[0]) {
+    setEditingId(combo.id);
+    setName(combo.name);
+    setComboPrice(String(combo.comboPrice));
+    setSelectedItems(combo.items.map((i) => ({ ...i })));
+    setProductSearch("");
+  }
+
+  function toggleProduct(productId: number) {
+    setSelectedItems((prev) => {
+      const exists = prev.find((i) => i.productId === productId);
+      if (exists) return prev.filter((i) => i.productId !== productId);
+      return [...prev, { productId, quantity: 1 }];
+    });
+  }
+
+  function updateQty(productId: number, quantity: number) {
+    setSelectedItems((prev) =>
+      prev.map((i) => (i.productId === productId ? { ...i, quantity: Math.max(0, quantity) } : i)),
+    );
+  }
+
+  function handleSave() {
+    if (!name.trim()) { showNotification("El combo debe tener un nombre"); return; }
+    if (selectedItems.length === 0) { showNotification("El combo debe tener al menos un producto"); return; }
+    if (selectedItems.some((i) => i.quantity < 1)) { showNotification("Todos los productos deben tener cantidad mayor a 0"); return; }
+    const price = parseFloat(comboPrice) || 0;
+    if (price <= 0) { showNotification("El precio del combo debe ser mayor a 0"); return; }
+
+    if (editingId != null) {
+      updateCombo(editingId, { name: name.trim(), comboPrice: price, items: selectedItems });
+      showNotification("Combo actualizado");
+    } else {
+      addCombo({ name: name.trim(), comboPrice: price, items: selectedItems, storeId });
+      showNotification("Combo creado");
+    }
+    resetForm();
+  }
+
+  function handleDelete(id: number) {
+    if (!confirm("¿Eliminar este combo?")) return;
+    deleteCombo(id);
+    if (editingId === id) resetForm();
+    showNotification("Combo eliminado");
+  }
+
+  const storeProducts = products.filter((p) => p.store_id === storeId);
+  const storeCombos = combos.filter((c) => c.storeId === storeId);
+  const q = productSearch.toLowerCase();
+  const filteredProducts = storeProducts.filter((p) => !q || p.name.toLowerCase().includes(q));
+
+  // Reset highlight to first result when search changes
+  useEffect(() => {
+    setHighlightIndex(0);
+  }, [productSearch]);
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    const el = listRef.current?.children[highlightIndex] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [highlightIndex]);
+
+  return (
+    <div>
+      <h3 className="text-base font-semibold text-pos-text mb-4">Combos</h3>
+      <div className="max-w-2xl space-y-6">
+        {/* Combo list */}
+        <div className="space-y-2">
+          {storeCombos.length === 0 && (
+            <p className="text-sm text-pos-muted">No hay combos creados todavía.</p>
+          )}
+          {storeCombos.map((combo) => (
+            <div
+              key={combo.id}
+              className="rounded-xl border border-pos-muted/10 bg-pos-surface p-4 dark:border-gray-600/30 dark:bg-gray-800"
+            >
+              {(() => {
+                const regularTotal = combo.items.reduce((sum, item) => {
+                  const prod = products.find((p) => p.id === item.productId);
+                  return sum + (prod?.price ?? 0) * item.quantity;
+                }, 0);
+                const savings = regularTotal - combo.comboPrice;
+                return (
+                  <>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-pos-text">{combo.name}</h4>
+                        <div className="flex items-baseline gap-2 mt-0.5">
+                          <span className="text-sm font-bold text-pos-text">${combo.comboPrice.toFixed(2)}</span>
+                          {regularTotal > 0 && (
+                            <>
+                              <span className="text-xs text-pos-muted line-through">${regularTotal.toFixed(2)}</span>
+                              <span className="text-xs font-medium text-green-600 dark:text-green-400">-${savings.toFixed(2)}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => startEdit(combo)}
+                          className="text-xs px-3 py-1.5 rounded-lg border border-pos-muted/20 text-pos-text touch-target hover:bg-pos-background"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(combo.id)}
+                          className="text-xs px-3 py-1.5 rounded-lg text-pos-danger touch-target hover:bg-pos-danger/10"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                    {combo.items.length > 0 && (
+                      <table className="w-full mt-2 text-xs">
+                        <thead>
+                          <tr className="text-pos-muted/60 border-b border-pos-muted/10">
+                            <th className="text-left font-medium py-1 pr-2">Producto</th>
+                            <th className="text-right font-medium py-1 px-2">Cant</th>
+                            <th className="text-right font-medium py-1 pl-2">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {combo.items.map((item) => {
+                            const prod = products.find((p) => p.id === item.productId);
+                            const lineTotal = (prod?.price ?? 0) * item.quantity;
+                            return (
+                              <tr key={item.productId} className="border-b border-pos-muted/5 last:border-0">
+                                <td className="py-1 pr-2 text-pos-muted">{prod?.name ?? `#${item.productId}`}</td>
+                                <td className="py-1 px-2 text-right font-mono text-pos-muted">{item.quantity}</td>
+                                <td className="py-1 pl-2 text-right font-mono text-pos-muted">${lineTotal.toFixed(2)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          ))}
+        </div>
+
+        {/* Create/Edit form */}
+        <div className="rounded-xl border border-pos-muted/10 bg-pos-surface p-4 dark:border-gray-600/30 dark:bg-gray-800">
+          <h4 className="text-sm font-semibold text-pos-text mb-3">
+            {editingId != null ? "Editar Combo" : "Nuevo Combo"}
+          </h4>
+          <div className="space-y-3">
+            {/* Selected products chips */}
+            {selectedItems.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {selectedItems.map((item) => {
+                  const prod = products.find((p) => p.id === item.productId);
+                  return (
+                    <span
+                      key={item.productId}
+                      className="inline-flex items-center gap-1 rounded-md bg-pos-secondary/10 px-2 py-0.5 text-xs font-medium text-pos-secondary dark:bg-pos-secondary/20"
+                    >
+                      {prod?.name ?? `#${item.productId}`}
+                      {item.quantity > 1 && <span className="font-mono text-[10px] opacity-60">×{item.quantity}</span>}
+                      <button
+                        onClick={() => toggleProduct(item.productId)}
+                        className="ml-0.5 hover:text-pos-danger transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Product selector */}
+            <div>
+              <p className="text-xs font-medium text-pos-muted mb-2">Productos</p>
+              <input
+                type="text"
+                value={productSearch}
+                onChange={(e) => { setProductSearch(e.target.value); }}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setHighlightIndex((i) => Math.min(i + 1, filteredProducts.length - 1));
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setHighlightIndex((i) => Math.max(i - 1, 0));
+                  } else if (e.key === "Enter" && filteredProducts[highlightIndex]) {
+                    e.preventDefault();
+                    toggleProduct(filteredProducts[highlightIndex].id);
+                  }
+                }}
+                placeholder="Buscá y seleccioná productos…"
+                className="w-full mb-2 border border-pos-muted/30 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface"
+                autoFocus
+              />
+              <div ref={listRef} className="max-h-48 overflow-y-auto space-y-1">
+                {filteredProducts.length === 0 && storeProducts.length > 0 && (
+                  <p className="text-xs text-pos-muted text-center py-4">Sin resultados</p>
+                )}
+                {filteredProducts.map((p, idx) => {
+                  const selected = selectedItems.find((i) => i.productId === p.id);
+                  const highlighted = idx === highlightIndex;
+                  return (
+                    <label
+                      key={p.id}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                        highlighted
+                          ? "bg-pos-secondary/10 ring-1 ring-pos-secondary/30"
+                          : "hover:bg-pos-background"
+                      }`}
+                      onMouseEnter={() => setHighlightIndex(idx)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!selected}
+                        onChange={() => toggleProduct(p.id)}
+                        className="rounded accent-pos-secondary"
+                      />
+                      <span className="text-sm text-pos-text flex-1">{p.name}</span>
+                      {selected && (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={selected.quantity || ""}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            if (raw === "") { updateQty(p.id, 0); return; }
+                            const parsed = parseInt(raw);
+                            if (!isNaN(parsed)) updateQty(p.id, parsed);
+                          }}
+                          className="w-12 border border-pos-muted/30 rounded px-2 py-0.5 text-xs text-right font-mono focus:outline-none focus:ring-1 focus:ring-pos-secondary bg-pos-surface"
+                        />
+                      )}
+                      <span className="text-xs text-pos-muted font-mono w-16 text-right">
+                        ${p.price.toFixed(2)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Name & price — below products */}
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nombre del combo"
+              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface"
+            />
+            <input
+              type="text"
+              inputMode="decimal"
+              value={comboPrice}
+              onChange={(e) => setComboPrice(e.target.value)}
+              placeholder="Precio del combo"
+              className="w-full border border-pos-muted/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pos-secondary bg-pos-surface"
+            />
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                disabled={selectedItems.length === 0}
+                className="px-4 py-2 bg-pos-secondary text-white rounded-lg text-sm font-medium touch-target hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                {editingId != null ? "Guardar Cambios" : "Crear Combo"}
+              </button>
+              {editingId != null && (
+                <button
+                  onClick={resetForm}
+                  className="px-4 py-2 border border-pos-muted/30 text-pos-text rounded-lg text-sm touch-target hover:bg-pos-background"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

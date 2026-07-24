@@ -43,5 +43,6 @@ export function usePermission(page: Page): boolean {
   if (!requiredPermission) return false;
 
   if (!currentUser) return false;
+  if (currentUser.role === "admin") return true;
   return currentUser.permissions.includes(requiredPermission);
 }

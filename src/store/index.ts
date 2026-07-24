@@ -3,6 +3,8 @@ import { useProductsStore } from "./products";
 import { useCustomersStore, type Customer } from "./customers";
 import { useAuthStore } from "./auth";
 import { useComprobantesStore, type ComprobanteTipo } from "./comprobantes";
+import { useCombosStore } from "./combos";
+import { detectActiveCombos, type ComboMatch } from "@/lib/combos";
 import { execute, enqueueSync, transaction as dbTransaction } from "@/lib/db";
 
 // ──────────────────────────────────────────────
@@ -75,6 +77,11 @@ export type UiState = {
   notification: string | null;
 };
 
+export type AppliedComboInfo = {
+  combos: Array<{ comboId: number; name: string; times: number; savingsPerSet: number; totalSavings: number }>;
+  totalSavings: number;
+};
+
 // ──────────────────────────────────────────────
 // Cart state slice
 // ──────────────────────────────────────────────
@@ -108,6 +115,7 @@ export type AppStore = {
   clearCart: () => void;
   cartTotal: () => number;
   itemCount: () => number;
+  getComboInfo: () => AppliedComboInfo | null;
 
   // ── Cart selection (keyboard shortcuts) ──
   selectedCartItemId: number | null;
@@ -148,6 +156,46 @@ export type AppStore = {
 
 function calcSubtotal(qty: number, price: number): number {
   return Math.round(qty * price * 100) / 100;
+}
+
+function computeComboInfo(items: CartItem[]): AppliedComboInfo | null {
+  if (items.length === 0) return null;
+  const combos = useCombosStore.getState().combos;
+  if (combos.length === 0) return null;
+  const products = useProductsStore.getState().products;
+  if (products.length === 0) return null;
+
+  const matches = detectActiveCombos(items, combos, products);
+  if (matches.length === 0) return null;
+
+  // Pick non-overlapping combos, prefer biggest totalSavings
+  const sorted = [...matches].sort((a, b) => b.totalSavings - a.totalSavings);
+  const picked: ComboMatch[] = [];
+  const usedProductIds = new Set<number>();
+
+  for (const match of sorted) {
+    const combo = combos.find((c) => c.id === match.comboId);
+    if (!combo) continue;
+    const productIds = new Set(combo.items.map((i) => i.productId));
+    const overlaps = [...productIds].some((pid) => usedProductIds.has(pid));
+    if (!overlaps) {
+      picked.push(match);
+      productIds.forEach((pid) => usedProductIds.add(pid));
+    }
+  }
+
+  if (picked.length === 0) return null;
+
+  return {
+    combos: picked.map((m) => ({
+      comboId: m.comboId,
+      name: m.comboName,
+      times: m.times,
+      savingsPerSet: m.savingsPerSet,
+      totalSavings: m.totalSavings,
+    })),
+    totalSavings: picked.reduce((sum, m) => sum + m.totalSavings, 0),
+  };
 }
 
 let nextSaleId = 1;
@@ -262,10 +310,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const itemDiscount = i.discountPercent > 0 ? i.subtotal * i.discountPercent / 100 : 0;
       return sum + i.subtotal - itemDiscount;
     }, 0);
-    const globalDiscount = globalDiscountPercent > 0 ? subtotal * globalDiscountPercent / 100 : 0;
-    const total = Math.round((subtotal - globalDiscount) * 100) / 100;
+    const comboInfo = computeComboInfo(items);
+    const afterCombo = comboInfo ? Math.round((subtotal - comboInfo.totalSavings) * 100) / 100 : subtotal;
+    const globalDiscount = globalDiscountPercent > 0 ? afterCombo * globalDiscountPercent / 100 : 0;
+    const total = Math.round((afterCombo - globalDiscount) * 100) / 100;
     return total;
   },
+
+  getComboInfo: () => computeComboInfo(get().items),
 
   itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
@@ -396,6 +448,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const dbCash = paymentMethod === "mixed" ? (cashAmount ?? 0) : paymentMethod === "cash" ? (amountPaid ?? null) : null;
     const dbCard = paymentMethod === "mixed" ? (cardAmount ?? 0) + (mercadopagoAmount ?? 0) : paymentMethod === "card" || paymentMethod === "mercadopago" ? total : null;
 
+    // ── Compute combo_id x qty map for sale_items ──
+    // Tracks how many units of each product are covered by combo sets
+    const comboInfo = computeComboInfo(items);
+    const comboMap = new Map<number, { comboId: number; coveredQty: number }>();
+    if (comboInfo) {
+      for (const c of comboInfo.combos) {
+        const combo = useCombosStore.getState().combos.find((co) => co.id === c.comboId);
+        if (combo) {
+          for (const ci of combo.items) {
+            comboMap.set(ci.productId, { comboId: c.comboId, coveredQty: ci.quantity * c.times });
+          }
+        }
+      }
+    }
+
     const stmts = [
       {
         sql: `INSERT INTO sales (id, total, payment_method, cash_amount, card_amount, change, status, customer_name, shift_id, created_by, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending')`,
@@ -409,9 +476,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     for (const item of sale.items) {
       const saleItemId = nextSaleItemId++;
+      const comboId = comboMap.get(item.productId)?.comboId ?? null;
       stmts.push({
-        sql: `INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
-        bind: [saleItemId, sale.id, item.productId, item.productName, item.quantity, item.unitPrice, item.subtotal, resolvedStoreId, now, now],
+        sql: `INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, unit_price, subtotal, store_id, created_at, updated_at, sync_status, combo_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', $11)`,
+        bind: [saleItemId, sale.id, item.productId, item.productName, item.quantity, item.unitPrice, item.subtotal, resolvedStoreId, now, now, comboId],
       });
       stmts.push({
         sql: `INSERT INTO sync_queue (entity, entity_id, operation, store_id, status, created_at, updated_at) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
@@ -479,3 +547,4 @@ export { useComprobantesStore } from "./comprobantes";
 export { useExpensesStore } from "./expenses";
 export { usePlantillasStore } from "./plantillas";
 export { useCompanyStore } from "./company";
+export { useCombosStore } from "./combos";

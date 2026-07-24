@@ -224,6 +224,26 @@ async function ensureTables(db: Database): Promise<void> {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    // ── Combos ──
+    `CREATE TABLE IF NOT EXISTS combos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      combo_price REAL NOT NULL DEFAULT 0,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
+    `CREATE TABLE IF NOT EXISTS combo_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      combo_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      store_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sync_status TEXT NOT NULL DEFAULT 'pending'
+    )`,
     `CREATE TABLE IF NOT EXISTS proveedores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -443,6 +463,11 @@ async function ensureTables(db: Database): Promise<void> {
     // Cash movements
     `CREATE INDEX IF NOT EXISTS idx_cash_movements_shift ON cash_movements(shift_id)`,
 
+    // Combos
+    `CREATE INDEX IF NOT EXISTS idx_combos_store_id ON combos(store_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_combo_items_combo_id ON combo_items(combo_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_combo_items_product_id ON combo_items(product_id)`,
+
     // Sync logs
     `CREATE INDEX IF NOT EXISTS idx_sync_logs_entity ON sync_logs(entity)`,
     `CREATE INDEX IF NOT EXISTS idx_sync_logs_created ON sync_logs(created_at)`,
@@ -464,6 +489,7 @@ async function ensureTables(db: Database): Promise<void> {
     `ALTER TABLE credit_payments ADD COLUMN comprobante_id INTEGER`,
     `ALTER TABLE sales ADD COLUMN mercadopago_amount REAL`,
     `ALTER TABLE pedido_items ADD COLUMN received_qty REAL NOT NULL DEFAULT 0`,
+    `ALTER TABLE sale_items ADD COLUMN combo_id INTEGER REFERENCES combos(id)`,
   ];
   for (const sql of migrations) {
     try {
@@ -498,8 +524,15 @@ export async function transaction(
   statements: Array<{ sql: string; bind?: unknown[] }>,
 ): Promise<void> {
   const db = await getDb();
-  for (const stmt of statements) {
-    await db.execute(stmt.sql, stmt.bind ?? []);
+  await db.execute("BEGIN");
+  try {
+    for (const stmt of statements) {
+      await db.execute(stmt.sql, stmt.bind ?? []);
+    }
+    await db.execute("COMMIT");
+  } catch (err) {
+    await db.execute("ROLLBACK");
+    throw err;
   }
 }
 

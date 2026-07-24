@@ -25,7 +25,8 @@ import StatsPage from "@/pages/StatsPage";
 import AdminPage from "@/pages/AdminPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import LoginPage from "@/pages/LoginPage";
-import ActivationPage from "@/pages/ActivationPage";
+// [ACTIVATION BYPASS] Import preserved for later uncomment
+// import ActivationPage from "@/pages/ActivationPage";
 
 // ──────────────────────────────────────────────
 // Page router — maps enum to component
@@ -70,6 +71,10 @@ export default function App() {
   const init = useAuthStore((s) => s.init);
   const hasAccess = usePermission(page);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  // [ACTIVATION BYPASS] Bypass constants — restore original state + effect below to re-enable
+  const activationChecked = true;
+  const isActivated = true;
+  /*
   const [activationChecked, setActivationChecked] = useState(false);
   const [isActivated, setIsActivated] = useState(false);
 
@@ -88,6 +93,7 @@ export default function App() {
     }
     checkActivation();
   }, []);
+  */
 
   // Hydrate auth store, restore session, load all data from SQLite
   useEffect(() => {
@@ -162,13 +168,7 @@ export default function App() {
 
   return (
     <StoreProvider initialStoreId="store_1">
-      {!activationChecked ? (
-        <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-gray-900">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-        </div>
-      ) : !isActivated ? (
-        <ActivationPage />
-      ) : isAuthenticated ? (
+      {isAuthenticated ? (
         <div className="flex h-screen w-screen overflow-hidden">
           <NavigationBar />
           <main className="flex-1 overflow-auto p-4">
@@ -185,8 +185,8 @@ export default function App() {
         <LoginPage />
       )}
 
-      {/* Close window confirmation modal — only when activated */}
-      {isActivated && showCloseConfirm && (
+      {/* [ACTIVATION BYPASS] Close confirm modal — always show when triggered */}
+      {showCloseConfirm && (
         <ConfirmModal
           title="Cerrar programa"
           message="¿Estás seguro de que querés cerrar el programa? Perderás la sesión actual."

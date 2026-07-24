@@ -28,8 +28,11 @@ export default function CheckoutModal({
   const selectedComprobanteTipo = useAppStore((s) => s.selectedComprobanteTipo);
   const setSelectedComprobanteTipo = useAppStore((s) => s.setSelectedComprobanteTipo);
 
+  const comboInfo = useAppStore((s) => s.getComboInfo());
   const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
   const total = cartTotal();
+  const beforeGlobal = comboInfo ? subtotal - comboInfo.totalSavings : subtotal;
+  const nextDiscount = Math.round((beforeGlobal - total) * 100) / 100;
   const discountAmount = Math.round((subtotal - total) * 100) / 100;
   const isEmpty = items.length === 0;
 
@@ -266,6 +269,18 @@ export default function CheckoutModal({
                 <span className="text-xs text-pos-danger font-medium">−{formatCurrency(discountAmount)}</span>
               )}
             </div>
+            {comboInfo && comboInfo.combos.length > 0 && (
+              <div className="space-y-1">
+                {comboInfo.combos.map((c) => (
+                  <div key={c.comboId} className="flex items-center justify-between text-xs">
+                    <span className="text-emerald-600 font-medium">
+                      {c.times > 1 ? `${c.times}x ` : ""}Combo: {c.name}
+                    </span>
+                    <span className="text-emerald-600 font-mono">−{formatCurrency(c.totalSavings)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Total */}

@@ -9,6 +9,7 @@ import { useCashClosingStore, setNextShiftId, setNextMovementId as setNextCashMo
 import { useAuthStore, setNextUserId } from "@/store/auth";
 import { useExpensesStore } from "@/store/expenses";
 import { useComprobantesStore, setNextComprobanteId, setNextComprobanteItemId, type ComprobanteItem } from "@/store/comprobantes";
+import { useCombosStore, setNextComboId } from "@/store/combos";
 import { useAppStore, setNextSaleId, setNextSaleItemId } from "@/store";
 
 let initialized = false;
@@ -28,6 +29,7 @@ export async function initAllStores(force = false): Promise<void> {
     initSales(),
     initExpenses(),
     initComprobantes(),
+    initCombos(),
   ]);
 
   // Diagnostic log — dump store counts
@@ -484,6 +486,15 @@ async function initComprobantes(): Promise<void> {
   } catch (err) {
     console.error("[init] initComprobantes failed:", err);
   }
+}
+
+// ── Combos ──
+
+async function initCombos(): Promise<void> {
+  await useCombosStore.getState().loadCombos();
+  const combos = useCombosStore.getState().combos;
+  const maxId = combos.reduce((m: number, c: any) => Math.max(m, c.id), 0);
+  setNextComboId(maxId + 1);
 }
 
 // ── Expenses ──
